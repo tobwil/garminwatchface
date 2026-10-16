@@ -149,6 +149,23 @@ function loop(ts) {
   useStore(key);
   const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating };
   render(ctx, face, cachedData, a, state.aod);
+  if (!mini.hidden) {
+    const m = miniCanvas.getContext("2d");
+    m.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+    m.drawImage(screen, 0, 0, miniCanvas.width, miniCanvas.height);
+  }
+}
+
+// floating mini preview while the big watch is scrolled out of view
+const mini = $("mini");
+const miniCanvas = $("miniScreen");
+function setupMini() {
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  miniCanvas.width = miniCanvas.height = Math.round(96 * dpr);
+  new IntersectionObserver((es) => {
+    for (const e of es) { mini.hidden = e.isIntersecting; state.dirty = true; }
+  }, { threshold: 0.15 }).observe($("watch"));
+  mini.onclick = () => $("watch").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
 }
 
 // ------------------------------------------------------------------ gallery
@@ -456,6 +473,8 @@ async function generate() {
     st.classList.add("bad");
     st.textContent = code === "declined" ? "Speichern abgebrochen."
       : code === "rate_limited" ? "Es ist schon ein Speichern-Dialog offen. Bitte kurz warten."
+      : code === "extension_not_enabled" || code === "rejected_extension" ? "ZIP-Downloads sind in dieser Ansicht gesperrt. Öffne das Studio im Browser auf claude.ai oder nutze die lokale Datei FaceLab.html."
+      : code === "unavailable" || code === "not_granted" ? "Speichern ist in dieser Ansicht nicht möglich. Öffne das Studio im Browser auf claude.ai."
       : "Das hat nicht geklappt: " + (e && e.message ? e.message : e);
   } finally {
     btn.disabled = false;
@@ -468,6 +487,7 @@ function boot() {
   buildGallery();
   syncPanel();
   sizeScreen();
+  setupMini();
   new ResizeObserver(sizeScreen).observe(screen);
   setInterval(() => faces.forEach((f) => refreshTile(f.key)), 60000);
   requestAnimationFrame(loop);
