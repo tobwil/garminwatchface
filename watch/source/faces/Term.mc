@@ -57,7 +57,7 @@ class FaceTerm extends Face {
     }
 
     function draw(dc as Dc, d as D, a as A) as Void {
-        var st = 3;
+        var st = d.cfg.style;
         var fg = st == 2 ? 0xFFB000 : (st == 3 ? 0x3BFF6A : d.accent);
         var live = a.live;
         var ms = live ? a.t : 99999;
