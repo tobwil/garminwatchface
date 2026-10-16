@@ -107,13 +107,17 @@ export const F = {
           const bits = FD.pxData[gi * 7 + row];
           if (bits === 0) continue;
           if (gap === 0) {
+            // identical rows were already drawn as one taller block
+            if (row > 0 && FD.pxData[gi * 7 + row - 1] === bits) continue;
+            let rows = 1;
+            while (row + rows < 7 && FD.pxData[gi * 7 + row + rows] === bits) rows++;
             // merge horizontal runs of dots into one rectangle (fewer draw calls)
             let col = 0;
             while (col < 5) {
               if (bits & (16 >> col)) {
                 let end = col + 1;
                 while (end < 5 && (bits & (16 >> end))) end++;
-                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, sc);
+                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, rows * sc);
                 col = end;
               } else col++;
             }

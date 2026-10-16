@@ -168,6 +168,14 @@ module F {
                         continue;
                     }
                     if (gap == 0) {
+                        // identical rows were already drawn as one taller block
+                        if (row > 0 && FontData.PX_DATA[gi * 7 + row - 1] == bits) {
+                            continue;
+                        }
+                        var rows = 1;
+                        while (row + rows < 7 && FontData.PX_DATA[gi * 7 + row + rows] == bits) {
+                            rows++;
+                        }
                         // merge horizontal runs of dots into one rectangle (fewer draw calls)
                         var col = 0;
                         while (col < 5) {
@@ -176,7 +184,7 @@ module F {
                                 while (end < 5 && (bits & (16 >> end)) != 0) {
                                     end++;
                                 }
-                                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, sc);
+                                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, rows * sc);
                                 col = end;
                             } else {
                                 col++;

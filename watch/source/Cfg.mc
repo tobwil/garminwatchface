@@ -2,6 +2,7 @@ import Toybox.Application;
 import Toybox.Application.WatchFaceConfig;
 import Toybox.Complications;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.WatchUi;
 
 // Configuration. Sources, in order of precedence:
@@ -110,6 +111,9 @@ class Cfg {
         } else {
             fromArray(stored as Array);
         }
+        if (Registry.DEBUG) {
+            System.println("baked " + baked + " seen " + seen + " stored " + stored);
+        }
         syncNative(false);
     }
 
@@ -134,9 +138,10 @@ class Cfg {
         return s.substring(0, end);
     }
 
-    // Merge the native watch face editor settings. With force=false they are
-    // only applied when they changed since we last looked (so a freshly baked
-    // Face-Code is not overridden by the editor's defaults).
+    // Merge the native watch face editor settings: only fields that changed since
+    // we last looked are applied (so a freshly baked Face-Code is not overridden
+    // by the editor's defaults). force=true (editor event) also applies when no
+    // previous snapshot exists.
     function syncNative(force as Boolean) as Void {
         if (!(Application has :WatchFaceConfig)) {
             return;
@@ -161,30 +166,31 @@ class Cfg {
                 }
             }
             var prev = Application.Storage.getValue("nsnap") as Array?;
-            var changed = prev == null ? false : !same(prev, snap);
-            if (force || changed) {
-                if (snap[0] > 0) { style = snap[0]; }
-                if (snap[1] != -1) { accent = snap[1] & 0xFFFFFF; }
-                if (snap[2] != -1) { dcol = snap[2] & 0xFFFFFF; }
-                for (var j = 0; j < 3; j++) {
-                    if (snap[3 + j] > 0) { slots[j] = snap[3 + j]; }
+            if (Registry.DEBUG) {
+                System.println("native snap " + snap + " prev " + prev + " force " + force + " style " + style);
+            }
+            // apply only the fields the user actually changed in the editor, so a
+            // baked style is not reset when only the colour is edited
+            if (prev != null || force) {
+                var any = false;
+                for (var k = 0; k < 6; k++) {
+                    var v = snap[k];
+                    var moved = prev == null ? force : (prev.size() > k && prev[k] != v);
+                    if (!moved || v == -1 || (k != 1 && k != 2 && v <= 0)) {
+                        continue;
+                    }
+                    any = true;
+                    if (k == 0) { style = v; }
+                    else if (k == 1) { accent = v & 0xFFFFFF; }
+                    else if (k == 2) { dcol = v & 0xFFFFFF; }
+                    else { slots[k - 3] = v; }
                 }
-                save();
+                if (any) {
+                    save();
+                }
             }
             Application.Storage.setValue("nsnap", snap);
         } catch (e) {
         }
-    }
-
-    static function same(a as Array, b as Array) as Boolean {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        for (var i = 0; i < a.size(); i++) {
-            if (a[i] != b[i]) {
-                return false;
-            }
-        }
-        return true;
     }
 }

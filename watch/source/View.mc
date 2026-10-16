@@ -119,6 +119,9 @@ class FaceView extends WatchUi.WatchFace {
     }
 
     function onTick() as Void {
+        // slow data reads run here, in their own callback, so a heavy frame and the
+        // once-a-minute refresh never share one watchdog budget
+        d.refresh(false);
         var t = System.getTimer() - _wake;
         if (t > INTRO_MS) {
             var fps = cfg.anim >= 2 ? face.fps() : 0;
@@ -133,7 +136,11 @@ class FaceView extends WatchUi.WatchFace {
 
     // ------------------------------------------------------------ drawing
     function onUpdate(dc as Dc) as Void {
-        d.refresh(false);
+        if (_timer != null) {
+            d.clock();
+        } else {
+            d.refresh(false);
+        }
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
         dc.setAntiAlias(true);

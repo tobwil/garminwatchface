@@ -69,7 +69,7 @@ site/           gebündeltes Studio (eine HTML-Datei)
   laufen über eigene, prozedurale Schriften (Vektor, 5×7-Pixel, 7-Segment) – dadurch sieht die
   Vorschau aus wie die Uhr.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
-  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design ≈ 45–90 KB).
+  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 44–60 KB im Simulator gemessen).
 * **Generator im Browser:** Jede `.prg` enthält Platzhalter für Face-Code, Namen und App-ID. Das Studio
   setzt deine Konfiguration ein und signiert die Datei neu (RSA, SHA-1 + SHA-256, wie der Garmin-Compiler).
   Den Schlüssel erzeugt `tools/build.py` beim ersten Build lokal in `tools/keys/` (nicht im Repo);

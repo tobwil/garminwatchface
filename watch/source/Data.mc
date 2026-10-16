@@ -53,11 +53,15 @@ class D {
     }
 
     // Called every frame: cheap clock fields. Every minute (or when forced): everything else.
-    function refresh(force as Boolean) as Void {
+    function clock() as Void {
         var ct = System.getClockTime();
         h = ct.hour; m = ct.min; s = ct.sec;
         tz = ct.timeZoneOffset / 60;
         mins = h * 60 + m;
+    }
+
+    function refresh(force as Boolean) as Void {
+        clock();
         var minuteKey = mins;
         if (!force && minuteKey == _lastSlow) {
             return;

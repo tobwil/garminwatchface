@@ -72,10 +72,14 @@ if ! xdpyinfo >/dev/null 2>&1; then
   for i in $(seq 1 50); do xdpyinfo >/dev/null 2>&1 && break; sleep 0.2; done
 fi
 LOG=$(mktemp)
-# the simulator is single-instance per $HOME: give every slot its own home
+# the simulator is single-instance per $HOME: give every slot its own home, and its
+# own temp dir (the simulated device storage lives in $TMPDIR/com.garmin.connectiq).
+# The device storage is wiped so every run starts like a fresh install.
 SH=/tmp/facelab-simhome.$SLOT
+ST=/tmp/facelab-simtmp.$SLOT
 mkdir -p "$SH" && ln -sfn "$HOME/.Garmin" "$SH/.Garmin"
-HOME=$SH timeout $((SECS + 120)) unshare -n bash "$0" --inner "$PRG" "$OUT" "$SECS" "$LOG" 9>&-
+rm -rf "$ST" && mkdir -p "$ST"
+TMPDIR=$ST HOME=$SH timeout $((SECS + 120)) unshare -n bash "$0" --inner "$PRG" "$OUT" "$SECS" "$LOG" 9>&-
 echo "--- app output (sim slot $SLOT) ---"
 grep -av "JAVA_TOOL\|^Script \|^$" "$LOG" | tail -n ${SIM_TAIL:-25}
 echo "--- screenshot: $OUT"
