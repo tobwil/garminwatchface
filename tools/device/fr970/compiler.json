@@ -1,0 +1,36 @@
+{
+  "deviceId": "fr970",
+  "displayName": "Forerunner® 970",
+  "deviceFamily": "round-454x454",
+  "worldWidePartNumber": "006-B4565-00",
+  "partNumbers": [
+    {
+      "connectIQVersion": "6.0.2",
+      "firmwareVersion": 1733,
+      "number": "006-B4565-00",
+      "languages": [
+        {"code": "deu", "fontSet": "ww"},
+        {"code": "eng", "fontSet": "ww"}
+      ]
+    }
+  ],
+  "orientation": 0,
+  "bitsPerPixel": 16,
+  "resolution": {"width": 454, "height": 454},
+  "appTypes": [
+    {"type": "watchFace", "memoryLimit": 131072},
+    {"type": "background", "memoryLimit": 65536},
+    {"type": "datafield", "memoryLimit": 131072},
+    {"type": "glance", "memoryLimit": 65536},
+    {"type": "watchApp", "memoryLimit": 786432},
+    {"type": "audioContentProvider", "memoryLimit": 524288}
+  ],
+  "launcherIcon": {"width": 65, "height": 65},
+  "complicationIcon": {"width": 49, "height": 49},
+  "alphaBlendingSupport": true,
+  "enhancedGraphicSupport": true,
+  "screenRotationSupport": false,
+  "codePageSize": 4096,
+  "imageFormats": ["yuv", "jpg", "png"],
+  "fonts": [{"fontSet": "ww", "fonts": []}]
+}

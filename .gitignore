@@ -1,0 +1,8 @@
+node_modules/
+build/
+dist/
+web/assets.js
+site/artifact.html
+# signing key (generated locally / in CI) and the bundled studio, which embeds it
+tools/keys/
+site/

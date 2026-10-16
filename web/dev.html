@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>FaceLab Dev Render</title>
+<style>body{margin:0;background:#222}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" style="width:454px;height:454px"></canvas>
+<script type="module">
+// Dev harness: renders one face at fixed data for screenshot comparisons.
+// ?face=MONO&style=1&h=10&m=2&t=99999&aod=0&sim={json}
+import { prepCanvas, render, animState } from "./js/engine/render.js";
+import { buildData, DEFAULT_CFG } from "./js/engine/model.js";
+const q = new URLSearchParams(location.search);
+const meta = await (await fetch("faces.json")).json();
+const fm = meta.faces.find((f) => f.key === (q.get("face") || "MONO"));
+const face = (await import("./js/faces/" + fm.js)).default;
+const df = fm.defaults;
+const cfg = { ...DEFAULT_CFG, ...df, accent: parseInt(df.accent, 16), dcol: parseInt(df.dcol, 16), style: +(q.get("style") || df.style || 1) };
+const now = new Date(2026, 9, 16, +(q.get("h") ?? 10), +(q.get("m") ?? 2), +(q.get("s") ?? 30));
+const sim = q.get("sim") ? JSON.parse(q.get("sim")) : {};
+const d = buildData(cfg, sim, now);
+const ctx = prepCanvas(document.getElementById("c"), 454);
+const t = +(q.get("t") ?? 99999);
+render(ctx, face, d, { ...animState(t, cfg), live: q.get("live") === "1" }, q.get("aod") === "1");
+document.title = "ready";
+</script>
+</body>
+</html>

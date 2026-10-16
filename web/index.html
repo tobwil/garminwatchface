@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!--FL:HEAD-->
+<title>FaceLab Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<!--FL:/HEAD-->
+</head>
+<body>
+<!--FL:BODY-->
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <div class="brand-name">FaceLab</div>
+        <div class="brand-sub">Watchface-Studio · Forerunner 970 · 454 × 454 AMOLED</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="surprise" type="button" title="Zufälliges Design mit zufälliger Farbe">Überrasch mich</button>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Vorschau">
+      <div class="stage-inner">
+        <div class="watch" id="watch">
+          <div class="watch-btn b1"></div><div class="watch-btn b2"></div><div class="watch-btn b3"></div>
+          <div class="watch-btn b4"></div><div class="watch-btn b5"></div>
+          <div class="bezel" aria-hidden="true"></div>
+          <canvas id="screen" width="454" height="454" aria-label="Watchface-Vorschau"></canvas>
+          <div class="aod-badge" id="aodBadge" hidden>Always-On</div>
+        </div>
+        <div class="stage-controls">
+          <button class="btn btn-primary" id="wake" type="button">Handgelenk heben</button>
+          <label class="switch"><input type="checkbox" id="aod"><span>Always-On</span></label>
+          <label class="switch"><input type="checkbox" id="live" checked><span>Echtzeit</span></label>
+        </div>
+        <div class="time-scrub" id="scrubWrap">
+          <label for="scrub" class="lbl">Uhrzeit</label>
+          <input type="range" id="scrub" min="0" max="1439" step="1" value="600">
+          <output id="scrubOut" class="mono">10:00</output>
+        </div>
+        <p class="stage-note" id="stageNote"></p>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Konfiguration">
+      <div class="block">
+        <div class="block-head">
+          <h2>Designs</h2>
+          <div class="chips" id="chips" role="tablist" aria-label="Filter"></div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+
+      <div class="block face-intro">
+        <div class="eyebrow" id="faceTags"></div>
+        <h1 id="faceName">Mono</h1>
+        <p id="faceBlurb" class="blurb"></p>
+      </div>
+
+      <div class="block" id="cfgBlock">
+        <h2>Anpassen</h2>
+        <div class="field" id="fStyle">
+          <span class="lbl">Variante</span>
+          <div class="seg" id="styles" role="radiogroup" aria-label="Variante"></div>
+        </div>
+        <div class="field">
+          <span class="lbl">Akzentfarbe</span>
+          <div class="swatches" id="accents"></div>
+        </div>
+        <div class="field">
+          <span class="lbl">Datenfarbe</span>
+          <div class="swatches" id="dcols"></div>
+        </div>
+        <div class="field" id="fSlots">
+          <span class="lbl">Datenfelder</span>
+          <div class="slots">
+            <select id="slot0" aria-label="Datenfeld 1"></select>
+            <select id="slot1" aria-label="Datenfeld 2"></select>
+            <select id="slot2" aria-label="Datenfeld 3"></select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field" id="fFtp"><label class="lbl" for="ftp">FTP</label><div class="num"><input type="number" id="ftp" min="100" max="450" step="5"><span>W</span></div></div>
+          <div class="field" id="fKg"><label class="lbl" for="kg">Gewicht</label><div class="num"><input type="number" id="kg" min="40" max="150" step="1"><span>kg</span></div></div>
+          <div class="field" id="fBike"><label class="lbl" for="bike">Rad-Wochenziel</label><div class="num"><input type="number" id="bike" min="0" max="1000" step="10"><span>km</span></div></div>
+          <div class="field" id="fClimb"><label class="lbl" for="climb">Kletterziel</label>
+            <select id="climb"><option value="0">Alpe d'Huez · 1071 Hm · 21 Kehren</option><option value="1">Mont Ventoux · 1610 Hm</option><option value="2">Stelvio · 1808 Hm · 48 Kehren</option><option value="3">Everest · 8848 Hm (kumulativ)</option></select></div>
+          <div class="field" id="fQuest"><label class="lbl" for="quest">Quest-Stufe</label>
+            <select id="quest"><option value="0">Locker</option><option value="1">Normal</option><option value="2">Hart</option></select></div>
+          <div class="field"><label class="lbl" for="anim">Animation</label>
+            <select id="anim"><option value="2">Voll (Intro + Bewegung)</option><option value="1">Nur Intro</option><option value="0">Aus (spart Akku)</option></select></div>
+        </div>
+      </div>
+
+      <details class="block sim" id="simBlock">
+        <summary><h2>Daten simulieren</h2><span class="hint">Schieb an den Werten und sieh, wie das Design reagiert</span></summary>
+        <div class="sim-grid" id="sim"></div>
+      </details>
+
+      <div class="block install" id="install">
+        <h2>Auf die Uhr</h2>
+        <div class="field">
+          <label class="lbl" for="fname">Name in der Watchface-Liste</label>
+          <input type="text" id="fname" maxlength="22" autocomplete="off">
+        </div>
+        <div class="field">
+          <span class="lbl">Face-Code</span>
+          <div class="code-row">
+            <code class="mono" id="code"></code>
+            <button class="btn btn-small" id="copy" type="button">Kopieren</button>
+          </div>
+          <details class="paste">
+            <summary>Code einfügen</summary>
+            <div class="code-row"><input type="text" id="codeIn" class="mono" placeholder="FL1.ALPE.1.FF6A2B…"><button class="btn btn-small" id="load" type="button">Laden</button></div>
+            <p class="err" id="codeErr" hidden></p>
+          </details>
+        </div>
+        <button class="btn btn-primary btn-big" id="download" type="button">Watchface erzeugen (.zip)</button>
+        <p class="status" id="dlStatus" role="status"></p>
+        <ol class="steps">
+          <li><b>ZIP entpacken.</b> Darin liegt eine <span class="mono">.prg</span>-Datei – das ist dein fertiges Watchface.</li>
+          <li><b>Uhr per USB anschließen.</b> Am Mac brauchst du dafür <span class="mono">OpenMTP</span> oder Android File Transfer.</li>
+          <li><b>Datei nach <span class="mono">GARMIN/APPS</span> kopieren</b> und die Uhr trennen.</li>
+          <li><b>Aktivieren:</b> Auf der Uhr Watchface lange drücken → Watchface wählen → durchblättern. Gleicher Name ersetzt das vorhandene Watchface, ein neuer Name legt ein zusätzliches an.</li>
+        </ol>
+        <p class="fine">Variante, Akzentfarbe und Datenfelder kannst du später auch direkt an der Uhr im Watchface-Editor ändern. FTP, Gewicht und Ziele stehen im Menü <i>Einstellungen</i> des Watchfaces.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<!--FL:/BODY-->
+<!--FL:SCRIPT--><script type="module" src="js/app.js"></script><!--FL:/SCRIPT-->
+</body>
+</html>
