@@ -5,6 +5,7 @@
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
+import { FONTDATA as FD } from "../engine/fontdata.js";
 
 const DIG = "0123456789";
 const DRUM = " ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ0123456789.:/-%°+";
@@ -27,6 +28,50 @@ function seqCh(drum, target, k, n, blank) {
   return drum.substring(j, j + 1);
 }
 
+// RUNS[bits * 6 + 2r] = first column, [+1] = length of the r-th run of lit dots in a 5-bit row
+const RUNS = [];
+for (let b = 0; b < 32; b++) {
+  let r = 0, c = 0;
+  const e = [0, 0, 0, 0, 0, 0];
+  while (c < 5) {
+    if (b & (16 >> c)) {
+      const s0 = c;
+      while (c < 5 && (b & (16 >> c))) c++;
+      e[r * 2] = s0; e[r * 2 + 1] = c - s0; r++;
+    } else c++;
+  }
+  for (let i = 0; i < 6; i++) RUNS.push(e[i]);
+}
+
+// Dot-matrix text, left aligned, pixel-identical to F.px for gap <= 0, but drawn as
+// horizontal runs merged over identical rows (~4x fewer draw calls; keeps the
+// board rattle well inside the watchdog budget).
+function pxt(dc, txt, x, y, sc, g) {
+  let ox = Math.round(x);
+  const d = sc - g;
+  for (let k = 0; k < txt.length; k++) {
+    const code = txt.charCodeAt(k);
+    const gi = code > 255 || code === 32 ? -1 : FD.pxMap[code] - 1;
+    if (gi >= 0) {
+      const g7 = gi * 7;
+      for (let row = 0; row < 7; row++) {
+        const bits = FD.pxData[g7 + row];
+        if (bits === 0) continue;
+        let h = 1;
+        while (row + h < 7 && FD.pxData[g7 + row + h] === bits) h++;
+        const hh = (h - 1) * sc + d;
+        for (let q = bits * 6; q < bits * 6 + 6; q += 2) {
+          const n = RUNS[q + 1];
+          if (n === 0) break;
+          dc.fillRectangle(ox + RUNS[q] * sc, y + row * sc, (n - 1) * sc + d, hh);
+        }
+        row += h - 1;
+      }
+    }
+    ox += 6 * sc;
+  }
+}
+
 // hour as two flap characters (12 h: leading blank flap)
 function hhStr(h, is24) {
   if (is24) return G.pad2(h);
@@ -45,7 +90,7 @@ function glyph(dc, ch, x, y, w, h, big, col, fast) {
     if (fast) F.st(dc, ch, x + w / 2, y + h / 2, gh, 9, 1, 1.0, 0);
     else for (let k = -1; k <= 1; k++) F.st(dc, ch, x + w / 2 + k * 2.2, y + h / 2, gh, 6, 1, 1.0, 0);
   }
-  else F.px(dc, ch, x + w / 2, y + h / 2 - 7, 2, 1, 0);
+  else pxt(dc, ch, x + w / 2 - 5, y + h / 2 - 7, 2, 0);
 }
 
 // tile body: lighter top half, darker bottom half
@@ -191,8 +236,8 @@ export default {
     const bx1 = bx0 + COLS * PITCH - 2;
     const hp = G.ease(ms / 500);
     dc.setColor(lab2, -1);
-    F.px(dc, "ABFAHRT", bx0, 245, 2, 0, 0);
-    F.px(dc, "GLEIS 970", bx1, 245, 2, 2, 0);
+    pxt(dc, "ABFAHRT", bx0, 245, 2, 0);
+    pxt(dc, "GLEIS 970", bx1 - F.pxW("GLEIS 970", 2), 245, 2, 0);
     dc.setColor(G.dim(lab, 0.35), -1);
     dc.fillRectangle(227 - (bx1 - bx0) * hp / 2, 263, (bx1 - bx0) * hp, 1);
 
@@ -230,7 +275,7 @@ export default {
       dc.setColor(G.dim(sig, fp), -1);
       dc.fillCircle(fx + 4, 371, 4);
       dc.setColor(G.dim(lab2, fp), -1);
-      F.px(dc, msg, fx + 16, 364, 2, 0, 0);
+      pxt(dc, msg, fx + 16, 364, 2, 0);
     }
   },
 

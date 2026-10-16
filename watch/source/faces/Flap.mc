@@ -16,9 +16,72 @@ class FaceFlap extends Face {
     hidden var _lastKey = -1;
     hidden var _mT0 = -1;
     hidden var _busy = true;
+    // RUNS[bits * 6 + 2r] = first column, [+1] = length of the r-th run of lit dots in a 5-bit row
+    hidden var _runs as Array<Number>;
 
     function initialize() {
         Face.initialize();
+        _runs = new [192] as Array<Number>;
+        for (var b = 0; b < 32; b++) {
+            var r = 0;
+            var c = 0;
+            for (var i = 0; i < 6; i++) {
+                _runs[b * 6 + i] = 0;
+            }
+            while (c < 5) {
+                if ((b & (16 >> c)) != 0) {
+                    var s0 = c;
+                    while (c < 5 && (b & (16 >> c)) != 0) {
+                        c++;
+                    }
+                    _runs[b * 6 + r * 2] = s0;
+                    _runs[b * 6 + r * 2 + 1] = c - s0;
+                    r++;
+                } else {
+                    c++;
+                }
+            }
+        }
+    }
+
+    // Dot-matrix text, left aligned, pixel-identical to F.px for gap <= 0, but drawn as
+    // horizontal runs merged over identical rows (~4x fewer draw calls; keeps the
+    // board rattle well inside the watchdog budget).
+    hidden function pxt(dc as Dc, txt as String, x, y, sc, g) as Void {
+        var ox = Math.round(x).toNumber();
+        var d = sc - g;
+        var cs = txt.toCharArray();
+        var map = FontData.PX_MAP;
+        var data = FontData.PX_DATA;
+        var runs = _runs;
+        for (var k = 0; k < cs.size(); k++) {
+            var code = cs[k].toNumber();
+            var gi = (code > 255 || code == 32) ? -1 : map[code] - 1;
+            if (gi >= 0) {
+                var g7 = gi * 7;
+                for (var row = 0; row < 7; row++) {
+                    var bits = data[g7 + row];
+                    if (bits == 0) {
+                        continue;
+                    }
+                    var h = 1;
+                    while (row + h < 7 && data[g7 + row + h] == bits) {
+                        h++;
+                    }
+                    var hh = (h - 1) * sc + d;
+                    var q0 = bits * 6;
+                    for (var q = q0; q < q0 + 6; q += 2) {
+                        var n = runs[q + 1];
+                        if (n == 0) {
+                            break;
+                        }
+                        dc.fillRectangle(ox + runs[q] * sc, y + row * sc, (n - 1) * sc + d, hh);
+                    }
+                    row += h - 1;
+                }
+            }
+            ox += 6 * sc;
+        }
     }
 
     function fps() as Number {
@@ -69,7 +132,7 @@ class FaceFlap extends Face {
                 }
             }
         } else {
-            F.px(dc, ch, x + w / 2.0, y + h / 2 - 7, 2, 1, 0);
+            pxt(dc, ch, x + w / 2.0 - 5, y + h / 2 - 7, 2, 0);
         }
     }
 
@@ -245,8 +308,8 @@ class FaceFlap extends Face {
         var bx1 = bx0 + COLS * PITCH - 2;
         var hp = G.ease(ms / 500.0);
         dc.setColor(lab2, -1);
-        F.px(dc, "ABFAHRT", bx0, 245, 2, 0, 0);
-        F.px(dc, "GLEIS 970", bx1, 245, 2, 2, 0);
+        pxt(dc, "ABFAHRT", bx0, 245, 2, 0);
+        pxt(dc, "GLEIS 970", bx1 - F.pxW("GLEIS 970", 2), 245, 2, 0);
         dc.setColor(G.dim(lab, 0.35), -1);
         dc.fillRectangle(227 - (bx1 - bx0) * hp / 2, 263, (bx1 - bx0) * hp, 1);
 
@@ -299,7 +362,7 @@ class FaceFlap extends Face {
             dc.setColor(G.dim(sig, fp), -1);
             dc.fillCircle(fx + 4, 371, 4);
             dc.setColor(G.dim(lab2, fp), -1);
-            F.px(dc, msg, fx + 16, 364, 2, 0, 0);
+            pxt(dc, msg, fx + 16, 364, 2, 0);
         }
     }
 

@@ -4,6 +4,7 @@
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
+import { FONTDATA as FD } from "../engine/fontdata.js";
 
 const DOWS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const MONS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -19,6 +20,52 @@ const LP = 21; // line pitch
 
 let busy = true;
 let rainOn = false;
+let cKey = -1;
+let cLines = null;
+
+// RUNS[bits * 6 + 2r] = first column, [+1] = length of the r-th run of lit dots in a 5-bit row
+const RUNS = [];
+for (let b = 0; b < 32; b++) {
+  let r = 0, c = 0;
+  const e = [0, 0, 0, 0, 0, 0];
+  while (c < 5) {
+    if (b & (16 >> c)) {
+      const s0 = c;
+      while (c < 5 && (b & (16 >> c))) c++;
+      e[r * 2] = s0; e[r * 2 + 1] = c - s0; r++;
+    } else c++;
+  }
+  for (let i = 0; i < 6; i++) RUNS.push(e[i]);
+}
+
+// Dot-matrix text, left aligned, pixel-identical to F.px for gap <= 0, but drawn as
+// horizontal runs merged over identical rows (~4x fewer draw calls: the session has
+// ~200 characters and F.px alone would come close to the watchdog limit).
+function pxt(dc, txt, x, y, sc, g) {
+  let ox = Math.round(x);
+  const d = sc - g;
+  for (let k = 0; k < txt.length; k++) {
+    const code = txt.charCodeAt(k);
+    const gi = code > 255 || code === 32 ? -1 : FD.pxMap[code] - 1;
+    if (gi >= 0) {
+      const g7 = gi * 7;
+      for (let row = 0; row < 7; row++) {
+        const bits = FD.pxData[g7 + row];
+        if (bits === 0) continue;
+        let h = 1;
+        while (row + h < 7 && FD.pxData[g7 + row + h] === bits) h++;
+        const hh = (h - 1) * sc + d;
+        for (let q = bits * 6; q < bits * 6 + 6; q += 2) {
+          const n = RUNS[q + 1];
+          if (n === 0) break;
+          dc.fillRectangle(ox + RUNS[q] * sc, y + row * sc, (n - 1) * sc + d, hh);
+        }
+        row += h - 1;
+      }
+    }
+    ox += 6 * sc;
+  }
+}
 
 // lower-case incl. umlauts (identical on the watch)
 function lc(s) {
@@ -52,7 +99,7 @@ export default {
 
     // ---- matrix rain (behind everything)
     if (st === 3) {
-      for (let c = 0; c < 30; c++) {
+      for (let c = 0; c < 24; c++) {
         let sd = G.rnd(c * 7919 + 13);
         const x = 24 + (c % 15) * 28 + (sd % 9);
         sd = G.rnd(sd);
@@ -78,45 +125,48 @@ export default {
     const ts = G.timeStr(d);
     const tn = G.clamp(Math.floor(ms / 70), 0, ts.length);
     const tw = F.pxW(ts, 9);
-    const tx = 227 - tw / 2;
+    const tx0 = 227 - tw / 2;
     const ty = 66;
     if (tn > 0) {
       const sub = ts.substring(0, tn);
+      // glow: one pass with oversized dots (negative gap) = 2 px halo around every dot
       dc.setColor(G.dim(fg, 0.2), -1);
-      F.px(dc, sub, tx - 2, ty, 9, 0, 0);
-      F.px(dc, sub, tx + 2, ty, 9, 0, 0);
-      F.px(dc, sub, tx, ty - 2, 9, 0, 0);
-      F.px(dc, sub, tx, ty + 2, 9, 0, 0);
+      pxt(dc, sub, tx0 - 2, ty - 2, 9, -4);
       dc.setColor(fg, -1);
-      F.px(dc, sub, tx, ty, 9, 0, 0);
+      pxt(dc, sub, tx0, ty, 9, 0);
     }
     if (tn < ts.length) {
       dc.setColor(fg, -1);
-      dc.fillRectangle(tx + tn * 54, ty, 45, 63);
+      dc.fillRectangle(tx0 + tn * 54, ty, 45, 63);
     }
     dc.setColor(0x000000, -1);
-    for (let yy = ty + 2; yy < ty + 63; yy += 3) dc.fillRectangle(tx - 3, yy, tw + 6, 1);
+    for (let yy = ty + 2; yy < ty + 63; yy += 3) dc.fillRectangle(tx0 - 3, yy, tw + 6, 1);
     if (tn < ts.length) {
       busy = true;
       return;
     }
 
     // ---- session lines
-    const body = "battery " + nv(d.bb, "%") + "  stress " + nv(d.stress, "");
-    const hr = nv(d.hr, " bpm") + " (ruhe " + nv(d.rhr, "") + ")";
-    const lines = [
-      "date", DOWS[d.dow] + " " + d.day + ". " + MONS[d.mon - 1] + " " + d.year,
-      "cat /body/*", body,
-      "hr", hr,
-      "./slots",
-    ];
-    for (let k = 0; k < 3; k++) {
-      const sl = d.slots[k];
-      const l = lc(sl.lbl), v = lc(sl.val);
-      let dots = " ";
-      for (let i = l.length + v.length + 2; i < NCH; i++) dots += ".";
-      lines.push(l + dots + " " + v);
+    // strings only change with the data (refreshed once a minute): build them once per snapshot
+    if (cKey !== d.unix || cLines === null) {
+      cKey = d.unix;
+      const body = "battery " + nv(d.bb, "%") + "  stress " + nv(d.stress, "");
+      const hr = nv(d.hr, " bpm") + " (ruhe " + nv(d.rhr, "") + ")";
+      cLines = [
+        "date", DOWS[d.dow] + " " + d.day + ". " + MONS[d.mon - 1] + " " + d.year,
+        "cat /body/*", body,
+        "hr", hr,
+        "./slots", "", "", "",
+      ];
+      for (let k = 0; k < 3; k++) {
+        const sl = d.slots[k];
+        const l = lc(sl.lbl), v = lc(sl.val);
+        let dots = " ";
+        for (let i = l.length + v.length + 2; i < NCH; i++) dots += ".";
+        cLines[7 + k] = l + dots + " " + v;
+      }
     }
+    const lines = cLines;
     const isP = [true, false, true, false, true, false, true, false, false, false];
     const x0 = 227 - (NCH * 12 - 2) / 2;
     const pw = F.pxW(PROMPT, 2) + 2;
@@ -132,14 +182,14 @@ export default {
       if (i === lines.length || isP[i]) {
         if (ms < tc) break;
         dc.setColor(dim, -1);
-        F.px(dc, PROMPT, lx, y, 2, 0, 0);
+        pxt(dc, PROMPT, lx, y, 2, 0);
         if (i === lines.length) { cx = lx + pw; cy = y; break; }
         let s = lines[i];
         const n = Math.floor((ms - tc) / 30);
         tc += s.length * 30 + 120;
         if (n < s.length) { s = s.substring(0, n); cx = lx + pw + n * 12; cy = y; }
         dc.setColor(fg, -1);
-        F.px(dc, s, lx + pw, y, 2, 0, 0);
+        pxt(dc, s, lx + pw, y, 2, 0);
         if (cy >= 0) break;
       } else {
         if (ms < tc) break;
@@ -147,7 +197,7 @@ export default {
         let s = lines[i];
         if (s.length > maxc) s = s.substring(0, maxc);
         dc.setColor(out, -1);
-        F.px(dc, s, lx, y, 2, 0, 0);
+        pxt(dc, s, lx, y, 2, 0);
       }
     }
     busy = ms < tc + 60;

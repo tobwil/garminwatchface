@@ -102,7 +102,7 @@ class FaceOrbit extends Face {
     // time moves to the top while the minute planet passes below it
     function flip(d as D) as Boolean {
         var ma = d.m * 6 + d.s * 0.1;
-        return ma > 128 && ma < 232;
+        return ma > 110 && ma < 250;
     }
 
     function stars(dc as Dc, a as A, col) as Void {

@@ -26,6 +26,7 @@ class FaceWort extends Face {
         [8, -2], [2, 7, 8, -2], [4, 6, -2], [5, 6, -2], [3, 6, -2], [2, 6, -2]
     ];
     hidden var _ch as Array<String>;
+    hidden var _gi as Array<Number>;
     hidden var _lit as Array;
     hidden var _total = 0.0;
 
@@ -44,10 +45,12 @@ class FaceWort extends Face {
             "ZEHNEUNKUHR"
         ];
         _ch = new [110] as Array<String>;
+        _gi = new [110] as Array<Number>;
         for (var r = 0; r < 10; r++) {
             var cs = rows[r].toCharArray();
             for (var c = 0; c < 11; c++) {
                 _ch[r * 11 + c] = cs[c].toString();
+                _gi[r * 11 + c] = FontData.STROKE_MAP[cs[c].toNumber()] - 1;
             }
         }
         _lit = new [110];
@@ -86,6 +89,46 @@ class FaceWort extends Face {
         _total = k;
     }
 
+    // Fast path for the dim letters: one centred glyph at pen 2, pixel-identical to
+    // F.st(dc, ch, x, y, LH, 2, 1, 1.0, 0) but without its per-call string work.
+    hidden function glyph2(dc as Dc, gi as Number, x, y) as Void {
+        var s = LH / 80.0;
+        var data = FontData.STROKE_DATA;
+        var ox = x - FontData.STROKE_W[gi] * s / 2.0;
+        var oy = y - LH / 2.0 - 24 * s;
+        var b = FontData.STROKE_OFFS[gi + 1];
+        var hasP = false;
+        var single = true;
+        var px = 0.0;
+        var py = 0.0;
+        var i = FontData.STROKE_OFFS[gi];
+        while (i < b) {
+            var xb = data[i];
+            if (xb == 255) {
+                if (single && hasP) {
+                    dc.fillCircle(px, py, 1.44);
+                }
+                hasP = false;
+                single = true;
+                i += 1;
+                continue;
+            }
+            var nx = ox + (xb & 127) * s;
+            var ny = oy + data[i + 1] * s;
+            if (hasP) {
+                single = false;
+                dc.drawLine(px, py, nx, ny);
+            }
+            px = nx;
+            py = ny;
+            hasP = true;
+            i += 2;
+        }
+        if (single && hasP) {
+            dc.fillCircle(px, py, 1.44);
+        }
+    }
+
     hidden function onCol(d as D) as Number {
         return d.cfg.style == 1 ? 0xFFFFFF : d.accent;
     }
@@ -104,6 +147,7 @@ class FaceWort extends Face {
 
         // unlit letters (flicker in)
         dc.setColor(off, -1);
+        dc.setPenWidth(2);
         for (var i = 0; i < 110; i++) {
             if (_lit[i] >= 0) {
                 continue;
@@ -117,7 +161,7 @@ class FaceWort extends Face {
             }
             var r = i / 11;
             var cc = i % 11;
-            F.st(dc, _ch[i], X0 + cc * CW, Y0 + r * RH, LH, 2, 1, 1.0, 0);
+            glyph2(dc, _gi[i], X0 + cc * CW, Y0 + r * RH);
         }
 
         // lit letters (typewriter, word by word)
@@ -133,15 +177,17 @@ class FaceWort extends Face {
             if (lp <= 0) {
                 if (p > 0.04) {
                     dc.setColor(off, -1);
-                    F.st(dc, _ch[i], x, y, LH, 2, 1, 1.0, 0);
+                    dc.setPenWidth(2);
+                    glyph2(dc, _gi[i], x, y);
                 }
                 continue;
             }
             if (glow) {
-                dc.setColor(G.dim(on, 0.13 * lp), -1);
-                F.st(dc, _ch[i], x, y, LH, 11, 1, 1.0, 0);
-                dc.setColor(G.dim(on, 0.3 * lp), -1);
-                F.st(dc, _ch[i], x, y, LH, 6, 1, 1.0, 0);
+                // cheap radial halo (stacked discs) instead of extra stroke passes
+                dc.setColor(G.dim(on, 0.09 * lp), -1);
+                dc.fillCircle(x, y, 14);
+                dc.setColor(G.dim(on, 0.19 * lp), -1);
+                dc.fillCircle(x, y, 9.5);
             }
             // flash white, settle to the lit colour
             var col = lp < 0.5 ? G.mix(off, 0xFFFFFF, lp * 2) : G.mix(0xFFFFFF, on, (lp - 0.5) * 2);

@@ -209,6 +209,21 @@ function confetti(dc, x, y, p) {
   }
 }
 
+// star field (x, y, brightness) — computed once
+let STARS = null;
+function stars() {
+  if (STARS === null) {
+    STARS = [];
+    let sd = 97;
+    for (let i = 0; i < 46; i++) {
+      sd = G.rnd(sd); STARS.push(30 + G.rf(sd) * 394);
+      sd = G.rnd(sd); STARS.push(40 + G.rf(sd) * 230);
+      sd = G.rnd(sd); STARS.push(0.3 + G.rf(sd) * 0.5);
+    }
+  }
+  return STARS;
+}
+
 function progress(d) {
   const c = G.clamp(d.cfg.climb, 0, 3);
   const H = HM[c];
@@ -244,11 +259,9 @@ export default {
 
     // ---- night sky
     if (night) {
-      let sd = 97;
+      const sf = stars();
       for (let i = 0; i < 46; i++) {
-        sd = G.rnd(sd); const x = 30 + G.rf(sd) * 394;
-        sd = G.rnd(sd); const y = 40 + G.rf(sd) * 230;
-        sd = G.rnd(sd); const b = 0.3 + G.rf(sd) * 0.5;
+        const x = sf[i * 3], y = sf[i * 3 + 1], b = sf[i * 3 + 2];
         const tw = a.live ? 0.75 + 0.25 * Math.sin(a.t * 0.002 + i * 1.7) : 1;
         dc.setColor(G.dim(0xc8d6ff, b * tw * G.ease(p * 2 - i * 0.02)), -1);
         dc.fillRectangle(x, y, i % 7 === 0 ? 2 : 1, i % 7 === 0 ? 2 : 1);

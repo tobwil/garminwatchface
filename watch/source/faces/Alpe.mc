@@ -304,6 +304,25 @@ class FaceAlpe extends Face {
         }
     }
 
+    // star field (x, y, brightness) — computed once
+    hidden var _stars = null;
+    hidden function stars() as Array {
+        if (_stars == null) {
+            var arr = new [138];
+            var sd = 97;
+            for (var i = 0; i < 46; i++) {
+                sd = G.rnd(sd);
+                arr[i * 3] = 30 + G.rf(sd) * 394;
+                sd = G.rnd(sd);
+                arr[i * 3 + 1] = 40 + G.rf(sd) * 230;
+                sd = G.rnd(sd);
+                arr[i * 3 + 2] = 0.3 + G.rf(sd) * 0.5;
+            }
+            _stars = arr;
+        }
+        return _stars as Array;
+    }
+
     hidden function progress(d as D) as Void {
         var c = G.clamp(d.cfg.climb, 0, 3);
         var H = HM[c];
@@ -355,14 +374,11 @@ class FaceAlpe extends Face {
 
         // ---- night sky
         if (night) {
-            var sd = 97;
+            var sf = stars();
             for (var i = 0; i < 46; i++) {
-                sd = G.rnd(sd);
-                var x = 30 + G.rf(sd) * 394;
-                sd = G.rnd(sd);
-                var y = 40 + G.rf(sd) * 230;
-                sd = G.rnd(sd);
-                var b = 0.3 + G.rf(sd) * 0.5;
+                var x = sf[i * 3];
+                var y = sf[i * 3 + 1];
+                var b = sf[i * 3 + 2];
                 var tw = a.live ? 0.75 + 0.25 * Math.sin(a.t * 0.002 + i * 1.7) : 1.0;
                 dc.setColor(G.dim(0xC8D6FF, b * tw * G.ease(p * 2 - i * 0.02)), -1);
                 var sz = i % 7 == 0 ? 2 : 1;

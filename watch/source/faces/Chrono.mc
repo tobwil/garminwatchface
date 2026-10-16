@@ -105,8 +105,9 @@ class FaceChrono extends Face {
         if (racing) {
             var tp = G.ease(p * 1.3);
             dc.setColor(0x121212, -1);
-            dc.setPenWidth(28);
-            dc.drawCircle(CX, CY, 213);
+            dc.fillCircle(CX, CY, 227);
+            dc.setColor(0x000000, -1);
+            dc.fillCircle(CX, CY, 199);
             dc.setColor(0x3A3A3A, -1);
             dc.setPenWidth(1);
             dc.drawCircle(CX, CY, 199);

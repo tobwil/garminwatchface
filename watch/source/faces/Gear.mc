@@ -95,6 +95,21 @@ class FaceGear extends Face {
         }
     }
 
+    // n radial lines r1..r2 starting at clock angle a0 (incremental rotation, no per-tooth trig)
+    hidden function teeth(dc as Dc, cx, cy, r1, r2, n, a0) as Void {
+        var stp = 2 * Math.PI / n;
+        var cs = Math.cos(stp);
+        var sn = Math.sin(stp);
+        var x = Math.sin(a0 * RAD);
+        var y = -Math.cos(a0 * RAD);
+        for (var i = 0; i < n; i++) {
+            dc.drawLine(cx + x * r1, cy + y * r1, cx + x * r2, cy + y * r2);
+            var nx = x * cs - y * sn;
+            y = x * sn + y * cs;
+            x = nx;
+        }
+    }
+
     hidden function hour12(d as D) {
         return d.h % 12 == 0 ? 12 : d.h % 12;
     }
@@ -161,9 +176,7 @@ class FaceGear extends Face {
         dc.drawCircle(KX, KY, cr);
         dc.setPenWidth(3);
         var cph = a.live ? -(a.t * CV / (cr + 3)) / RAD : 0.0;
-        for (var i = 0; i < cn; i++) {
-            G.tick(dc, KX, KY, cr, cr + 4, i * 360.0 / cn + cph);
-        }
+        teeth(dc, KX, KY, cr, cr + 4, cn, cph);
         if (chrom) {
             dc.setColor(0xE6E9ED, -1);
             dc.setPenWidth(2);
@@ -215,17 +228,14 @@ class FaceGear extends Face {
         // teeth: short thick radial lines
         dc.setColor(cTooth, -1);
         dc.setPenWidth(neon ? 2 : 5);
-        for (var i = 0; i < NT; i++) {
-            G.tick(dc, RX, RY, RR - 1, RR + 5, i * 7.2 + tr);
-        }
+        teeth(dc, RX, RY, RR - 1, RR + 5, NT, tr);
         if (st == 1) {
             // carbon weave hint on the ring band
-            dc.setPenWidth(3);
-            for (var i = 0; i < 36; i++) {
-                dc.setColor(i % 2 == 0 ? 0x3A3D42 : 0x202225, -1);
-                G.arcC(dc, RX, RY, RR - 9, i * 10 + rot, i * 10 + rot + 5);
-                dc.setColor(i % 2 == 0 ? 0x202225 : 0x3A3D42, -1);
-                G.arcC(dc, RX, RY, RR - 4, i * 10 + rot + 5, i * 10 + rot + 10);
+            dc.setPenWidth(4);
+            dc.setColor(0x3C3F45, -1);
+            for (var i = 0; i < 12; i++) {
+                G.arcC(dc, RX, RY, RR - 9, i * 30 + rot, i * 30 + rot + 15);
+                G.arcC(dc, RX, RY, RR - 4, i * 30 + rot + 15, i * 30 + rot + 30);
             }
         }
         if (chrom) {

@@ -162,7 +162,7 @@ export function buildData(cfg, sim, now) {
   const rawFor = {
     1: d.batt, 2: d.steps, 3: d.kcal, 4: d.floors, 5: d.imWeek, 13: d.sunrise * 60, 14: d.sunset * 60, 15: d.alt,
     16: d.pres, 17: d.notif, 18: d.hr, 19: d.wkRun, 20: d.wkBike, 21: d.recov, 22: d.stress, 23: d.bb, 24: d.vo2r,
-    25: d.vo2b, 26: d.tStatus, 27: d.p5k, 28: d.p10k, 29: d.pHM, 30: d.pM, 35: d.spo2, 36: d.resp, 38: d.temp, 42: d.sleep,
+    25: d.vo2b, 26: d.tStatus, 27: d.p5k, 28: d.p10k, 29: d.pHM, 30: d.pM, 35: d.spo2, 36: d.resp, 38: d.temp === -99 ? -1 : d.temp, 42: d.sleep,
   };
   d.slots = cfg.slots.map((t) => fmtSlot(t, rawFor[t] === undefined ? -1 : rawFor[t], d.metric));
   return d;

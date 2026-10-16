@@ -60,6 +60,18 @@ function links(dc, g, off, P, Dl, s1) {
   }
 }
 
+// n radial lines r1..r2 starting at clock angle a0 (incremental rotation, no per-tooth trig)
+function teeth(dc, cx, cy, r1, r2, n, a0) {
+  const stp = (2 * Math.PI) / n, cs = Math.cos(stp), sn = Math.sin(stp);
+  let x = Math.sin(a0 * RAD), y = -Math.cos(a0 * RAD);
+  for (let i = 0; i < n; i++) {
+    dc.drawLine(cx + x * r1, cy + y * r1, cx + x * r2, cy + y * r2);
+    const nx = x * cs - y * sn;
+    y = x * sn + y * cs;
+    x = nx;
+  }
+}
+
 function hour12(d) { return d.h % 12 === 0 ? 12 : d.h % 12; }
 
 export default {
@@ -124,7 +136,7 @@ export default {
       dc.drawCircle(KX, KY, r);
       dc.setPenWidth(3);
       const cph = a.live ? -(a.t * CV / (r + 3)) / RAD : 0;
-      for (let i = 0; i < n; i++) G.tick(dc, KX, KY, r, r + 4, i * 360 / n + cph);
+      teeth(dc, KX, KY, r, r + 4, n, cph);
     }
     if (chrom) {
       dc.setColor(0xe6e9ed, -1);
@@ -175,15 +187,14 @@ export default {
     // teeth: short thick radial lines
     dc.setColor(cTooth, -1);
     dc.setPenWidth(neon ? 2 : 5);
-    for (let i = 0; i < NT; i++) G.tick(dc, RX, RY, RR - 1, RR + 5, i * 7.2 + tr);
+    teeth(dc, RX, RY, RR - 1, RR + 5, NT, tr);
     if (st === 1) {
       // carbon weave hint on the ring band
-      dc.setPenWidth(3);
-      for (let i = 0; i < 36; i++) {
-        dc.setColor(i % 2 === 0 ? 0x3a3d42 : 0x202225, -1);
-        G.arcC(dc, RX, RY, RR - 9, i * 10 + rot, i * 10 + rot + 5);
-        dc.setColor(i % 2 === 0 ? 0x202225 : 0x3a3d42, -1);
-        G.arcC(dc, RX, RY, RR - 4, i * 10 + rot + 5, i * 10 + rot + 10);
+      dc.setPenWidth(4);
+      dc.setColor(0x3c3f45, -1);
+      for (let i = 0; i < 12; i++) {
+        G.arcC(dc, RX, RY, RR - 9, i * 30 + rot, i * 30 + rot + 15);
+        G.arcC(dc, RX, RY, RR - 4, i * 30 + rot + 15, i * 30 + rot + 30);
       }
     }
     if (chrom) {

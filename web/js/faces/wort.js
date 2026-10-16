@@ -4,6 +4,7 @@
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
+import { FONTDATA as FD } from "../engine/fontdata.js";
 
 const GRID = [
   "ESKISTAFÜNF",
@@ -66,6 +67,31 @@ function litMap(d) {
   return lit;
 }
 
+// stroke-font glyph index per cell (precomputed)
+const GI = [];
+for (let i = 0; i < 110; i++) GI.push(FD.strokeMap[GRID[Math.floor(i / 11)].charCodeAt(i % 11)] - 1);
+
+// Fast path for the dim letters: one centred glyph at pen 2, pixel-identical to
+// F.st(dc, ch, x, y, LH, 2, 1, 1.0, 0) but without its per-call string work.
+function glyph2(dc, gi, x, y) {
+  const s = LH / 80;
+  const ox = x - (FD.strokeW[gi] * s) / 2, oy = y - LH / 2 - 24 * s;
+  const b = FD.strokeOffs[gi + 1];
+  let hasP = false, single = true, px = 0, py = 0;
+  let i = FD.strokeOffs[gi];
+  while (i < b) {
+    const xb = FD.strokeData[i];
+    if (xb === 255) {
+      if (single && hasP) dc.fillCircle(px, py, 1.44);
+      hasP = false; single = true; i += 1; continue;
+    }
+    const nx = ox + (xb & 127) * s, ny = oy + FD.strokeData[i + 1] * s;
+    if (hasP) { single = false; dc.drawLine(px, py, nx, ny); }
+    px = nx; py = ny; hasP = true; i += 2;
+  }
+  if (single && hasP) dc.fillCircle(px, py, 1.44);
+}
+
 function cols(d) {
   const st = d.cfg.style;
   const acc = d.accent;
@@ -87,14 +113,15 @@ export default {
     const step = 0.6 / total;
 
     // unlit letters (flicker in)
+    dc.setColor(c.off, -1);
+    dc.setPenWidth(2);
     for (let i = 0; i < 110; i++) {
       if (lit[i] >= 0) continue;
       const t0 = 0.04 + G.rf(G.rnd(i * 7919 + 13)) * 0.5;
       if (p < t0) continue;
       if (p < t0 + 0.12 && (Math.floor(a.t / 40) + i) % 3 === 0) continue;
       const r = Math.floor(i / 11), cc = i % 11;
-      dc.setColor(c.off, -1);
-      F.st(dc, GRID[r][cc], X0 + cc * CW, Y0 + r * RH, LH, 2, 1, 1.0, 0);
+      glyph2(dc, GI[i], X0 + cc * CW, Y0 + r * RH);
     }
 
     // lit letters (typewriter, word by word)
@@ -105,14 +132,15 @@ export default {
       const x = X0 + cc * CW, y = Y0 + r * RH;
       const ch = GRID[r][cc];
       if (lp <= 0) {
-        if (p > 0.04) { dc.setColor(c.off, -1); F.st(dc, ch, x, y, LH, 2, 1, 1.0, 0); }
+        if (p > 0.04) { dc.setColor(c.off, -1); dc.setPenWidth(2); glyph2(dc, GI[i], x, y); }
         continue;
       }
       if (c.glow) {
-        dc.setColor(G.dim(c.on, 0.13 * lp), -1);
-        F.st(dc, ch, x, y, LH, 11, 1, 1.0, 0);
-        dc.setColor(G.dim(c.on, 0.3 * lp), -1);
-        F.st(dc, ch, x, y, LH, 6, 1, 1.0, 0);
+        // cheap radial halo (stacked discs) instead of extra stroke passes
+        dc.setColor(G.dim(c.on, 0.09 * lp), -1);
+        dc.fillCircle(x, y, 14);
+        dc.setColor(G.dim(c.on, 0.19 * lp), -1);
+        dc.fillCircle(x, y, 9.5);
       }
       // flash white, settle to the lit colour
       const col = lp < 0.5 ? G.mix(c.off, 0xffffff, lp * 2) : G.mix(0xffffff, c.on, (lp - 0.5) * 2);
