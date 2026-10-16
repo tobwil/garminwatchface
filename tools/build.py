@@ -177,14 +177,21 @@ def ensure_key():
 def compile_face(face, typecheck="2"):
     d = stage(face)
     os.makedirs(OUT, exist_ok=True)
+    # compile into the face's own build dir: the compiler writes intermediates (gen/, mir/)
+    # next to the output, so parallel builds must not share an output folder
+    tmp = os.path.join(d, "out", face["key"] + ".prg")
+    os.makedirs(os.path.dirname(tmp), exist_ok=True)
     out = os.path.join(OUT, face["key"] + ".prg")
     cmd = ["java", "-Xms1g", "-Xss128m", "-Dfile.encoding=UTF-8", "-jar", os.path.join(SDK, "bin", "monkeybrains.jar"),
-           "-o", out, "-f", os.path.join(d, "monkey.jungle"), "-y", KEY, "-d", DEVICE, "-w", "-l", typecheck, "-O", "2"]
+           "-o", tmp, "-f", os.path.join(d, "monkey.jungle"), "-y", KEY, "-d", DEVICE, "-w", "-l", typecheck, "-O", "2"]
     if os.environ.get("CIQ_RELEASE"):
         cmd.append("-r")
     p = subprocess.run(cmd, capture_output=True, text=True)
     log = "\n".join(l for l in (p.stdout + p.stderr).splitlines() if "JAVA_TOOL_OPTIONS" not in l)
-    ok = p.returncode == 0 and os.path.exists(out)
+    ok = p.returncode == 0 and os.path.exists(tmp)
+    if ok:
+        shutil.copy(tmp, out + ".part")
+        os.replace(out + ".part", out)
     return ok, out, log
 
 

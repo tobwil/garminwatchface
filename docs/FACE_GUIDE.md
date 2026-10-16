@@ -18,7 +18,7 @@ report needed changes instead).
 * 454 × 454 px round AMOLED (Forerunner 970). Centre (227, 227), radius 227. Black background is
   already cleared before `draw`. Anything outside the circle is invisible.
 * Anti-aliasing is on. Colours are `0xRRGGBB` numbers. `-1` = transparent.
-* Alpha colours: `G.argb(alpha0to254, 0xRRGGBB)` (works on the FR970; use sparingly).
+* Alpha colours (`G.argb`) do **not** blend reliably on the watch – prefer opaque `G.mix`/`G.dim` colours.
 
 ## Draw API (subset of Toybox.Graphics.Dc — use ONLY these)
 `setColor(fg, bg)` (always pass `-1` as bg), `setPenWidth(w)`, `fillCircle(x,y,r)`, `drawCircle`,

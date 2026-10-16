@@ -126,7 +126,7 @@ module G {
     }
 
     function argb(a, c) as Number {
-        return (clamp(a.toNumber(), 0, 254) << 24) | (c & 0xFFFFFF);
+        return (clamp(a.toNumber(), 1, 254) << 24) | (c & 0xFFFFFF);
     }
 
     function hsv(h, s, v) as Number {

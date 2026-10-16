@@ -76,7 +76,7 @@ export const G = {
   },
   dim(c, f) { return G.mix(0, c, f); },
   // alpha colour (a: 0..254). Use sparingly; degrades to opaque on devices without blending.
-  argb(a, c) { return (((G.clamp(a | 0, 0, 254) << 24) | (c & 0xffffff)) >>> 0) | 0; },
+  argb(a, c) { return (((G.clamp(a | 0, 1, 254) << 24) | (c & 0xffffff)) >>> 0) | 0; },
   hsv(h, s, v) {
     h = ((h % 360) + 360) % 360;
     const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
