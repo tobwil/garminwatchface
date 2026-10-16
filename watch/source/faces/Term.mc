@@ -67,9 +67,9 @@ class FaceTerm extends Face {
 
         // ---- matrix rain (behind everything)
         if (st == 3) {
-            for (var c = 0; c < 15; c++) {
+            for (var c = 0; c < 30; c++) {
                 var sd = G.rnd(c * 7919 + 13);
-                var x = 24 + c * 28 + (sd % 9);
+                var x = 24 + (c % 15) * 28 + (sd % 9);
                 sd = G.rnd(sd);
                 var v = 70 + (sd % 90); // px/s
                 sd = G.rnd(sd);

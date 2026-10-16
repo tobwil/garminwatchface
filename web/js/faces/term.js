@@ -52,9 +52,9 @@ export default {
 
     // ---- matrix rain (behind everything)
     if (st === 3) {
-      for (let c = 0; c < 15; c++) {
+      for (let c = 0; c < 30; c++) {
         let sd = G.rnd(c * 7919 + 13);
-        const x = 24 + c * 28 + (sd % 9);
+        const x = 24 + (c % 15) * 28 + (sd % 9);
         sd = G.rnd(sd);
         const v = 70 + (sd % 90); // px/s
         sd = G.rnd(sd);
