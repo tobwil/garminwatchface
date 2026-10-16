@@ -29,7 +29,7 @@ export function render(ctx, face, d, a, aod) {
   const dc = new Dc(ctx, SIZE, SIZE);
   dc.setColor(0, 0);
   try {
-    if (aod) (face.aod || defaultAod)(dc, d);
+    if (aod) { if (face.aod) face.aod(dc, d); else defaultAod(dc, d); }
     else face.draw(dc, d, a);
   } catch (e) {
     console.error(e);

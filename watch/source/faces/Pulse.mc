@@ -155,7 +155,7 @@ class FacePulse extends Face {
         var hsz = 14 * G.spring(G.clamp(p * 2 - 0.5, 0.0, 1.0)) * (1 + 0.2 * beat);
         if (hsz > 0.5) {
             if (beat > 0.08) {
-                dc.setColor(G.argb(34 * beat, main), -1);
+                dc.setColor(G.dim(main, 0.22 * beat), -1);
                 dc.fillCircle(hx, hy, hsz * 1.6);
             }
             dc.setColor(main, -1);
@@ -218,7 +218,7 @@ class FacePulse extends Face {
                 }
             }
             // cursor head
-            dc.setColor(G.argb(1 + 89 * ep, ecol), -1);
+            dc.setColor(G.dim(ecol, 0.35 * ep), -1);
             dc.fillCircle(px, py, 7);
             dc.setColor(G.dim(0xFFFFFF, ep), -1);
             dc.fillCircle(px, py, 3);

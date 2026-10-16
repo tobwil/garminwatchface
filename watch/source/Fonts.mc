@@ -167,9 +167,26 @@ module F {
                     if (bits == 0) {
                         continue;
                     }
-                    for (var col = 0; col < 5; col++) {
-                        if ((bits & (16 >> col)) != 0) {
-                            dc.fillRectangle(ox + col * sc, y + row * sc, d, d);
+                    if (gap == 0) {
+                        // merge horizontal runs of dots into one rectangle (fewer draw calls)
+                        var col = 0;
+                        while (col < 5) {
+                            if ((bits & (16 >> col)) != 0) {
+                                var end = col + 1;
+                                while (end < 5 && (bits & (16 >> end)) != 0) {
+                                    end++;
+                                }
+                                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, sc);
+                                col = end;
+                            } else {
+                                col++;
+                            }
+                        }
+                    } else {
+                        for (var col = 0; col < 5; col++) {
+                            if ((bits & (16 >> col)) != 0) {
+                                dc.fillRectangle(ox + col * sc, y + row * sc, d, d);
+                            }
                         }
                     }
                 }

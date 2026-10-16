@@ -427,7 +427,7 @@ class FaceHud extends Face {
         dc.setColor(0xC8C8C8, -1);
         F.px(dc, WS[wi] + " " + WP[wi] + "% " + rn(ftp * WP[wi] / 100.0) + "W", 227 + ox, 210, 2, 1, 0);
         var cp = G.easeInOut(G.stag(p, 3, 0.09, 0.6));
-        chart(dc, 74 + ox, 300, 306, 64, wi, cp);
+        chart(dc, 74 + ox, 294, 306, 60, wi, cp);
         // inputs
         var lb = ["BB", "SCHLAF", "ERHOL", "RUHE"];
         var rv = d.recov >= 0 ? rn(100 - G.clamp(d.recov * 100.0 / 2880, 0.0, 100.0)) : -1;

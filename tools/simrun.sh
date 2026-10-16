@@ -50,7 +50,7 @@ fi
 
 PRG=$(readlink -f "${1:?prg}")
 OUT=$(readlink -m "${2:?out.png}")
-SECS=${3:-14}
+SECS=${3:-24}
 SLOTS=${SIM_SLOTS:-3}
 
 # grab a free slot (or wait for one)

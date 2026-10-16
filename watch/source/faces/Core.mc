@@ -106,7 +106,7 @@ class FaceCore extends Face {
 
         // ---- surface glow line
         dc.setPenWidth(7);
-        dc.setColor(G.argb(60, c), -1);
+        dc.setColor(G.mix(top, c, 0.45), -1);
         for (var i = 0; i < 31; i++) {
             dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
         }
@@ -142,7 +142,7 @@ class FaceCore extends Face {
             if (st == 3) {
                 var rr = 7 + r1 * 10;
                 var wob = Math.sin(t * 0.002 + i) * 0.18;
-                dc.setColor(G.argb(80 * fade, c), -1);
+                dc.setColor(G.mix(top, c, 0.4 * fade), -1);
                 dc.fillEllipse(xx, yy, rr * (1 + wob) + 5, rr * (1 - wob) + 5);
                 dc.setColor(G.mix(top, G.mix(c, 0xFFD36A, 0.4), fade), -1);
                 dc.fillEllipse(xx, yy, rr * (1 + wob), rr * (1 - wob));
@@ -154,7 +154,7 @@ class FaceCore extends Face {
                 dc.fillCircle(xx - rr * 0.35, yy - rr * 0.35, 1);
             } else {
                 var rr = 1.6 + r1 * 1.6;
-                dc.setColor(G.argb(70 * fade, 0xB48CFF), -1);
+                dc.setColor(G.mix(top, 0xB48CFF, 0.35 * fade), -1);
                 dc.fillCircle(xx, yy, rr + 4);
                 dc.setColor(G.mix(c, 0xFFFFFF, 0.6 * fade), -1);
                 dc.fillCircle(xx, yy, rr);

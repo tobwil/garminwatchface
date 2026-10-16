@@ -106,8 +106,21 @@ export const F = {
         for (let row = 0; row < 7; row++) {
           const bits = FD.pxData[gi * 7 + row];
           if (bits === 0) continue;
-          for (let col = 0; col < 5; col++) {
-            if (bits & (16 >> col)) dc.fillRectangle(ox + col * sc, y + row * sc, d, d);
+          if (gap === 0) {
+            // merge horizontal runs of dots into one rectangle (fewer draw calls)
+            let col = 0;
+            while (col < 5) {
+              if (bits & (16 >> col)) {
+                let end = col + 1;
+                while (end < 5 && (bits & (16 >> end))) end++;
+                dc.fillRectangle(ox + col * sc, y + row * sc, (end - col) * sc, sc);
+                col = end;
+              } else col++;
+            }
+          } else {
+            for (let col = 0; col < 5; col++) {
+              if (bits & (16 >> col)) dc.fillRectangle(ox + col * sc, y + row * sc, d, d);
+            }
           }
         }
       }

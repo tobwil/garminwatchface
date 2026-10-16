@@ -375,7 +375,7 @@ export default {
     dc.setColor(0xc8c8c8, -1);
     F.px(dc, WS[wi] + " " + WP[wi] + "% " + Math.round((ftp * WP[wi]) / 100.0) + "W", 227 + ox, 210, 2, 1, 0);
     const cp = G.easeInOut(G.stag(p, 3, 0.09, 0.6));
-    chart(dc, 74 + ox, 300, 306, 64, wi, cp);
+    chart(dc, 74 + ox, 294, 306, 60, wi, cp);
     // inputs
     const lb = ["BB", "SCHLAF", "ERHOL", "RUHE"];
     const rv = d.recov >= 0 ? Math.round(100 - G.clamp((d.recov * 100.0) / 2880, 0, 100)) : -1;

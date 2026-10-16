@@ -103,7 +103,7 @@ export default {
 
     // ---- surface glow line
     dc.setPenWidth(7);
-    dc.setColor(G.argb(60, c), -1);
+    dc.setColor(G.mix(top, c, 0.45), -1);
     for (let i = 0; i < 31; i++) dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
     dc.setPenWidth(3);
     dc.setColor(G.mix(c, 0xffffff, 0.25), -1);
@@ -130,7 +130,7 @@ export default {
       if (st === 3) {
         const rr = 7 + r1 * 10;
         const wob = Math.sin(t * 0.002 + i) * 0.18;
-        dc.setColor(G.argb(80 * fade, c), -1);
+        dc.setColor(G.mix(top, c, 0.4 * fade), -1);
         dc.fillEllipse(xx, yy, rr * (1 + wob) + 5, rr * (1 - wob) + 5);
         dc.setColor(G.mix(top, G.mix(c, 0xffd36a, 0.4), fade), -1);
         dc.fillEllipse(xx, yy, rr * (1 + wob), rr * (1 - wob));
@@ -142,7 +142,7 @@ export default {
         dc.fillCircle(xx - rr * 0.35, yy - rr * 0.35, 1);
       } else {
         const rr = 1.6 + r1 * 1.6;
-        dc.setColor(G.argb(70 * fade, 0xb48cff), -1);
+        dc.setColor(G.mix(top, 0xb48cff, 0.35 * fade), -1);
         dc.fillCircle(xx, yy, rr + 4);
         dc.setColor(G.mix(c, 0xffffff, 0.6 * fade), -1);
         dc.fillCircle(xx, yy, rr);

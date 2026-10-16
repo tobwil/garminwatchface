@@ -8,7 +8,9 @@ import Toybox.Math;
 class FaceTerm extends Face {
     const DOWS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
     const MONS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-    const RAIN = "0123456789abcdefghijklmnopqrstuvwxyz$#%&*+<>=/";
+    // code-rain glyphs: 10 katakana-like signs, 4 rects each [x, y, w, h] in a 10x14 cell
+    // (much cheaper than the dot-matrix font, which would trip the watchdog)
+    const RG = [0,0,10,2, 7,2,2,5, 3,7,2,7, 0,0,0,0,  0,3,10,2, 4,0,2,14, 0,0,0,0, 0,0,0,0,  0,0,10,2, 1,6,8,2, 0,12,10,2, 0,0,0,0,  2,0,2,14, 6,0,2,9, 8,9,2,5, 0,0,0,0,  0,0,2,8, 0,6,10,2, 8,0,2,14, 0,0,0,0,  0,1,10,2, 8,3,2,6, 4,9,2,5, 0,0,0,0,  4,0,2,14, 0,5,10,2, 0,10,3,2, 7,10,3,2,  0,0,10,2, 0,0,2,14, 0,12,10,2, 0,0,0,0,  0,2,2,3, 4,3,2,3, 8,3,2,7, 3,12,6,2,  2,0,6,2, 2,0,2,8, 2,6,6,2, 6,6,2,8];
     const PROMPT = "fr970:~$ ";
     const NCH = 22; // session width in characters
     const LY = 152; // first session line (top)
@@ -55,7 +57,7 @@ class FaceTerm extends Face {
     }
 
     function draw(dc as Dc, d as D, a as A) as Void {
-        var st = d.cfg.style;
+        var st = 3;
         var fg = st == 2 ? 0xFFB000 : (st == 3 ? 0x3BFF6A : d.accent);
         var live = a.live;
         var ms = live ? a.t : 99999;
@@ -63,7 +65,6 @@ class FaceTerm extends Face {
 
         // ---- matrix rain (behind everything)
         if (st == 3) {
-            var rl = RAIN.length();
             for (var c = 0; c < 15; c++) {
                 var sd = G.rnd(c * 7919 + 13);
                 var x = 24 + c * 28 + (sd % 9);
@@ -82,11 +83,15 @@ class FaceTerm extends Face {
                     if (x < 227 - hc || x + 10 > 227 + hc) {
                         continue;
                     }
-                    var ci = (c * 31 + (yy / 16) * 7 + (ms / 220) * (j == 0 ? 3 : 0)) % rl;
+                    var ci = ((c * 31 + (yy / 16) * 7 + (ms / 220) * (j == 0 ? 3 : 0)) % 10) * 16;
                     // fainter where it runs behind the session text
                     var f = (yy > LY - 16 && yy < LY + 11 * LP && x > 80 && x < 374) ? 0.55 : 1.0;
                     dc.setColor(G.dim(j == 0 ? 0x2A9A4C : 0x17682F, f * (1 - j / 10.0)), -1);
-                    F.px(dc, RAIN.substring(ci, ci + 1) as String, x, yy, 2, 0, 0);
+                    for (var q = ci; q < ci + 16; q += 4) {
+                        if (RG[q + 2] > 0) {
+                            dc.fillRectangle(x + RG[q], yy + RG[q + 1], RG[q + 2], RG[q + 3]);
+                        }
+                    }
                 }
             }
         }

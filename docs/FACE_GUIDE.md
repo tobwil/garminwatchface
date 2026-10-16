@@ -86,6 +86,9 @@ apply `St.shift(d)` offsets to everything. Make it a recognisable, elegant echo 
   `function draw(dc as Dc, d as D, a as A) as Void` must match the base class.
 * Avoid allocating big arrays per frame; precompute static geometry once (e.g. in `initialize`)
   only if it is small. Memory budget for one face: keep `usedMemory` < 90 KB (engine ≈ 43 KB).
+* **Drawing cost**: filled rectangles/circles are cheap; every stroke-font line is ~5× more expensive
+  (digits are long polylines – "3.3" ≈ 70 lines). Use the pixel font for small/secondary text when a
+  face is heavy. Helper functions for `aod` must not rely on `this` in JS.
 * Per-frame cost: the debug build prints `dt=<ms>` (draw time in the simulator). Aim for ≤ 60 ms
   while animating (the simulator is slow, but the watchdog also limits work per frame).
 * Math: `Math.sin/cos/sqrt/atan2/floor/round/pow`, `Math.PI`. `.abs()` on numbers.
