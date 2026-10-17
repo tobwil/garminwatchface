@@ -603,6 +603,7 @@ class FaceSterne extends Face {
                 var x = bx + ux * f;
                 var y = by + uy * f;
                 dc.setColor(_ap[j * 8 + q], -1);
+                dc.setPenWidth(8 - j * 2);
                 dc.drawLine(x0, y0, x, y);
                 x0 = x;
                 y0 = y;

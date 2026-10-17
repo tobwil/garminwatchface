@@ -408,6 +408,7 @@ function aurora(dc, t, k, refl) {
       const f = j === 0 ? 0.3 : j === 1 ? 0.55 : j === 2 ? 0.8 : 1.0;
       const x = bx + ux * f, y = by + uy * f;
       dc.setColor(AP[j * 8 + q], -1);
+      dc.setPenWidth(8 - j * 2);
       dc.drawLine(x0, y0, x, y);
       x0 = x; y0 = y;
     }
