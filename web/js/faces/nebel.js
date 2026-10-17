@@ -27,7 +27,9 @@ const NP = 13;
 const A1 = new Float64Array(NSTR), B1 = new Float64Array(NSTR), A2 = new Float64Array(NSTR), B2 = new Float64Array(NSTR);
 const COLS = new Array(NSTR); // fog colour per strip (streaks + light shining through)
 const NJ = new Float64Array(NSTR); // edge raggedness per strip
+const GLOW = new Array(NSTR); // background colour under the fog per strip (light behind the time)
 let busy = true;
+let any = false; // is anything wiped right now?
 let cKey = -1;
 let wn = 0, tilt = 0, bow = 0, dir = 1, ph = 0, tilt2 = 0;
 let blobs = null; // x, y, r, tone
@@ -45,7 +47,7 @@ function build(st, d) {
   sd = G.rnd(sd); dir = (sd >> 5) % 3 === 0 ? -1 : 1;
   sd = G.rnd(sd); ph = (sd % 1000) / 100.0;
   sd = G.rnd(sd); tilt2 = (sd % 9) - 4;
-  const nb = st === 3 ? 16 : 13;
+  const nb = st === 3 ? 13 : 12;
   blobs = new Array(nb * 4);
   for (let i = 0; i < nb; i++) {
     sd = G.rnd(sd);
@@ -64,6 +66,7 @@ function build(st, d) {
     const u = (xc - 227) / 227.0;
     COLS[s] = G.mix(G.mix(P[0], P[1], 0.5 + 0.5 * G.noise(xc * 0.031 + ph)), P[12], (1 - u * u) * 0.55);
     NJ[s] = 1 + G.noise(xc * 0.045 + ph);
+    GLOW[s] = G.mix(P[5], P[6], G.clamp(1.15 - Math.abs(u) * 1.25, 0, 1));
   }
   fern = null;
   if (st === 2) {
@@ -106,11 +109,12 @@ function strips(st, t) {
   const head2 = X2A + (X2B - X2A) * p2;
   const hw2 = 27 - 3 * cr;
   const tt = t * 0.0006;
+  any = t >= T0;
   for (let s = 0; s < NSTR; s++) {
     const xc = s * 6 + 3;
     const u = (xc - 227) / 227.0;
     const yc = Y0 + tilt * u + bow * (u * u - 0.1);
-    const jit = (st === 3 ? 1 + G.noise(xc * 0.045 + ph + tt) : NJ[s]) * (1.5 + 4 * cr);
+    const jit = (st === 3 ? NJ[s] * 0.6 + 0.4 * (1 + Math.sin(xc * 0.05 + tt * 2)) : NJ[s]) * (1.5 + 4 * cr);
     let h = -1;
     if (t >= T0) {
       const dx = dir > 0 ? xc - head : head - xc;
@@ -132,8 +136,9 @@ function fmod(v, m) { return v - Math.floor(v / m) * m; }
 
 // is the point inside a wiped area (with a margin)?
 function clearAt(x, y, mg) {
+  if (!any || x < 0) return false;
   const s = Math.floor(x / 6);
-  if (s < 0 || s >= NSTR) return false;
+  if (s >= NSTR) return false;
   return (y > A1[s] - mg && y < B1[s] + mg) || (y > A2[s] - mg && y < B2[s] + mg);
 }
 
@@ -171,12 +176,17 @@ function fogCirc(dc, bx, by, r) {
 }
 
 function content(dc, d, st, P) {
-  // what lies under the fog: dark background with a soft light, date, time, data slots
-  dc.setColor(P[5], -1);
-  dc.fillCircle(227, 227, 227);
-  for (let i = 0; i < 6; i++) {
-    dc.setColor(G.mix(P[5], P[6], (i + 1) / 6.0), -1);
-    dc.fillCircle(227, Y0 + 10, 200 - i * 30);
+  // what lies under the fog: a dark background with a soft light (only where it can be seen:
+  // inside the wiped strips), date, time, data slots
+  for (let s = 0; s < NSTR; s++) {
+    if (A1[s] < B1[s]) {
+      dc.setColor(GLOW[s], -1);
+      dc.fillRectangle(s * 6, Math.floor(A1[s]), 6, Math.ceil(B1[s]) - Math.floor(A1[s]));
+    }
+    if (A2[s] < B2[s]) {
+      dc.setColor(P[5], -1);
+      dc.fillRectangle(s * 6, Math.floor(A2[s]), 6, Math.ceil(B2[s]) - Math.floor(A2[s]));
+    }
   }
   const ts = G.timeStr(d);
   dc.setColor(P[8], -1);
@@ -193,8 +203,14 @@ function content(dc, d, st, P) {
     dc.setColor(P[9], -1);
     F.px(dc, sl.lbl, x, Y2 - 21, 2, 1, 0);
     dc.setColor(P[10], -1);
-    F.px(dc, sl.val, x, Y2 - 3, 3, 1, 0);
+    slotVal(dc, sl.val, x);
   }
+}
+
+// slot value: large, or smaller when it is long (race times, big step counts)
+function slotVal(dc, v, x) {
+  if (F.pxW(v, 3) > 88) F.px(dc, v, x, Y2, 2, 1, 0);
+  else F.px(dc, v, x, Y2 - 3, 3, 1, 0);
 }
 
 export default {
@@ -207,7 +223,8 @@ export default {
     const t = a.live ? a.t : 99999;
     busy = a.live && t < T2 + SW2 + 300;
     strips(st, t);
-    content(dc, d, st, P);
+    // before the wipe nothing of the content is visible (and this frame also builds the fog)
+    if (any) content(dc, d, st, P);
 
     // fog layer: strips around the wiped intervals, subtle vertical streaks
     for (let s = 0; s < NSTR; s++) {
@@ -253,7 +270,7 @@ export default {
       for (let i = 0; i < n; i++) {
         const o = i * 4;
         const x1 = fern[o], y1 = fern[o + 1], x2 = fern[o + 2], y2 = fern[o + 3];
-        if (clearAt(x1, y1, 4) || clearAt(x2, y2, 4) || clearAt((x1 + x2) / 2, (y1 + y2) / 2, 4)) continue;
+        if (clearAt((x1 + x2) / 2, (y1 + y2) / 2, 11)) continue;
         if (i < nMain) { dc.setColor(P[4], -1); dc.setPenWidth(2); }
         else { dc.setColor(0x86a9c8, -1); dc.setPenWidth(1); }
         dc.drawLine(x1, y1, x2, y2);
@@ -321,7 +338,7 @@ export default {
       const sl = d.slots[k];
       dc.setColor(G.mix(P[0], P[10], 0.22), -1);
       F.px(dc, sl.lbl, x, Y2 - 21, 2, 1, 0);
-      F.px(dc, sl.val, x, Y2 - 3, 3, 1, 0);
+      slotVal(dc, sl.val, x);
     }
     // after the wipe: droplets run down the clear path (Rauch: embers rise)
     const cr = G.ease((t - TC) / CR);

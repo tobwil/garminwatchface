@@ -415,8 +415,6 @@ class FaceNeuro extends Face {
                 var y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000.0);
                 dc.setColor(0x21100A, -1);
                 dc.drawCircle(x, y, 40 + c * 8);
-                dc.setColor(0x1A0B07, -1);
-                dc.fillCircle(x + 6, y - 4, 9 + c * 2);
             }
         } else {
             dc.setColor(0x0C0819, -1);
@@ -478,7 +476,7 @@ class FaceNeuro extends Face {
                 drawPath(dc, n, ep);
             }
             // signal pulse on strong edges
-            if (p >= 1 && s > 0.22) {
+            if (p >= 1 && s > 0.3) {
                 var f = ph - L + (((e * 37) % 11) - 5) * 0.03;
                 if (f >= 0 && f <= 1) {
                     if (n == 2) {

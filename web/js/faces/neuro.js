@@ -196,8 +196,6 @@ export default {
         dc.setColor(0x21100a, -1);
         dc.setPenWidth(2);
         dc.drawCircle(x, y, 40 + c * 8);
-        dc.setColor(0x1a0b07, -1);
-        dc.fillCircle(x + 6, y - 4, 9 + c * 2);
       }
     } else {
       dc.setColor(0x0c0819, -1);
@@ -225,7 +223,7 @@ export default {
             dc.setPenWidth(s > 0.62 ? 2 : 1);
             drawPath(dc, n, ep);
             // signal pulse on strong edges
-            if (p >= 1 && s > 0.22) {
+            if (p >= 1 && s > 0.3) {
               const f = ph - L + (((e * 37) % 11) - 5) * 0.03;
               if (f >= 0 && f <= 1) {
                 const q = along(n, f);

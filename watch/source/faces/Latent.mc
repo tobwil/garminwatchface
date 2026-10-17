@@ -29,7 +29,7 @@ class FaceLatent extends Face {
     const INK = 0x3E3229;
     const AY = 206; // aquarell time centre
     const AH = 104; // aquarell time height
-    const SP = 12.0; // aquarell dab spacing along the stroke
+    const SP = 15.0; // aquarell dab spacing along the stroke
     // custom 5x7 glyphs: guillemets and a check mark
     const GL = [0, 20, 10, 5, 10, 20, 0, 0, 5, 10, 20, 10, 5, 0, 0, 0, 1, 2, 20, 8, 0];
 
@@ -277,10 +277,10 @@ class FaceLatent extends Face {
             bd[o + 1] = p[i * 2 + 1];
             bd[o + 2] = 227 + Math.sin(ang) * rad;
             bd[o + 3] = 215 + Math.cos(ang) * rad;
-            bd[o + 4] = 13 + G.rf(sd) * 17;
+            bd[o + 4] = 11 + G.rf(sd) * 13;
             bd[o + 5] = G.mix(pa, pb, (p[i * 2] - x0) / w);
             sd = G.rnd(sd);
-            bd[o + 6] = 8 + G.rf(sd) * 3.5; // brush pressure
+            bd[o + 6] = 9.5 + G.rf(sd) * 3; // brush pressure
             bd[o + 7] = G.mix(bd[o + 5], INK, 0.25);
         }
         p = null;
@@ -304,6 +304,11 @@ class FaceLatent extends Face {
         glyph(dc, 1, x + w + 14, y, 2);
     }
 
+    // paper -> pigment c by f/256 (cheap integer mix for the many brush dabs)
+    hidden function pm(c, f) as Number {
+        return ((0xF1 + ((((c >> 16) & 255) - 0xF1) * f >> 8)) << 16) | ((0xE9 + ((((c >> 8) & 255) - 0xE9) * f >> 8)) << 8) | (0xDA + (((c & 255) - 0xDA) * f >> 8));
+    }
+
     hidden function drawAq(dc as Dc, d as D, a as A, s, t) as Void {
         var g = s.toFloat() / NS;
         var dry = (a.live && s >= NS) ? G.clamp((t - NS * SMS) / 6000.0, 0.0, 1.0) * 0.14 : 0.0;
@@ -311,27 +316,25 @@ class FaceLatent extends Face {
         var bn = _bn;
         dc.setColor(PAPER, -1);
         dc.fillRectangle(0, 0, 454, 454);
-        dc.setColor(0xE7DCC8, -1);
-        dc.setPenWidth(12);
-        dc.drawCircle(227, 227, 224);
         // the scattered dabs converge onto the stroke (painted left to right), larger and more
         // watery while travelling; edge pass first so only the outer pooled edge stays visible
         var bq = _bq;
         for (var i = 0; i < bn; i++) {
             var o = i * 8;
             var q = i * 4;
-            var e = G.easeInOut(G.clamp(g * 1.5 - 0.5 * i / bn, 0.0, 1.0));
+            var e = g * 1.5 - 0.5 * i / bn;
+            e = e <= 0 ? 0.0 : (e >= 1 ? 1.0 : e * e * (3 - 2 * e));
             var sw = (i % 2 == 0 ? 18 : -18) * Math.sin(e * 3.1416);
             bq[q] = bd[o + 2] + (bd[o] - bd[o + 2]) * e + sw;
             bq[q + 1] = bd[o + 3] + (bd[o + 1] - bd[o + 3]) * e - sw * 0.5;
             bq[q + 2] = bd[o + 4] + (bd[o + 6] - bd[o + 4]) * e;
             bq[q + 3] = e;
-            dc.setColor(G.mix(PAPER, bd[o + 7], 0.22 + 0.6 * e - dry), -1);
+            dc.setColor(pm(bd[o + 7], Math.floor((0.22 + 0.6 * e - dry) * 256).toNumber()), -1);
             dc.fillCircle(bq[q], bq[q + 1], bq[q + 2] + 1.8);
         }
         for (var i = 0; i < bn; i++) {
             var q = i * 4;
-            dc.setColor(G.mix(PAPER, bd[i * 8 + 5], 0.18 + 0.56 * bq[q + 3] - dry), -1);
+            dc.setColor(pm(bd[i * 8 + 5], Math.floor((0.18 + 0.56 * bq[q + 3] - dry) * 256).toNumber()), -1);
             dc.fillCircle(bq[q], bq[q + 1], bq[q + 2]);
         }
         // a few splatters land at the end
@@ -350,7 +353,7 @@ class FaceLatent extends Face {
         // line and wash: the ink line writes itself over the last steps
         if (s > 34) {
             dc.setColor(INK, -1);
-            F.st(dc, G.timeStr(d), 229, AY - 2, AH, 3, 1, (s - 34) / 16.0, 0);
+            F.st(dc, G.timeStr(d), 229, AY - 2, AH, 2, 1, (s - 34) / 16.0, 0);
         }
         // captions in ink
         dc.setColor(0x9A8A76, -1);

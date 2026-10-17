@@ -1,7 +1,6 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
-import Toybox.System;
 
 // ORAKEL — "KI-Orakel": a glowing oracle orb. Every wrist raise it "thinks" (the swirl
 // accelerates, the glow swells), then answers a question about your day — 27 question/answer
@@ -29,8 +28,6 @@ class FaceOrakel extends Face {
     hidden var _sp as Array; // stars [x, y, phase, speed] x 16
     hidden var _runs as ByteArray; // 8-bit orb runs [i0+1, len, j+1, colour]
 
-    hidden var _p0 = 0;
-    hidden var _pf = "";
     hidden var _tapN = 0;
     hidden var _busy = true;
     hidden var _cUnix = -1;
@@ -397,8 +394,6 @@ class FaceOrakel extends Face {
     }
 
     function draw(dc as Dc, d as D, a as A) as Void {
-        _p0 = System.getTimer();
-        _pf = "";
         var st = d.cfg.style;
         var acc = d.accent;
         var p = a.intro;
@@ -421,11 +416,9 @@ class FaceOrakel extends Face {
             cx = CX + Math.sin(a.tap * 0.06) * 12 * (1 - a.tap / 700.0);
         }
 
-        _pf += "A" + (System.getTimer() - _p0) + " ";
         var pale = G.mix(acc, 0xFFFFFF, 0.6);
         stars(dc, t, st == 3, st == 3 ? 0xCDB8FF : 0xDCD4FF);
 
-        _pf += "B" + (System.getTimer() - _p0) + " ";
         // ---- time (always legible)
         var ts = G.timeStr(d);
         if (st == 3) {
@@ -438,7 +431,6 @@ class FaceOrakel extends Face {
             F.st(dc, ts, 227, 56, 40, 3, 1, G.ease(p * 1.4), 0);
         }
 
-        _pf += "C" + (System.getTimer() - _p0) + " ";
         // ---- question
         var qa = G.clamp((ms - 80) / 400.0, 0.0, 1.0);
         if (qa > 0) {
@@ -449,7 +441,6 @@ class FaceOrakel extends Face {
             }
         }
 
-        _pf += "D" + (System.getTimer() - _p0) + " ";
         // ---- orb
         if (st == 1) {
             // halo
@@ -526,12 +517,11 @@ class FaceOrakel extends Face {
                 var an = ph * 0.3 + b * 2.094;
                 var bx = cx + Math.cos(an) * 64;
                 var by = CY + Math.sin(an) * 40;
-                for (var l = 0; l < 5; l++) {
-                    dc.setColor(G.dim(gc[b], 0.03 + l * 0.03 + think * 0.05), -1);
-                    dc.fillCircle(bx, by, 58 - l * 11);
+                for (var l = 0; l < 4; l++) {
+                    dc.setColor(G.dim(gc[b], 0.035 + l * 0.03 + think * 0.04), -1);
+                    dc.fillCircle(bx, by, 58 - l * 13);
                 }
             }
-        _pf += "K" + (System.getTimer() - _p0) + " ";
             // palette: 8 colour bins along the arm x 4 depth levels (once per frame)
             var pp = new [32];
             var mul = 0.75 + 0.25 * think;
@@ -543,13 +533,12 @@ class FaceOrakel extends Face {
                     pp[b * 4 + l] = G.dim(c, (0.3 + 0.7 * l / 3.0) * mul);
                 }
             }
-        _pf += "L" + (System.getTimer() - _p0) + " ";
-            var trail = think > 0.05 ? 2 : 0;
+            var trail = think > 0.05 ? 1 : 0;
             var ph2 = ph * 1.2;
             var szm = 1 + think * 0.3;
             var np = _np;
-            for (var k = 0; k < 60; k++) {
-                var u = (k / 2) / 29.0;
+            for (var k = 0; k < 48; k++) {
+                var u = (k / 2) / 23.0;
                 var r = 14 + u * 108 + np[k * 3];
                 r += (70 - 0.55 * r) * rev; // the vortex opens into an eye
                 var an = (k % 2) * 3.1416 + u * 4.2 + np[k * 3 + 1] + ph2;
@@ -563,7 +552,7 @@ class FaceOrakel extends Face {
                 }
                 // comet trail against the spin direction while thinking
                 for (var q = trail; q >= 0; q--) {
-                    var aq = an - q * 0.16;
+                    var aq = an - q * 0.2;
                     var sn = Math.sin(aq);
                     var l = ((sn + 1) * 1.99).toNumber() - q;
                     if (l < 0) {
@@ -573,18 +562,16 @@ class FaceOrakel extends Face {
                     dc.fillCircle(cx + Math.cos(aq) * r, CY + sn * r * 0.62, sz * (1 - q * 0.25));
                 }
             }
-        _pf += "E" + (System.getTimer() - _p0) + " ";
             var dc0 = G.dim(0xB8A8FF, 0.4);
             var dc1 = G.dim(0xB8A8FF, 0.75);
             var nd = _nd;
-            for (var k = 0; k < 90; k += 3) {
+            for (var k = 0; k < 60; k += 3) {
                 var r = nd[k];
                 r += (72 - 0.55 * r) * rev;
                 var an = nd[k + 1] + ph * (40 / r);
                 dc.setColor(nd[k + 2] > 0.5 ? dc1 : dc0, -1);
                 dc.fillCircle(cx + Math.cos(an) * r, CY + Math.sin(an) * r * 0.62, 1.2);
             }
-        _pf += "F" + (System.getTimer() - _p0) + " ";
             // core
             var cs = (1 - rev) * (0.7 + 0.5 * think);
             if (cs > 0.02) {
@@ -593,14 +580,14 @@ class FaceOrakel extends Face {
                     dc.fillCircle(cx, CY, (34 - l * 6) * cs);
                 }
             }
-        _pf += "G" + (System.getTimer() - _p0) + " ";
             if (rev > 0) {
                 dc.setPenWidth(1);
                 dc.setColor(G.dim(acc, 0.55 * rev), -1);
                 dc.drawEllipse(cx, CY, 74, 45);
                 var hv = G.clamp((rev - 0.4) / 0.6, 0.0, 1.0);
                 if (hv > 0) {
-                    headline(dc, _cH, cx, CY + 1, 30, G.dim(0xFFFFFF, hv), 0x000000);
+                    dc.setColor(G.dim(0xFFFFFF, hv), -1);
+                    F.st(dc, _cH, cx, CY + 1, 30, 3, 1, 1.0, 0);
                 }
             }
         } else {
@@ -651,7 +638,6 @@ class FaceOrakel extends Face {
             dc.fillRectangle(ox + 6 * PS, OY + 29 * PS, PS * 2, PS);
         }
 
-        _pf += "H" + (System.getTimer() - _p0) + " ";
         // ---- detail answer below the orb
         if (rd > 0) {
             dc.setColor(G.mix(0x000000, st == 3 ? 0xE9DCFF : 0xECE6FF, rd), -1);
@@ -660,7 +646,6 @@ class FaceOrakel extends Face {
                 F.px(dc, cD[k] as String, 227, y0 + k * 19, 2, 1, 0);
             }
         }
-        System.println("prof " + _pf + "Z" + (System.getTimer() - _p0));
     }
 
     function aod(dc as Dc, d as D) as Void {

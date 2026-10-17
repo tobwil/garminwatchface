@@ -399,9 +399,9 @@ export default {
       for (let b = 0; b < 3; b++) {
         const an = ph * 0.3 + b * 2.094;
         const bx = cx + Math.cos(an) * 64, by = CY + Math.sin(an) * 40;
-        for (let l = 0; l < 5; l++) {
-          dc.setColor(G.dim(GC[b], 0.03 + l * 0.03 + think * 0.05), -1);
-          dc.fillCircle(bx, by, 58 - l * 11);
+        for (let l = 0; l < 4; l++) {
+          dc.setColor(G.dim(GC[b], 0.035 + l * 0.03 + think * 0.04), -1);
+          dc.fillCircle(bx, by, 58 - l * 13);
         }
       }
       // palette: 8 colour bins along the arm x 4 depth levels (once per frame)
@@ -412,10 +412,10 @@ export default {
         const c = G.mix(AC[Math.floor(ci)], AC[Math.floor(ci) + 1], ci - Math.floor(ci));
         for (let l = 0; l < 4; l++) pp.push(G.dim(c, (0.3 + 0.7 * l / 3) * mul));
       }
-      const trail = think > 0.05 ? 2 : 0;
+      const trail = think > 0.05 ? 1 : 0;
       const ph2 = ph * 1.2, szm = 1 + think * 0.3;
-      for (let k = 0; k < 60; k++) {
-        const u = Math.floor(k / 2) / 29;
+      for (let k = 0; k < 48; k++) {
+        const u = Math.floor(k / 2) / 23;
         let r = 14 + u * 108 + NP[k * 3];
         r += (70 - 0.55 * r) * rev; // the vortex opens into an eye
         const an = (k % 2) * 3.1416 + u * 4.2 + NP[k * 3 + 1] + ph2;
@@ -429,7 +429,7 @@ export default {
         }
         // comet trail against the spin direction while thinking
         for (let q = trail; q >= 0; q--) {
-          const aq = an - q * 0.16;
+          const aq = an - q * 0.2;
           const sn = Math.sin(aq);
           let l = Math.floor((sn + 1) * 1.99) - q;
           if (l < 0) l = 0;
@@ -438,7 +438,7 @@ export default {
         }
       }
       const dc0 = G.dim(0xb8a8ff, 0.4), dc1 = G.dim(0xb8a8ff, 0.75);
-      for (let k = 0; k < ND.length; k += 3) {
+      for (let k = 0; k < 60; k += 3) {
         let r = ND[k];
         r += (72 - 0.55 * r) * rev;
         const an = ND[k + 1] + ph * (40 / r);
@@ -458,7 +458,10 @@ export default {
         dc.setColor(G.dim(acc, 0.55 * rev), -1);
         dc.drawEllipse(cx, CY, 74, 45);
         const hv = G.clamp((rev - 0.4) / 0.6, 0, 1);
-        if (hv > 0) headline(dc, cH, cx, CY + 1, 30, G.dim(0xffffff, hv), 0x000000);
+        if (hv > 0) {
+          dc.setColor(G.dim(0xffffff, hv), -1);
+          F.st(dc, cH, cx, CY + 1, 30, 3, 1, 1.0, 0);
+        }
       }
     } else {
       // 8-bit crystal ball

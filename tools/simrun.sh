@@ -89,6 +89,6 @@ mkdir -p "$SH" && ln -sfn "$HOME/.Garmin" "$SH/.Garmin"
 rm -rf "$ST" && mkdir -p "$ST"
 TMPDIR=$ST HOME=$SH timeout $((SECS + 120)) unshare -n bash "$0" --inner "$PRG" "$OUT" "$SECS" "$LOG" 9>&-
 echo "--- app output (sim slot $SLOT) ---"
-grep -av "JAVA_TOOL\|^Script \|^$" "$LOG" | tail -n ${SIM_TAIL:-25}
+grep -av "JAVA_TOOL\|^Script \|^$" "$LOG" | tail -n ${SIM_TAIL:-400}
 echo "--- screenshot: $OUT"
 rm -f "$LOG"

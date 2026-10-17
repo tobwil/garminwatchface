@@ -776,9 +776,7 @@
         "Schaltplan",
         "Bio"
       ],
-      "uses": [
-        "slots"
-      ],
+      "uses": [],
       "sprites": [],
       "defaults": {
         "style": 1,

@@ -35,7 +35,9 @@ class FaceNebel extends Face {
     hidden var _b2 as Array<Float>;
     hidden var _cols as Array<Number>; // fog colour per strip (streaks + light shining through)
     hidden var _nj as Array<Float>;    // edge raggedness per strip
+    hidden var _glow as Array<Number>; // background colour under the fog per strip (light behind the time)
     hidden var _busy = true;
+    hidden var _any = false; // is anything wiped right now?
     hidden var _key = -1;
     hidden var _wn = 0;
     hidden var _tilt = 0;
@@ -55,6 +57,7 @@ class FaceNebel extends Face {
         _b2 = new [NSTR] as Array<Float>;
         _cols = new [NSTR] as Array<Number>;
         _nj = new [NSTR] as Array<Float>;
+        _glow = new [NSTR] as Array<Number>;
         for (var s = 0; s < NSTR; s++) {
             _a1[s] = 1.0;
             _b1[s] = 0.0;
@@ -93,7 +96,7 @@ class FaceNebel extends Face {
         sd = G.rnd(sd); _dir = (sd >> 5) % 3 == 0 ? -1 : 1;
         sd = G.rnd(sd); _ph = (sd % 1000) / 100.0;
         sd = G.rnd(sd); _tilt2 = (sd % 9) - 4;
-        var nb = st == 3 ? 16 : 13;
+        var nb = st == 3 ? 13 : 12;
         var bl = new [nb * 4];
         for (var i = 0; i < nb; i++) {
             sd = G.rnd(sd);
@@ -113,6 +116,7 @@ class FaceNebel extends Face {
             var u = (xc - 227) / 227.0;
             _cols[s] = G.mix(G.mix(PAL[b], PAL[b + 1], 0.5 + 0.5 * G.noise(xc * 0.031 + _ph)), PAL[b + 12], (1 - u * u) * 0.55);
             _nj[s] = 1 + G.noise(xc * 0.045 + _ph);
+            _glow[s] = G.mix(PAL[b + 5], PAL[b + 6], G.clamp(1.15 - u.abs() * 1.25, 0.0, 1.0));
         }
         _fern = null;
         if (st == 2) {
@@ -164,6 +168,7 @@ class FaceNebel extends Face {
         var head2 = X2A + (X2B - X2A) * p2;
         var hw2 = 27 - 3 * cr;
         var tt = t * 0.0006;
+        _any = t >= T0;
         var a1 = _a1;
         var b1 = _b1;
         var a2 = _a2;
@@ -172,7 +177,7 @@ class FaceNebel extends Face {
             var xc = s * 6 + 3;
             var u = (xc - 227) / 227.0;
             var yc = Y0 + _tilt * u + _bow * (u * u - 0.1);
-            var jit = (st == 3 ? 1 + G.noise(xc * 0.045 + _ph + tt) : _nj[s]) * (1.5 + 4 * cr);
+            var jit = (st == 3 ? _nj[s] * 0.6 + 0.4 * (1 + Math.sin(xc * 0.05 + tt * 2)) : _nj[s]) * (1.5 + 4 * cr);
             var h = -1.0;
             if (t >= T0) {
                 var dx = _dir > 0 ? xc - head : head - xc;
@@ -204,8 +209,11 @@ class FaceNebel extends Face {
 
     // is the point inside a wiped area (with a margin)?
     hidden function clearAt(x, y, mg) as Boolean {
-        var s = fl(x / 6.0);
-        if (s < 0 || s >= NSTR) {
+        if (!_any || x < 0) {
+            return false;
+        }
+        var s = x.toNumber() / 6;
+        if (s >= NSTR) {
             return false;
         }
         return (y > _a1[s] - mg && y < _b1[s] + mg) || (y > _a2[s] - mg && y < _b2[s] + mg);
@@ -278,12 +286,21 @@ class FaceNebel extends Face {
     }
 
     hidden function content(dc as Dc, d as D, st, P as Array) as Void {
-        // what lies under the fog: dark background with a soft light, date, time, data slots
-        dc.setColor(P[5], -1);
-        dc.fillCircle(227, 227, 227);
-        for (var i = 0; i < 6; i++) {
-            dc.setColor(G.mix(P[5], P[6], (i + 1) / 6.0), -1);
-            dc.fillCircle(227, Y0 + 10, 200 - i * 30);
+        // what lies under the fog: a dark background with a soft light (only where it can be seen:
+        // inside the wiped strips), date, time, data slots
+        var a1 = _a1;
+        var b1 = _b1;
+        var a2 = _a2;
+        var b2 = _b2;
+        for (var s = 0; s < NSTR; s++) {
+            if (a1[s] < b1[s]) {
+                dc.setColor(_glow[s], -1);
+                dc.fillRectangle(s * 6, fl(a1[s]), 6, ce(b1[s]) - fl(a1[s]));
+            }
+            if (a2[s] < b2[s]) {
+                dc.setColor(P[5], -1);
+                dc.fillRectangle(s * 6, fl(a2[s]), 6, ce(b2[s]) - fl(a2[s]));
+            }
         }
         var ts = G.timeStr(d);
         dc.setColor(P[8], -1);
@@ -300,7 +317,16 @@ class FaceNebel extends Face {
             dc.setColor(P[9], -1);
             F.px(dc, sl[:lbl] as String, x, Y2 - 21, 2, 1, 0);
             dc.setColor(P[10], -1);
-            F.px(dc, sl[:val] as String, x, Y2 - 3, 3, 1, 0);
+            slotVal(dc, sl[:val] as String, x);
+        }
+    }
+
+    // slot value: large, or smaller when it is long (race times, big step counts)
+    hidden function slotVal(dc as Dc, v as String, x) as Void {
+        if (F.pxW(v, 3) > 88) {
+            F.px(dc, v, x, Y2, 2, 1, 0);
+        } else {
+            F.px(dc, v, x, Y2 - 3, 3, 1, 0);
         }
     }
 
@@ -311,7 +337,10 @@ class FaceNebel extends Face {
         var t = a.live ? a.t : 99999;
         _busy = a.live && t < T2 + SW2 + 300;
         strips(st, t);
-        content(dc, d, st, P);
+        // before the wipe nothing of the content is visible (and this frame also builds the fog)
+        if (_any) {
+            content(dc, d, st, P);
+        }
         var a1 = _a1;
         var b1 = _b1;
         var a2 = _a2;
@@ -370,7 +399,7 @@ class FaceNebel extends Face {
                 var y1 = fern[o + 1];
                 var x2 = fern[o + 2];
                 var y2 = fern[o + 3];
-                if (clearAt(x1, y1, 4) || clearAt(x2, y2, 4) || clearAt((x1 + x2) / 2, (y1 + y2) / 2, 4)) {
+                if (clearAt((x1 + x2) / 2, (y1 + y2) / 2, 11)) {
                     continue;
                 }
                 if (i < _nMain) {
@@ -456,7 +485,7 @@ class FaceNebel extends Face {
             var sl = d.slots[k];
             dc.setColor(G.mix(P[0], P[10], 0.22), -1);
             F.px(dc, sl[:lbl] as String, x, Y2 - 21, 2, 1, 0);
-            F.px(dc, sl[:val] as String, x, Y2 - 3, 3, 1, 0);
+            slotVal(dc, sl[:val] as String, x);
         }
         // after the wipe: droplets run down the clear path (Rauch: embers rise)
         var cr = G.ease((t - TC) / (CR * 1.0));
