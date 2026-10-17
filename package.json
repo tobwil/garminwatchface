@@ -1,0 +1,13 @@
+{
+  "name": "facelab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fonts": "node tools/fontgen.mjs",
+    "site": "node tools/bundle.mjs",
+    "shot": "node tools/shot.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

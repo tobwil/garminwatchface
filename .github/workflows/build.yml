@@ -1,0 +1,93 @@
+name: Build watch faces
+
+# Compiles every FaceLab watch face for the Forerunner 970 with the public
+# Connect IQ SDK and bundles the studio (site/FaceLab.html).
+# Optional: run manually with a Face-Code to get one ready-to-copy .prg.
+
+on:
+  push:
+    branches: [main]
+    paths: ["watch/**", "web/**", "tools/**", ".github/workflows/build.yml"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      face_code:
+        description: "Optional Face-Code from the studio (FL1.<FACE>....) to bake into its face"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CIQ_SDK_URL: https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-9.2.0-2026-06-09-92a1605b2.zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache Connect IQ SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/ciq-sdk
+          key: ciq-sdk-${{ env.CIQ_SDK_URL }}
+
+      - name: Download Connect IQ SDK
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o /tmp/sdk.zip "$CIQ_SDK_URL"
+          unzip -q /tmp/sdk.zip -d ~/ciq-sdk
+
+      - name: Install FR970 device definition
+        run: |
+          mkdir -p ~/.Garmin/ConnectIQ/Devices
+          cp -r tools/device/fr970 ~/.Garmin/ConnectIQ/Devices/
+
+      - name: Generate fonts and sprites
+        run: |
+          node tools/fontgen.mjs
+          node tools/spritegen.mjs
+
+      - name: Compile all faces (release)
+        run: |
+          export CIQ_SDK=$HOME/ciq-sdk CIQ_RELEASE=1
+          python3 tools/build.py
+          mkdir -p web/prg && cp dist/*.prg web/prg/
+
+      - name: Bake Face-Code (manual runs)
+        if: github.event.inputs.face_code != ''
+        env:
+          FACE_CODE: ${{ github.event.inputs.face_code }}
+        run: |
+          export CIQ_SDK=$HOME/ciq-sdk CIQ_RELEASE=1
+          KEY=$(echo "$FACE_CODE" | cut -d. -f2)
+          case "$KEY" in (*[!A-Z]*|"") echo "invalid face code"; exit 1;; esac
+          export "CODE_$KEY=$FACE_CODE"
+          python3 tools/build.py "$KEY"
+          mkdir -p custom && cp "dist/$KEY.prg" "custom/FL_$KEY.prg"
+
+      - name: Bundle studio
+        run: |
+          npm ci --no-audit --no-fund
+          node tools/bundle.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: facelab-watchfaces
+          path: |
+            web/prg/*.prg
+            site/FaceLab.html
+
+      - uses: actions/upload-artifact@v4
+        if: github.event.inputs.face_code != ''
+        with:
+          name: facelab-custom
+          path: custom/*.prg

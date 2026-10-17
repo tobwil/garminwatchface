@@ -1,0 +1,1279 @@
+{
+  "faces": [
+    {
+      "key": "MONO",
+      "cls": "FaceMono",
+      "file": "Mono.mc",
+      "js": "mono.js",
+      "name": "Mono",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Riesige Monoline-Ziffern, die sich beim Handgelenk-Heben selbst schreiben. 60 Ticks zeigen dein Schrittziel, drei frei wählbare Datenfelder.",
+      "styles": [
+        "Outline",
+        "Bold",
+        "Stack"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF5A1F",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          21,
+          20
+        ]
+      }
+    },
+    {
+      "key": "CHRONO",
+      "cls": "FaceChrono",
+      "file": "Chrono.mc",
+      "js": "chrono.js",
+      "name": "Chronograph",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Analoger Chronograph mit Hilfszifferblättern, Datumsfenster und butterweich gleitendem Sekundenzeiger. Die Zeiger schwingen beim Aufwachen in Position.",
+      "styles": [
+        "Noir",
+        "Panda",
+        "Racing"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "E8C468",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          1
+        ]
+      }
+    },
+    {
+      "key": "WORT",
+      "cls": "FaceWort",
+      "file": "Wort.mc",
+      "js": "wort.js",
+      "name": "Wortuhr",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "\"ES IST VIERTEL NACH ZEHN\" – die Wortuhr fürs Handgelenk. Die Buchstaben leuchten beim Aufwachen nacheinander auf.",
+      "styles": [
+        "Klassisch",
+        "Akzent",
+        "Neon"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB347",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          21,
+          20
+        ]
+      }
+    },
+    {
+      "key": "FLAP",
+      "cls": "FaceFlap",
+      "file": "Flap.mc",
+      "js": "flap.js",
+      "name": "Split-Flap",
+      "tags": [
+        "klassisch",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Die Abflugtafel vom Bahnhof: Klappziffern, die sich beim Aufwachen und jede Minute durchblättern. Darunter deine Daten als Tafelzeilen.",
+      "styles": [
+        "Bahnhof",
+        "Café",
+        "Akzent"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD24A",
+        "dcol": "FFFFFF",
+        "slots": [
+          27,
+          20,
+          21
+        ]
+      }
+    },
+    {
+      "key": "ALPE",
+      "cls": "FaceAlpe",
+      "file": "Alpe.mc",
+      "js": "alpe.js",
+      "name": "Alpe 21",
+      "tags": [
+        "rad",
+        "challenge"
+      ],
+      "blurb": "Erklimm jede Woche einen Pass – Kehre für Kehre die 21 Serpentinen der Alpe d'Huez (oder Ventoux, Stelvio, Everest). Antrieb wählbar: Etagen, Rad-km-Wochenziel oder Trainingstage.",
+      "styles": [
+        "Serpentinen",
+        "Nacht",
+        "Profil"
+      ],
+      "uses": [
+        "slots",
+        "climb",
+        "bike",
+        "src",
+        "days"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF6A2B",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          21,
+          25
+        ],
+        "climb": 0,
+        "bikeGoal": 150,
+        "src": 0,
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "HUD",
+      "cls": "FaceHud",
+      "file": "Hud.mc",
+      "js": "hud.js",
+      "name": "Power HUD",
+      "tags": [
+        "rad",
+        "daten"
+      ],
+      "blurb": "Zwift-inspiriertes HUD: FTP, W/kg und Kategorie, deine 6 Leistungszonen in Watt – und ein Workout des Tages, abgestimmt auf Body Battery, Schlaf und Erholung.",
+      "styles": [
+        "Watopia",
+        "Carbon",
+        "Neon"
+      ],
+      "uses": [
+        "ftp",
+        "kg",
+        "bike"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FC6719",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          25,
+          21
+        ],
+        "ftp": 250,
+        "kg": 75
+      }
+    },
+    {
+      "key": "GEAR",
+      "cls": "FaceGear",
+      "file": "Gear.mc",
+      "js": "gear.js",
+      "name": "Drivetrain",
+      "tags": [
+        "rad",
+        "wild"
+      ],
+      "blurb": "Kettenblatt und Kassette als Uhr: Jede Stunde schaltet die Kette ein Ritzel weiter, die Minuten laufen über die Zähne. Darunter dein Wochen-Kilometerzähler.",
+      "styles": [
+        "Carbon",
+        "Chrom",
+        "Neon"
+      ],
+      "uses": [
+        "slots",
+        "bike"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3DDC97",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          25,
+          21
+        ],
+        "bikeGoal": 150
+      }
+    },
+    {
+      "key": "CORE",
+      "cls": "FaceCore",
+      "file": "Core.mc",
+      "js": "core.js",
+      "name": "Energy Core",
+      "tags": [
+        "wild",
+        "daten"
+      ],
+      "blurb": "Deine Body Battery als leuchtende Flüssigkeit, die das ganze Display füllt. Je gestresster du bist, desto wilder schwappen die Wellen.",
+      "styles": [
+        "Plasma",
+        "Ozean",
+        "Lava"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "29E6FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          42
+        ]
+      }
+    },
+    {
+      "key": "PULSE",
+      "cls": "FacePulse",
+      "file": "Pulse.mc",
+      "js": "pulse.js",
+      "name": "Pulse",
+      "tags": [
+        "wild",
+        "daten"
+      ],
+      "blurb": "Deine letzten zwei Stunden Herzfrequenz als Radial-Spektrum, ein EKG im Takt deines echten Pulses und ein schlagendes Herz.",
+      "styles": [
+        "Monitor",
+        "Zonen",
+        "Akzent"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF2D55",
+        "dcol": "FFFFFF",
+        "slots": [
+          18,
+          22,
+          23
+        ]
+      }
+    },
+    {
+      "key": "SUN",
+      "cls": "FaceSun",
+      "file": "Sun.mc",
+      "js": "sun.js",
+      "name": "Daylight",
+      "tags": [
+        "daten",
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Sonnenbogen, Himmelsfarbe nach echtem Sonnenstand, Goldene Stunde, verbleibendes Tageslicht für die Feierabendrunde – und nachts der Mond in seiner echten Phase.",
+      "styles": [
+        "Himmel",
+        "Linie",
+        "24h"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB13B",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          20,
+          23
+        ]
+      }
+    },
+    {
+      "key": "GLITCH",
+      "cls": "FaceGlitch",
+      "file": "Glitch.mc",
+      "js": "glitch.js",
+      "name": "Glitch",
+      "tags": [
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Die Uhr glitcht im Takt deines Stresslevels: entspannt bleibt alles sauber, unter Stress zerfällt die Zeit in RGB-Splitter und Scanlines.",
+      "styles": [
+        "RGB",
+        "Vaporwave",
+        "Mono"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "00F0FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          22,
+          23,
+          18
+        ]
+      }
+    },
+    {
+      "key": "ORBIT",
+      "cls": "FaceOrbit",
+      "file": "Orbit.mc",
+      "js": "orbit.js",
+      "name": "Orbit",
+      "tags": [
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Ein Sonnensystem als Uhr: Stunden- und Minutenplanet kreisen um die Sonne, ein Komet zieht die Sekunden, der Mond zeigt seine echte Phase.",
+      "styles": [
+        "Kosmos",
+        "Blueprint",
+        "Eclipse"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "8C7BFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          21,
+          20
+        ]
+      }
+    },
+    {
+      "key": "QUEST",
+      "cls": "FaceQuest",
+      "file": "Quest.mc",
+      "js": "quest.js",
+      "name": "Daily Quest",
+      "tags": [
+        "pixel",
+        "challenge",
+        "wild"
+      ],
+      "blurb": "Jeden Tag drei neue Quests, automatisch mit deinen Daten geprüft. Sammle XP, steig im Level auf und halte deine Streak am Brennen.",
+      "styles": [
+        "Pixel",
+        "Clean",
+        "Neon"
+      ],
+      "uses": [
+        "quest"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFC83D",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          4,
+          5
+        ],
+        "quest": 1
+      }
+    },
+    {
+      "key": "TERM",
+      "cls": "FaceTerm",
+      "file": "Term.mc",
+      "js": "term.js",
+      "name": "Terminal",
+      "tags": [
+        "pixel",
+        "wild"
+      ],
+      "blurb": "Grüner Phosphor, blinkender Cursor: Deine Uhr tippt dir Uhrzeit und Körperdaten als Shell-Session ins Display.",
+      "styles": [
+        "Phosphor",
+        "Amber",
+        "Matrix"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "33FF77",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          21,
+          18
+        ]
+      }
+    },
+    {
+      "key": "RIDER",
+      "cls": "FaceRider",
+      "file": "Rider.mc",
+      "js": "rider.js",
+      "name": "Pixel Rider",
+      "tags": [
+        "pixel",
+        "rad",
+        "wild"
+      ],
+      "blurb": "8-Bit-Sidescroller: Dein Pixel-Radler tritt durch eine Parallax-Landschaft, Tag und Nacht folgen der echten Sonne. Jedes Wochenziel ist eine Etappe mit Zielflagge.",
+      "styles": [
+        "Tag & Nacht",
+        "Gameboy",
+        "Neon"
+      ],
+      "uses": [
+        "slots",
+        "bike",
+        "src",
+        "days"
+      ],
+      "sprites": [
+        "rider"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD23F",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          21,
+          20
+        ],
+        "bikeGoal": 150,
+        "src": 1,
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "BUDDY",
+      "cls": "FaceBuddy",
+      "file": "Buddy.mc",
+      "js": "buddy.js",
+      "name": "Pixel Buddy",
+      "tags": [
+        "pixel",
+        "wild",
+        "daten"
+      ],
+      "blurb": "Dein Tamagotchi am Handgelenk: Es schläft bei leerer Body Battery, schwitzt bei Stress, hüpft vor Freude, wenn du dein Schrittziel knackst.",
+      "styles": [
+        "Klassik",
+        "Gameboy",
+        "Pastell"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "buddy"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF7EB6",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "DUNGEON",
+      "cls": "FaceDungeon",
+      "file": "Dungeon.mc",
+      "js": "dungeon.js",
+      "name": "Dungeon",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Pixel-RPG: Jeden Tag wartet ein neues Monster. Deine Schritte sind die Angriffe – erreichst du dein Ziel, fällt es und lässt Beute fallen. Sieg-Serie inklusive.",
+      "styles": [
+        "Verlies",
+        "Wald",
+        "Lava"
+      ],
+      "uses": [
+        "quest"
+      ],
+      "sprites": [
+        "dungeon"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF4D4D",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          4,
+          5
+        ],
+        "quest": 1
+      }
+    },
+    {
+      "key": "CITY",
+      "cls": "FaceCity",
+      "file": "City.mc",
+      "js": "city.js",
+      "name": "Pixel City",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Eine Pixel-Skyline, die mit dir wächst: Jede erklommene Etage lässt ein Fenster aufleuchten. Tag, Dämmerung und Nacht nach echtem Sonnenstand, nachts fährt die S-Bahn.",
+      "styles": [
+        "Neon-Nacht",
+        "Retro",
+        "Winter"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "city"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB13B",
+        "dcol": "FFFFFF",
+        "slots": [
+          4,
+          2,
+          23
+        ]
+      }
+    },
+    {
+      "key": "MUNCH",
+      "cls": "FaceMunch",
+      "file": "Munch.mc",
+      "js": "munch.js",
+      "name": "Muncher",
+      "tags": [
+        "pixel",
+        "challenge",
+        "wild"
+      ],
+      "blurb": "Arcade-Labyrinth: Der Muncher frisst sich durch deine Schritt-Punkte, Geister jagen ihn – je höher dein Stress, desto mehr Geister. Highscore = Schritte.",
+      "styles": [
+        "Arcade",
+        "Gameboy",
+        "Neon"
+      ],
+      "uses": [],
+      "sprites": [
+        "munch"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFE135",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          22,
+          23
+        ]
+      }
+    },
+    {
+      "key": "TOUR",
+      "cls": "FaceTour",
+      "file": "Tour.mc",
+      "js": "tour.js",
+      "name": "Tour de Woche",
+      "tags": [
+        "rad",
+        "challenge"
+      ],
+      "blurb": "Deine Woche als Rundfahrt: 7 Etappen, jede Trainingseinheit ein Etappensieg. Gelbes Trikot für das Rad-km-Ziel, Grünes für Trainingstage, Bergtrikot für Höhenmeter.",
+      "styles": [
+        "Maillot",
+        "Klassik",
+        "Nacht"
+      ],
+      "uses": [
+        "bike",
+        "days"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD400",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          21,
+          25
+        ],
+        "bikeGoal": 150,
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "VELO",
+      "cls": "FaceVelo",
+      "file": "Velo.mc",
+      "js": "velo.js",
+      "name": "Velodrom",
+      "tags": [
+        "rad",
+        "wild"
+      ],
+      "blurb": "Die Bahn aus der Vogelperspektive: Deine Wochen-Kilometer sind Runden im Velodrom, der Fahrer zieht seine Kreise, Rundenzähler und Zielglocke inklusive.",
+      "styles": [
+        "Holz",
+        "Nacht",
+        "Neon"
+      ],
+      "uses": [
+        "slots",
+        "bike"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E8423F",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          25,
+          21
+        ],
+        "bikeGoal": 150
+      }
+    },
+    {
+      "key": "BAHN",
+      "cls": "FaceBahn",
+      "file": "Bahn.mc",
+      "js": "bahn.js",
+      "name": "Bahnhofsuhr",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Die klassische Bahnhofsuhr mit roter Kelle: Der Sekundenzeiger läuft in 58,5 Sekunden herum, wartet oben und gibt die Minute frei – wie am Bahnsteig.",
+      "styles": [
+        "Klassisch",
+        "Nacht",
+        "Kelle"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E2231A",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          38,
+          2
+        ]
+      }
+    },
+    {
+      "key": "SYNTH",
+      "cls": "FaceSynth",
+      "file": "Synth.mc",
+      "js": "synth.js",
+      "name": "Synthwave",
+      "tags": [
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Outrun bis zum Horizont: Retro-Sonne nach echtem Sonnenstand, ein Gitter-Highway, der im Takt deines Pulses rast, und die Uhrzeit in Chrom-Neon.",
+      "styles": [
+        "Outrun",
+        "Sunset",
+        "Vapor"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF2E88",
+        "dcol": "FFFFFF",
+        "slots": [
+          18,
+          23,
+          20
+        ]
+      }
+    },
+    {
+      "key": "WOCHE",
+      "cls": "FaceWoche",
+      "file": "Woche.mc",
+      "js": "woche.js",
+      "name": "Wochenbilanz",
+      "tags": [
+        "daten",
+        "challenge",
+        "pixel"
+      ],
+      "blurb": "Deine Woche auf einen Blick: Schritte, Etagen und Aktivminuten Tag für Tag als Heatmap, Trainingstage als Häkchen und dein Wochenziel als Fortschrittsring.",
+      "styles": [
+        "Heatmap",
+        "Balken",
+        "Pixel"
+      ],
+      "uses": [
+        "days",
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3DDC97",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          19,
+          5
+        ],
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "NEURO",
+      "cls": "FaceNeuro",
+      "file": "Neuro.mc",
+      "js": "neuro.js",
+      "name": "Neuronetz",
+      "tags": [
+        "ki",
+        "daten",
+        "wild"
+      ],
+      "blurb": "Deine Körperdaten als Eingänge eines neuronalen Netzes: Signale pulsieren durch die Schichten, die Ausgabe-Neuronen leuchten deine Form-Prognose – und die Uhrzeit.",
+      "styles": [
+        "Synapse",
+        "Schaltplan",
+        "Bio"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "7C5CFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          42
+        ]
+      }
+    },
+    {
+      "key": "SCAN",
+      "cls": "FaceScan",
+      "file": "Scan.mc",
+      "js": "scan.js",
+      "name": "KI-Vision",
+      "tags": [
+        "ki",
+        "wild"
+      ],
+      "blurb": "Ein Objekterkennungs-Scanner: Fadenkreuz, Scanlinie und Bounding-Boxen, die deine Werte mit Konfidenz erkennen – „STRESS 28 · 97 %“. Die Uhrzeit ist das wichtigste erkannte Objekt.",
+      "styles": [
+        "Terminator",
+        "Clean",
+        "Thermal"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF3B30",
+        "dcol": "FFFFFF",
+        "slots": [
+          22,
+          23,
+          18
+        ]
+      }
+    },
+    {
+      "key": "LATENT",
+      "cls": "FaceLatent",
+      "file": "Latent.mc",
+      "js": "latent.js",
+      "name": "Latent",
+      "tags": [
+        "ki",
+        "versteckt",
+        "interaktiv",
+        "ohnesport"
+      ],
+      "blurb": "Wie ein Bildgenerator: Bei jedem Handgelenk-Heben entsteht die Uhrzeit Schritt für Schritt aus reinem Rauschen – jedes Mal mit neuem Seed, jedes Mal ein anderes Bild.",
+      "styles": [
+        "Diffusion",
+        "Pixel",
+        "Aquarell"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "00E5A8",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "COACH",
+      "cls": "FaceCoach",
+      "file": "Coach.mc",
+      "js": "coach.js",
+      "name": "KI-Coach",
+      "tags": [
+        "ki",
+        "interaktiv",
+        "daten"
+      ],
+      "blurb": "Ein Chat mit deinem Trainings-Coach: Bei jedem Blick tippt er eine neue Nachricht, gebaut aus Body Battery, Schlaf, Erholung und Wochenziel – mit Tipp des Tages.",
+      "styles": [
+        "Messenger",
+        "Terminal",
+        "Glas"
+      ],
+      "uses": [
+        "slots",
+        "bike",
+        "days"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "2F80FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          42,
+          21
+        ],
+        "bikeGoal": 150,
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "ORAKEL",
+      "cls": "FaceOrakel",
+      "file": "Orakel.mc",
+      "js": "orakel.js",
+      "name": "KI-Orakel",
+      "tags": [
+        "ki",
+        "interaktiv",
+        "wild"
+      ],
+      "blurb": "Eine leuchtende Orakel-Kugel: Bei jedem Handgelenk-Heben wirbelt sie und beantwortet eine Frage zu deinem Tag – gespeist aus deinen Daten und einer Prise Zufall.",
+      "styles": [
+        "Kristall",
+        "Nebula",
+        "8-Bit"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "B26BFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          42
+        ]
+      }
+    },
+    {
+      "key": "BLICK",
+      "cls": "FaceBlick",
+      "file": "Blick.mc",
+      "js": "blick.js",
+      "name": "Blick-Zähler",
+      "tags": [
+        "interaktiv",
+        "challenge",
+        "pixel"
+      ],
+      "blurb": "Wie oft schaust du heute auf die Uhr? Ein Auge zählt jeden Blick, vergibt Abzeichen und vergleicht mit gestern – Rekordjagd oder Digital-Detox, du entscheidest.",
+      "styles": [
+        "Auge",
+        "Pixel",
+        "Minimal"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB000",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "CIPHER",
+      "cls": "FaceCipher",
+      "file": "Cipher.mc",
+      "js": "cipher.js",
+      "name": "Geheimcode",
+      "tags": [
+        "versteckt",
+        "wild",
+        "pixel",
+        "ohnesport"
+      ],
+      "blurb": "Die Uhrzeit ist verschlüsselt – binär, als Morsecode oder in römischen Zahlen. Wer kurz wartet, sieht sie sich entschlüsseln; wer den Code beherrscht, braucht das nicht.",
+      "styles": [
+        "Binär",
+        "Morse",
+        "Römisch"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "00FF9C",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "NEBEL",
+      "cls": "FaceNebel",
+      "file": "Nebel.mc",
+      "js": "nebel.js",
+      "name": "Nebel",
+      "tags": [
+        "versteckt",
+        "interaktiv",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Das Display ist beschlagen. Beim Handgelenk-Heben wischt ein Finger die Uhrzeit frei – dann zieht der Nebel langsam wieder zu.",
+      "styles": [
+        "Beschlagen",
+        "Frost",
+        "Rauch"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "9ED8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          23,
+          2
+        ]
+      }
+    },
+    {
+      "key": "NIXIE",
+      "cls": "FaceNixie",
+      "file": "Nixie.mc",
+      "js": "nixie.js",
+      "name": "Nixie",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Glühende Nixie-Röhren mit gestapelten Ziffern-Kathoden. Beim Handgelenk-Heben läuft der „Kathoden-Check“ durch alle Ziffern, bis die Uhrzeit einrastet – mit warmem Glimmen und Röhrenflackern.",
+      "styles": [
+        "Klassisch",
+        "Eisblau",
+        "Dekatron"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF7A1F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "SKELETT",
+      "cls": "FaceSkelett",
+      "file": "Skelett.mc",
+      "js": "skelett.js",
+      "name": "Skelett",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Ein offenes mechanisches Uhrwerk: Unruh, Ankerrad und Räderwerk arbeiten sichtbar, die Gangreserve ist dein Akku. Beim Heben schwingt die Unruh an.",
+      "styles": [
+        "Gold",
+        "Stahl",
+        "Tourbillon"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "D4A64A",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "BLOCK",
+      "cls": "FaceBlock",
+      "file": "Block.mc",
+      "js": "block.js",
+      "name": "Blockfall",
+      "tags": [
+        "pixel",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Fallende Pixel-Blöcke drehen sich, rutschen und stapeln sich zur Uhrzeit. Zu jeder neuen Minute wird eine Reihe abgeräumt – mit Punkten, Level und Highscore.",
+      "styles": [
+        "Klassik",
+        "Gameboy",
+        "Neon"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3FD8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "AQUA",
+      "cls": "FaceAqua",
+      "file": "Aqua.mc",
+      "js": "aqua.js",
+      "name": "Aquarium",
+      "tags": [
+        "pixel",
+        "ohnesport"
+      ],
+      "blurb": "Ein Pixel-Aquarium am Handgelenk: Fische ziehen ihre Bahnen, Luftblasen steigen, Seegras wiegt sich, nachts leuchtet das Becken. Beim Heben kommen die Fische neugierig zur Scheibe.",
+      "styles": [
+        "Riff",
+        "Teich",
+        "Tiefsee"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "aqua"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3FC8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "LAVA",
+      "cls": "FaceLava",
+      "file": "Lava.mc",
+      "js": "lava.js",
+      "name": "Lavalampe",
+      "tags": [
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Wachsblasen steigen auf, teilen sich und verschmelzen in einer Lavalampe – die Uhrzeit schwimmt mittendrin. Je wärmer es draußen ist, desto lebhafter die Lampe.",
+      "styles": [
+        "Retro",
+        "Ozean",
+        "Plasma"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF3D7F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "BAUHAUS",
+      "cls": "FaceBauhaus",
+      "file": "Bauhaus.mc",
+      "js": "bauhaus.js",
+      "name": "Bauhaus",
+      "tags": [
+        "klassisch",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Kreis, Quadrat, Dreieck: Eine geometrische Komposition, die beim Handgelenk-Heben zusammenfällt und sich jede Minute neu ordnet. Stunde und Minute sind Formen, keine Zeiger.",
+      "styles": [
+        "Bauhaus",
+        "Mondrian",
+        "Memphis"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E53935",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "STERNE",
+      "cls": "FaceSterne",
+      "file": "Sterne.mc",
+      "js": "sterne.js",
+      "name": "Sternenhimmel",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Der echte Himmel über deinem Standort, jetzt: helle Sterne, Sternbilder und Mond am richtigen Platz, nach Ortszeit berechnet. Die Uhrzeit dreht den Himmel.",
+      "styles": [
+        "Planetarium",
+        "Sternkarte",
+        "Polarlicht"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "9FC4FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "WETTER",
+      "cls": "FaceWetter",
+      "file": "Wetter.mc",
+      "js": "wetter.js",
+      "name": "Wetterfenster",
+      "tags": [
+        "pixel",
+        "daten",
+        "ohnesport"
+      ],
+      "blurb": "Ein Pixel-Fenster mit dem echten Wetter draußen: Regen läuft die Scheibe herunter, Schnee bleibt auf dem Sims liegen, Wind biegt den Baum, nachts Mond und Sterne. Dazu Höchst-/Tiefstwert und Regenrisiko.",
+      "styles": [
+        "Fenster",
+        "Postkarte",
+        "Diorama"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "wetter"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD23F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    }
+  ]
+}
