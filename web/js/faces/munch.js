@@ -218,7 +218,7 @@ export default {
         }
       } else {
         dc.setColor(P[7], -1);
-        F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 257, 2, 1, 0);
+        F.px(dc, power ? "ZIEL! " + d.dowStr + " " + d.day + "." : d.dowStr + " " + d.day + ". " + d.monStr, 227, 257, 2, 1, 0);
       }
     }
 
@@ -273,7 +273,7 @@ export default {
       chomp(dc, P, cx, cy, cd, fr);
       if (pop >= 0) {
         dc.setColor(P[st === 1 ? 22 : 6], -1);
-        F.px(dc, "200", cx + 13, cy - 12, 2, 1, 0);
+        F.px(dc, "200", cx + 13, cy - 17, 2, 1, 0);
       }
     }
 

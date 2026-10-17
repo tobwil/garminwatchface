@@ -217,7 +217,7 @@ class FaceCity extends Face {
             var sp = st == 2 ? [PK[9], PK[10], PK[7]] : [G.mix(0xFFE07A, 0xFF6A3A, gf), G.mix(0xFFF6C8, 0xFFA060, gf), 0xFFFFFF];
             Spr.draw(dc, SprCity.SUN, sx, sy, P, sp, false);
         } else if (night && d.moon > 0.05 && d.moon < 0.95) {
-            var f = 0.3;
+            var f = 0.12;
             if (st != 1 && rise >= 0 && set >= 0) {
                 var m = d.mins - set;
                 if (m < 0) {

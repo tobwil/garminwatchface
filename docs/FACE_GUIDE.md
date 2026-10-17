@@ -112,7 +112,8 @@ apply `St.shift(d)` offsets to everything. Make it a recognisable, elegant echo 
 1. Write the JS face, render it:
    `node tools/shot.mjs <outdir> KEY:1 KEY:2 KEY:3` (final frame),
    `node tools/shot.mjs <outdir> KEY:1 --q "t=500&live=1"` (mid-intro), `--q "aod=1"` (AOD),
-   other data: `--q "h=21&m=47&sim={\"bb\":12,\"stress\":80}"` (URL-encode if needed). Look at the PNGs (Read tool).
+   other data: `--q "h=21&m=47&sim={\"bb\":12,\"stress\":80}"` (URL-encode if needed), config overrides
+   `cfg={\"src\":2,\"dayGoal\":5}`, another date `date=2026-10-18`. Look at the PNGs (Read tool).
 2. Port to Monkey C, compile: `python3 tools/build.py KEY` (must print `OK`; fix all errors).
 3. Run in the real Garmin simulator: `FL_DEBUG=1 python3 tools/build.py KEY && tools/simrun.sh dist/KEY.prg <out.png> 16 > <log.txt>; cat <log.txt>`
    (**redirect to a file, do not pipe**; one simulator is shared, calls queue automatically ~20–60 s).

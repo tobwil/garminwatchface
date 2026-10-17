@@ -32,6 +32,8 @@ const POP_Y = [0, 0, 0, -15, -25, -25, -10, 0, 0, 0];
 const HAT_F = [2, 2, 0, 0, 2, 1, 0, 0];
 const HAT_Y = [-10, -30, -40, -35, -15, 0, 0, 0];
 const REST = [300, 875, 375, 0, 0, 0];
+const STX = [64, 388, 146, 316];
+const STY = [166, 170, 188, 186];
 
 let hatchDay = -2;
 
@@ -182,6 +184,19 @@ export default {
       }
     }
 
+    // ---------------- night sky (sleeping)
+    if (md === SLEEP) {
+      dc.setColor(P[27], -1);
+      for (let i = 0; i < 4; i++) {
+        const sx = STX[i], sy = STY[i];
+        dc.fillRectangle(sx, sy, 3, 3);
+        if ((k + i * 3) % 10 < 6) {
+          dc.fillRectangle(sx - 3, sy, 9, 3);
+          dc.fillRectangle(sx, sy - 3, 3, 9);
+        }
+      }
+    }
+
     // ---------------- cushion
     const cy0 = BASE - 20;
     SPR.draw(dc, SP.CUSHION, 137, cy0, PX, [P[23], P[21], P[22], P[27]], false);
@@ -249,7 +264,7 @@ export default {
         const yy = 130 + Math.floor(((t * v) / 1000 + (sd % 190)) % 190);
         const sy = Math.floor(yy / 5) * 5 + 4;
         const sx = Math.floor((x + G.noise(t / 400 + i) * 8) / 5) * 5 + 2;
-        if (sy > 300) continue;
+        if (sy > 285) continue;
         dc.setColor(cc[i % 5], -1);
         if ((i + k) % 3 === 0) dc.fillRectangle(sx, sy, 5, 5);
         else dc.fillRectangle(sx, sy, i % 2 === 0 ? 10 : 5, i % 2 === 0 ? 5 : 10);
@@ -329,15 +344,15 @@ export default {
     // ---------------- slots
     for (let i = 0; i < 3; i++) {
       const sl = d.slots[i];
-      const x = 127 + i * 100;
+      const x = 125 + i * 102;
       const vs = F.pxW(sl.val, 3) > 88 ? 2 : 3;
       if (st === 3) {
         dc.setColor(P[12], -1);
         F.px(dc, sl.lbl, x, 336, 2, 1, 0);
         dc.setColor(P[38], -1);
-        dc.fillRoundedRectangle(x - 48, 352, 96, 36, 18);
+        dc.fillRoundedRectangle(x - 50, 352, 100, 36, 18);
         dc.setColor(P[13], -1);
-        dc.fillRoundedRectangle(x - 46, 352, 92, 32, 16);
+        dc.fillRoundedRectangle(x - 48, 352, 96, 32, 16);
         dc.setColor(P[10], -1);
         F.px(dc, sl.val, x, vs === 3 ? 358 : 361, vs, 1, 0);
       } else {

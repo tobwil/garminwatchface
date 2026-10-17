@@ -170,7 +170,7 @@ export default {
       const sp = st === 2 ? [PK[9], PK[10], PK[7]] : [G.mix(0xffe07a, 0xff6a3a, gf), G.mix(0xfff6c8, 0xffa060, gf), 0xffffff];
       SPR.draw(dc, SP.SUN, sx, sy, P, sp, false);
     } else if (night && d.moon > 0.05 && d.moon < 0.95) {
-      let f = 0.3;
+      let f = 0.12;
       if (st !== 1 && rise >= 0 && set >= 0) {
         let m = d.mins - set;
         if (m < 0) m += 1440;

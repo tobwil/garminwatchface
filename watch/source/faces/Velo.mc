@@ -232,11 +232,18 @@ class FaceVelo extends Face {
 
         // ---- stands (outside the rail): two tiers with spectators
         if (st != 3) {
+            dc.setColor(G.mix(bg, C[12], fade), -1);
+            dc.setPenWidth(9);
             for (var row = 0; row < 2; row++) {
                 var r = (195 + row * 11) * z;
-                dc.setColor(G.mix(bg, C[12], fade), -1);
-                dc.setPenWidth(9);
-                stadLine(dc, za, r, 1.0);
+                // only the parts inside the round screen
+                var v = row == 0 ? 52 : 30;
+                dc.drawLine(CX - za, CY - r, CX + za, CY - r);
+                dc.drawLine(CX - za, CY + r, CX + za, CY + r);
+                G.arcC(dc, CX + za, CY, r, 0, v);
+                G.arcC(dc, CX + za, CY, r, 180 - v, 180);
+                G.arcC(dc, CX - za, CY, r, 180, 180 + v);
+                G.arcC(dc, CX - za, CY, r, 360 - v, 360);
             }
             crowd();
             var n = _crx.size();
@@ -419,14 +426,15 @@ class FaceVelo extends Face {
         var ip = G.ease(G.clamp((p - 0.25) / 0.6, 0.0, 1.0));
         var ink = C[10];
         var sub = C[11];
+        var ib = C[5];
         // slots
         for (var k = 0; k < 2; k++) {
             var sp = G.ease(G.stag(p - 0.3, k, 0.08, 0.5));
             var sl = d.slots[k];
             var x = k == 0 ? 162 : 292;
-            dc.setColor(G.mix(bg, sub, ip), -1);
+            dc.setColor(G.mix(ib, sub, ip), -1);
             F.px(dc, sl[:lbl] as String, x, 124, 2, 1, 0);
-            dc.setColor(G.mix(bg, d.dcol, ip * sp), -1);
+            dc.setColor(G.mix(ib, d.dcol, ip * sp), -1);
             F.st(dc, sl[:val] as String, x, 156, 20, 3, 1, 1.0, 0);
         }
         // time
@@ -485,16 +493,16 @@ class FaceVelo extends Face {
         }
 
         // laps + legend
-        dc.setColor(G.mix(bg, ink, ip), -1);
+        dc.setColor(G.mix(ib, ink, ip), -1);
         F.px(dc, laps + " RUNDEN", CX, 314, 2, 1, 0);
-        dc.setColor(G.mix(bg, acc, ip), -1);
+        dc.setColor(G.mix(ib, acc, ip), -1);
         dc.fillCircle(CX - 48, 341, 4);
-        dc.setColor(G.mix(bg, sub, ip), -1);
+        dc.setColor(G.mix(ib, sub, ip), -1);
         F.px(dc, "DU", CX - 40, 334, 2, 0, 0);
-        dc.setColor(G.mix(bg, gcol, ip), -1);
+        dc.setColor(G.mix(ib, gcol, ip), -1);
         dc.setPenWidth(2);
         dc.drawCircle(CX + 4, 341, 4);
-        dc.setColor(G.mix(bg, sub, ip), -1);
+        dc.setColor(G.mix(ib, sub, ip), -1);
         F.px(dc, "MIN", CX + 12, 334, 2, 0, 0);
     }
 

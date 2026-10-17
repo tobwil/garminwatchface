@@ -38,7 +38,6 @@ function yKey(d) { return d.doy > 1 ? d.year * 1000 + d.doy - 1 : (d.year - 1) *
 
 // today's monster index (Sunday = dragon boss)
 function monster(d) {
-  if (d.temp >= 100) return d.temp - 100; // DEBUGTMP
   if (d.dow === 0) return 6;
   const s = G.rnd(G.rnd(d.year * 1000 + d.doy));
   return Math.floor(s / 4096) % 6;
@@ -376,7 +375,7 @@ export default {
       else if (m === 2) { mf = Math.floor(t / 125) % 2; mdy = Math.floor(t / 250) % 2 === 0 ? 0 : 4; }
       else mf = Math.floor(t / 600) % 2;
     }
-    const hov = m === 2 ? 44 : 0;
+    const hov = m === 2 ? 36 : 0;
     // ground shadows
     dc.setColor(SHD[st - 1], -1);
     dc.fillRectangle(HX + 20, GY - 4, 48, 4);
@@ -564,7 +563,7 @@ export default {
     } else {
       const ms = msprite(m, 0);
       out[0] = G.dim(m === 6 ? 0xff4a3d : d.accent, 0.45);
-      SPR.draw(dc, ms, MX - (ms[0] * SC) / 2 + o[0], GY - ms[1] * SC - (m === 2 ? 44 : 0) + o[1], SC, out, false);
+      SPR.draw(dc, ms, MX - (ms[0] * SC) / 2 + o[0], GY - ms[1] * SC - (m === 2 ? 36 : 0) + o[1], SC, out, false);
     }
     dc.setColor(0x2a2c36, -1);
     for (let x = 60; x < 400; x += 12) dc.fillRectangle(x + o[0], GY + 4 + o[1], 4, 4);

@@ -25,6 +25,8 @@ class FaceBuddy extends Face {
     const HAT_F = [2, 2, 0, 0, 2, 1, 0, 0];
     const HAT_Y = [-10, -30, -40, -35, -15, 0, 0, 0];
     const REST = [300, 875, 375, 0, 0, 0];
+    const STX = [64, 388, 146, 316];
+    const STY = [166, 170, 188, 186];
 
     hidden var _bodies as Array<ByteArray>;
     hidden var _eyes as Array<ByteArray>;
@@ -243,6 +245,20 @@ class FaceBuddy extends Face {
             }
         }
 
+        // ---------------- night sky (sleeping)
+        if (md == 0) {
+            dc.setColor(P[27], -1);
+            for (var i = 0; i < 4; i++) {
+                var sx = STX[i];
+                var sy = STY[i];
+                dc.fillRectangle(sx, sy, 3, 3);
+                if ((k + i * 3) % 10 < 6) {
+                    dc.fillRectangle(sx - 3, sy, 9, 3);
+                    dc.fillRectangle(sx, sy - 3, 3, 9);
+                }
+            }
+        }
+
         // ---------------- cushion
         var cy0 = BASE - 20;
         Spr.draw(dc, SprBuddy.CUSHION, 137, cy0, PX, [P[23], P[21], P[22], P[27]], false);
@@ -331,7 +347,7 @@ class FaceBuddy extends Face {
                 var yy = 130 + (t * v / 1000 + (sd % 190)) % 190;
                 var sy = (yy / 5) * 5 + 4;
                 var sx = Math.floor((x + G.noise(t / 400.0 + i) * 8) / 5.0).toNumber() * 5 + 2;
-                if (sy > 300) {
+                if (sy > 285) {
                     continue;
                 }
                 dc.setColor(cc[i % 5], -1);
@@ -439,7 +455,7 @@ class FaceBuddy extends Face {
         // ---------------- slots
         for (var i = 0; i < 3; i++) {
             var sl = d.slots[i];
-            var x = 127 + i * 100;
+            var x = 125 + i * 102;
             var lbl = sl[:lbl] as String;
             var val = sl[:val] as String;
             var vs = F.pxW(val, 3) > 88 ? 2 : 3;
@@ -447,9 +463,9 @@ class FaceBuddy extends Face {
                 dc.setColor(P[12], -1);
                 F.px(dc, lbl, x, 336, 2, 1, 0);
                 dc.setColor(P[38], -1);
-                dc.fillRoundedRectangle(x - 48, 352, 96, 36, 18);
+                dc.fillRoundedRectangle(x - 50, 352, 100, 36, 18);
                 dc.setColor(P[13], -1);
-                dc.fillRoundedRectangle(x - 46, 352, 92, 32, 16);
+                dc.fillRoundedRectangle(x - 48, 352, 96, 32, 16);
                 dc.setColor(P[10], -1);
                 F.px(dc, val, x, vs == 3 ? 358 : 361, vs, 1, 0);
             } else {

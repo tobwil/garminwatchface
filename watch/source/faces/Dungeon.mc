@@ -94,7 +94,7 @@ class FaceDungeon extends Face {
 
     // persistent state -> [gold, streak, wonToday]
     hidden function sync(d as D, m) as Array<Number> {
-        var key = d.doy * 100000 + d.steps;
+        var key = (d.doy * 100000 + d.steps) * 3 + d.cfg.quest;
         if (key == _sKey) {
             return _S;
         }
@@ -434,7 +434,7 @@ class FaceDungeon extends Face {
                 mf = (t / 600) % 2;
             }
         }
-        var hov = m == 2 ? 44 : 0;
+        var hov = m == 2 ? 36 : 0;
         // ground shadows
         dc.setColor(SHD[st - 1], -1);
         dc.fillRectangle(HX + 20, GY - 4, 48, 4);
@@ -660,7 +660,7 @@ class FaceDungeon extends Face {
         } else {
             var ms = msprite(m, 0);
             out[0] = G.dim(m == 6 ? 0xFF4A3D : d.accent, 0.45);
-            Spr.draw(dc, ms, MX - ms[0] * SC / 2 + o[0], GY - ms[1] * SC - (m == 2 ? 44 : 0) + o[1], SC, out, false);
+            Spr.draw(dc, ms, MX - ms[0] * SC / 2 + o[0], GY - ms[1] * SC - (m == 2 ? 36 : 0) + o[1], SC, out, false);
         }
         dc.setColor(0x2A2C36, -1);
         for (var x = 60; x < 400; x += 12) {
