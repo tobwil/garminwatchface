@@ -58,7 +58,14 @@ module G {
         if (a1 - a0 < 0.4) {
             return;
         }
-        dc.drawArc(cx, cy, r, Graphics.ARC_CLOCKWISE, 90 - a0, 90 - a1);
+        // drawArc works in whole degrees and draws a full circle when start == end;
+        // round and normalise here so tiny spans vanish and big negative angles still draw
+        var s = Math.round(90 - a0).toNumber();
+        var e = Math.round(90 - a1).toNumber();
+        if (s == e) {
+            return;
+        }
+        dc.drawArc(cx, cy, r, Graphics.ARC_CLOCKWISE, (s % 360 + 360) % 360, (e % 360 + 360) % 360);
     }
 
     function ring(dc as Dc, cx, cy, r, w, frac, col, track) as Void {

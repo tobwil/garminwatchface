@@ -21,7 +21,10 @@ export const G = {
   arcC(dc, cx, cy, r, a0, a1) {
     if (a1 - a0 >= 359.9) { dc.drawCircle(cx, cy, r); return; }
     if (a1 - a0 < 0.4) return;
-    dc.drawArc(cx, cy, r, ARC_CW, 90 - a0, 90 - a1);
+    // whole degrees, normalised, like the watch (see Gfx.mc)
+    const s = Math.round(90 - a0), e = Math.round(90 - a1);
+    if (s === e) return;
+    dc.drawArc(cx, cy, r, ARC_CW, ((s % 360) + 360) % 360, ((e % 360) + 360) % 360);
   },
 
   // Progress ring from 12 o'clock (or `start`) clockwise. Rounded caps.
