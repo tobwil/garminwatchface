@@ -326,9 +326,10 @@ export default {
     let tempSlot = false;
     for (let k = 0; k < 3; k++) if (d.slots[k].lbl === "TEMP") tempSlot = true;
     for (let k = 0; k < 4; k++) {
-      const p0 = 0.72 + k * 0.06;
+      const p0 = 0.70 + k * 0.05;
       if (p < p0) continue;
-      if (p < p0 + 0.12 && Math.floor(a.t / 60) % 2 === 1) continue;
+      // switch-on flicker, always over before the intro ends (p reaches exactly 1)
+      if (p < p0 + 0.12 && p < 1 && Math.floor(a.t / 60) % 2 === 1) continue;
       // occasional flicker of one neon sign
       if (st === 1 && k === 1 && a.live && p >= 1 && tt % 5200 > 4900 && Math.floor(tt / 70) % 2 === 0) continue;
       if (k < 3) {

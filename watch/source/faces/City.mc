@@ -397,11 +397,12 @@ class FaceCity extends Face {
             }
         }
         for (var k = 0; k < 4; k++) {
-            var p0 = 0.72 + k * 0.06;
+            var p0 = 0.70 + k * 0.05;
             if (p < p0) {
                 continue;
             }
-            if (p < p0 + 0.12 && (a.t / 60) % 2 == 1) {
+            // switch-on flicker, always over before the intro ends (p reaches exactly 1)
+            if (p < p0 + 0.12 && p < 1 && (a.t / 60) % 2 == 1) {
                 continue;
             }
             // occasional flicker of one neon sign
