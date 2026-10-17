@@ -51,11 +51,25 @@ In Monkey C use the literal `-1` for transparent and `Graphics.ARC_CLOCKWISE` et
 
 **AST** (`astro.js` / `Astro.mc`): `elev(doy, minOfDay, lat, lon, tz)` sun elevation°, `cross(doy, lat, lon, tz, elevDeg, rising)` → local minute or -1, `noon(doy, lon, tz)`, `moon(unix)` phase 0..1 (0 new, .5 full), `illum(phase)`.
 
+**SPR** (`spr.js` / `Spr.mc`) – multi-colour pixel sprites. Define sprites once in
+`web/js/sprites/<name>.js` as `export default { HERO: { w: 12, h: 10, rows: ["..1122..", ...] }, ... }`
+('.' transparent, '0'-'9','a'-'z' = palette index; sprite names UPPER_CASE). Run `node tools/spritegen.mjs`
+→ generates `watch/source/gen/Spr<Name>.mc` (module `Spr<Name>`, ByteArray constants). List the module
+in faces.json `"sprites": ["<name>"]` (the lead does that). Use:
+JS `import S from "../sprites/<name>.js"; import { SPR, encodeAll } from "../engine/spr.js"; const SP = encodeAll(S);`
+→ `SPR.draw(dc, SP.HERO, x, y, sc, [col0, col1, ...], flip)`;
+MC `Spr.draw(dc, Spr<Name>.HERO, x, y, sc, [col0, col1, ...], flip)`. Palette entries can be `-1` (skip) so
+styles recolour the same sprite. Animation frames = several sprites (HERO_A, HERO_B, …). Draws merged runs
+(cheap), but keep total sprite pixels per frame reasonable.
+
 **St**: `St.get(key, default)`, `St.set(key, value)` (persistent, values: numbers/strings/arrays), `St.shift(d)` → `[dx, dy]` AOD burn-in offset.
 
 ## Data `d` (same field names in both; unknown numbers are `-1`)
 time `h m s is24 dow(0=So) day mon year doy wk dowStr("FR") monStr("OKT") unix tz(min) mins`;
 activity `steps stepGoal floors floorsGoal floorsWeek imWeek imGoal kcal distM`;
+week (ISO week, Monday = index 0, future days `-1`) `dayIdx` (today 0..6), `wkSteps[7] wkFloors[7] wkAct[7]` (active minutes per day),
+`trainMask` (bit n = training day on weekday n), `trainDays` (count), `dayGoal` (target training days, = `d.cfg.dayGoal`),
+`src` (= `d.cfg.src`: progress source for challenge faces — 0 climbed metres `floorsWeek*3`, 1 weekly bike km `wkBike/1000` vs `cfg.bikeGoal`, 2 training days vs `dayGoal`);
 body `hr rhr hrMax hrHist[60 over 2h, oldest first] bb bbHist[48 over 24h] stress stressHist[48 over 24h] sleep recov(min) vo2b vo2r wkBike(m) wkRun(m) tStatus(string) p5k p10k pHM pM(sec) resp spo2`;
 env `temp(°C, -99 unknown) cond wind windDeg rain hiT loT alt pres lat lon locOk sunrise sunset (minutes of day, float, -1) moon(0..1)`;
 device `batt battDays charging notif phone dnd alarms metric`;

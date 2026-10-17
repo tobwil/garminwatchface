@@ -51,8 +51,10 @@ jobs:
           mkdir -p ~/.Garmin/ConnectIQ/Devices
           cp -r tools/device/fr970 ~/.Garmin/ConnectIQ/Devices/
 
-      - name: Generate fonts
-        run: node tools/fontgen.mjs
+      - name: Generate fonts and sprites
+        run: |
+          node tools/fontgen.mjs
+          node tools/spritegen.mjs
 
       - name: Compile all faces (release)
         run: |

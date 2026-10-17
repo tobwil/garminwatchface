@@ -15,13 +15,13 @@ const byKey = Object.fromEntries(faces.map((f) => [f.key, f]));
 
 const ACCENTS = ["FF5A1F", "FC6719", "FFC83D", "E8C468", "3DDC97", "29E6FF", "4D8DFF", "8C7BFF", "FF2D55", "FF4FD8", "FFFFFF"];
 const DCOLS = ["FFFFFF", "D9DEE3", "FFD24A", "29E6FF", "3DDC97", "FF8A65"];
-const TAGS = [["alle", "Alle"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"]];
+const TAGS = [["alle", "Alle"], ["pixel", "Pixel"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"]];
 const TAG_LABEL = Object.fromEntries(TAGS);
 const SIMS = [
   ["bb", "Body Battery", 0, 100, 1, ""], ["stress", "Stress", 0, 100, 1, ""], ["steps", "Schritte", 0, 25000, 100, ""],
   ["floorsWeek", "Etagen diese Woche", 0, 600, 1, ""], ["hr", "Puls", 40, 190, 1, " bpm"], ["sleep", "Schlafscore", 0, 100, 1, ""],
   ["recovH", "Erholungszeit", 0, 96, 1, " h"], ["wkBikeKm", "Rad diese Woche", 0, 600, 1, " km"], ["batt", "Akku", 0, 100, 1, " %"],
-  ["temp", "Temperatur", -15, 38, 1, " °C"],
+  ["temp", "Temperatur", -15, 38, 1, " °C"], ["trainDays", "Trainingstage diese Woche", 0, 7, 1, ""],
 ];
 
 // ------------------------------------------------------------------ storage (per viewer)
@@ -299,6 +299,9 @@ function syncPanel() {
   $("fBike").hidden = !uses.includes("bike");
   $("fClimb").hidden = !uses.includes("climb");
   $("fQuest").hidden = !uses.includes("quest");
+  $("fSrc").hidden = !uses.includes("src");
+  $("fDays").hidden = !uses.includes("days") && !uses.includes("src");
+  $("src").value = String(cfg.src ?? 0); $("days").value = String(cfg.dayGoal ?? 4);
   $("ftp").value = cfg.ftp; $("kg").value = cfg.kg; $("bike").value = cfg.bikeGoal;
   $("climb").value = String(cfg.climb); $("quest").value = String(cfg.quest); $("anim").value = String(cfg.anim);
   $("fname").value = state.names[state.key] || f.name;
@@ -322,6 +325,8 @@ function bindInputs() {
   num("ftp", "ftp", 100, 450); num("kg", "kg", 40, 150); num("bike", "bikeGoal", 0, 1000);
   $("climb").onchange = () => setCfg({ climb: +$("climb").value });
   $("quest").onchange = () => setCfg({ quest: +$("quest").value });
+  $("src").onchange = () => { setCfg({ src: +$("src").value }); wake(); };
+  $("days").onchange = () => setCfg({ dayGoal: +$("days").value });
   $("anim").onchange = () => { setCfg({ anim: +$("anim").value }); wake(); };
   $("fname").oninput = () => { state.names[state.key] = $("fname").value; LS.set("names", state.names); };
 

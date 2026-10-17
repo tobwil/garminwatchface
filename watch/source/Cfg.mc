@@ -21,12 +21,14 @@ class Cfg {
     var quest as Number = 1;
     var anim as Number = 2;
     var bikeGoal as Number = 150;
+    var src as Number = 0;      // progress source for challenge faces: 0 climb (floors), 1 bike km, 2 training days
+    var dayGoal as Number = 4;  // training days per week
 
     function initialize() {
     }
 
     function toArray() as Array<Number> {
-        return [style, accent, dcol, slots[0], slots[1], slots[2], ftp, kg, climb, quest, anim, bikeGoal];
+        return [style, accent, dcol, slots[0], slots[1], slots[2], ftp, kg, climb, quest, anim, bikeGoal, src, dayGoal];
     }
 
     function fromArray(a as Array) as Void {
@@ -36,10 +38,14 @@ class Cfg {
         style = a[0]; accent = a[1]; dcol = a[2];
         slots = [a[3], a[4], a[5]];
         ftp = a[6]; kg = a[7]; climb = a[8]; quest = a[9]; anim = a[10]; bikeGoal = a[11];
+        if (a.size() >= 14) {
+            src = a[12]; dayGoal = a[13];
+        }
     }
 
-    // FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>
-    // (<face> selects the design in the studio; each .prg contains exactly one design.)
+    // FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>[.<src>.<dayGoal>]
+    // (<face> selects the design in the studio; each .prg contains exactly one design.
+    //  The last two fields are optional for codes from the first studio version.)
     function decode(code as String) as Boolean {
         var p = split(code, '.');
         if (p.size() < 12 || !p[0].equals("FL1")) {
@@ -59,6 +65,8 @@ class Cfg {
         quest = num(p[9], 0, 2, 1);
         anim = num(p[10], 0, 2, 2);
         bikeGoal = num(p[11], 0, 2000, 150);
+        src = p.size() > 12 ? num(p[12], 0, 2, 0) : 0;
+        dayGoal = p.size() > 13 ? num(p[13], 1, 7, 4) : 4;
         return true;
     }
 

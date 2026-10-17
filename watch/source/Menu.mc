@@ -11,6 +11,8 @@ module SetMenu {
         if (key.equals("ftp")) { return range(100, 450, 10, " W"); }
         if (key.equals("kg")) { return range(45, 130, 1, " kg"); }
         if (key.equals("bike")) { return range(0, 500, 25, " km"); }
+        if (key.equals("src")) { return ["Höhenmeter", "Rad-km", "Trainingstage"]; }
+        if (key.equals("days")) { return range(1, 7, 1, " Tage"); }
         return [];
     }
 
@@ -30,6 +32,8 @@ module SetMenu {
         if (key.equals("ftp")) { return "FTP"; }
         if (key.equals("kg")) { return "Gewicht"; }
         if (key.equals("bike")) { return "Rad-Wochenziel"; }
+        if (key.equals("src")) { return "Fortschritt aus"; }
+        if (key.equals("days")) { return "Trainingstage-Ziel"; }
         return key;
     }
 
@@ -42,6 +46,8 @@ module SetMenu {
         if (key.equals("ftp")) { return (cfg.ftp - 100) / 10; }
         if (key.equals("kg")) { return cfg.kg - 45; }
         if (key.equals("bike")) { return cfg.bikeGoal / 25; }
+        if (key.equals("src")) { return cfg.src; }
+        if (key.equals("days")) { return cfg.dayGoal - 1; }
         return 0;
     }
 
@@ -53,6 +59,8 @@ module SetMenu {
         else if (key.equals("ftp")) { cfg.ftp = 100 + i * 10; }
         else if (key.equals("kg")) { cfg.kg = 45 + i; }
         else if (key.equals("bike")) { cfg.bikeGoal = i * 25; }
+        else if (key.equals("src")) { cfg.src = i; }
+        else if (key.equals("days")) { cfg.dayGoal = i + 1; }
         cfg.save();
     }
 

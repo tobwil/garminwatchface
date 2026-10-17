@@ -21,6 +21,15 @@ class D {
     // activity
     var steps = 0; var stepGoal = 10000; var floors = 0; var floorsGoal = 10; var floorsWeek = 0;
     var imWeek = 0; var imGoal = 150; var kcal = 0; var distM = 0;
+    // current ISO week, Monday = index 0. Future days are -1.
+    var dayIdx = 0;
+    var wkSteps = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;
+    var wkFloors = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;
+    var wkAct = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;   // active (intensity) minutes per day
+    var trainMask = 0;  // bit n = training day on weekday n (Mon = bit 0)
+    var trainDays = 0;
+    var dayGoal = 4;
+    var src = 0;
     // body
     var hr = -1; var rhr = -1; var hrMax = 190;
     var hrHist = [] as Array<Number>;
@@ -79,6 +88,7 @@ class D {
             _lastHist = mins;
             try { readHistory(); } catch (e) { }
         }
+        try { readWeek(); } catch (e) { }
         try { readAstro(); } catch (e) { }
         try { buildSlots(); } catch (e) { }
     }
@@ -175,6 +185,68 @@ class D {
                 hr = smp.heartRate;
             }
         }
+    }
+
+    // Week view + training-day detection. A day counts as a training day when it has
+    // >= 30 active minutes, or when the weekly bike/run distance grew by > 1 km that day.
+    hidden function readWeek() as Void {
+        dayGoal = cfg.dayGoal;
+        src = cfg.src;
+        dayIdx = dow == 0 ? 6 : dow - 1;
+        var st = [-1, -1, -1, -1, -1, -1, -1];
+        var fl = [-1, -1, -1, -1, -1, -1, -1];
+        var ac = [-1, -1, -1, -1, -1, -1, -1];
+        var ai = ActivityMonitor.getInfo();
+        st[dayIdx] = steps;
+        fl[dayIdx] = floors;
+        ac[dayIdx] = (ai.activeMinutesDay != null) ? nz(ai.activeMinutesDay.total, 0) : 0;
+        var hist = ActivityMonitor.getHistory();
+        if (hist != null) {
+            for (var i = 0; i < hist.size() && i < dayIdx; i++) {
+                var k = dayIdx - 1 - i;
+                st[k] = nz(hist[i].steps, 0);
+                fl[k] = nz(hist[i].floorsClimbed, 0);
+                ac[k] = hist[i].activeMinutes != null ? nz(hist[i].activeMinutes.total, 0) : 0;
+            }
+        }
+        wkSteps = st;
+        wkFloors = fl;
+        wkAct = ac;
+        var mask = 0;
+        for (var j = 0; j <= dayIdx; j++) {
+            if (ac[j] >= 30) {
+                mask |= (1 << j);
+            }
+        }
+        // remember distance-based training days across the week
+        var key = year * 100 + wk;
+        var tw = Application.Storage.getValue("tw") as Array?;
+        if (tw == null || tw.size() < 5 || tw[0] != key) {
+            tw = [key, 0, -1, 0, 0];
+        }
+        var old = tw[1];
+        var dirty = false;
+        if (tw[2] != doy) {
+            dirty = true;
+            tw[2] = doy;
+            tw[3] = wkBike < 0 ? 0 : wkBike;
+            tw[4] = wkRun < 0 ? 0 : wkRun;
+        }
+        if ((wkBike >= 0 && wkBike - tw[3] > 1000) || (wkRun >= 0 && wkRun - tw[4] > 1000)) {
+            tw[1] = tw[1] | (1 << dayIdx);
+        }
+        mask |= tw[1];
+        if (dirty || tw[1] != old) {
+            Application.Storage.setValue("tw", tw);
+        }
+        trainMask = mask;
+        var n = 0;
+        for (var b = 0; b < 7; b++) {
+            if ((mask & (1 << b)) != 0) {
+                n++;
+            }
+        }
+        trainDays = n;
     }
 
     hidden function readProfile() as Void {

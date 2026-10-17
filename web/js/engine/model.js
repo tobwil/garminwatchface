@@ -44,14 +44,18 @@ export const CLIMBS = [
 
 export const DEFAULT_CFG = {
   style: 1, accent: 0xff5a1f, dcol: 0xffffff, slots: [23, 21, 20],
-  ftp: 250, kg: 75, climb: 0, quest: 1, anim: 2, bikeGoal: 150,
+  ftp: 250, kg: 75, climb: 0, quest: 1, anim: 2, bikeGoal: 150, src: 0, dayGoal: 4,
 };
+
+export const SOURCES = ["Höhenmeter (Etagen)", "Rad-km der Woche", "Trainingstage der Woche"];
 
 const hex6 = (n) => (n >>> 0).toString(16).toUpperCase().padStart(6, "0").slice(-6);
 
-// FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>
+// FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>.<src>.<dayGoal>
+// (the last two fields are optional when decoding, for codes from the first studio version)
 export function encodeCode(face, c) {
-  return ["FL1", face, c.style, hex6(c.accent), hex6(c.dcol), c.slots.join("-"), c.ftp, c.kg, c.climb, c.quest, c.anim, c.bikeGoal].join(".");
+  return ["FL1", face, c.style, hex6(c.accent), hex6(c.dcol), c.slots.join("-"), c.ftp, c.kg, c.climb, c.quest, c.anim, c.bikeGoal,
+    c.src ?? 0, c.dayGoal ?? 4].join(".");
 }
 export function decodeCode(s) {
   const p = (s || "").trim().toUpperCase().split(".");
@@ -65,6 +69,7 @@ export function decodeCode(s) {
       style: n(p[2], 1, 9, 1), accent: parseInt(p[3], 16) || 0xff5a1f, dcol: parseInt(p[4], 16) || 0xffffff,
       slots: sl.slice(0, 3), ftp: n(p[6], 50, 600, 250), kg: n(p[7], 30, 200, 75), climb: n(p[8], 0, 3, 0),
       quest: n(p[9], 0, 2, 1), anim: n(p[10], 0, 2, 2), bikeGoal: n(p[11], 0, 2000, 150),
+      src: p.length > 12 ? n(p[12], 0, 2, 0) : 0, dayGoal: p.length > 13 ? n(p[13], 1, 7, 4) : 4,
     },
   };
 }
@@ -107,7 +112,7 @@ export const SIM_DEFAULTS = {
   wkBike: 87400, wkRun: 21300, tStatus: "Produktiv", p5k: 1236, p10k: 2580, pHM: 5760, pM: 12300,
   resp: 14, spo2: 97, temp: 14, cond: 1, wind: 4.2, windDeg: 250, rain: 20, hiT: 17, loT: 8,
   batt: 76, battDays: 9, notif: 3, phone: true, alt: 212, pres: 101520,
-  lat: 50.11, lon: 8.68, metric: true, is24: true,
+  lat: 50.11, lon: 8.68, metric: true, is24: true, trainDays: 3,
 };
 
 const DOW = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -156,6 +161,27 @@ export function buildData(cfg, sim, now) {
     cfg: { ...cfg },
     accent: cfg.accent, dcol: cfg.dcol,
   };
+  // week view (Monday = 0), mirrors Data.readWeek()
+  d.dayIdx = (dt.getDay() + 6) % 7;
+  d.src = cfg.src ?? 0;
+  d.dayGoal = cfg.dayGoal ?? 4;
+  d.wkSteps = []; d.wkFloors = []; d.wkAct = [];
+  for (let i = 0; i < 7; i++) {
+    if (i > d.dayIdx) { d.wkSteps.push(-1); d.wkFloors.push(-1); d.wkAct.push(-1); continue; }
+    if (i === d.dayIdx) { d.wkSteps.push(s.steps); d.wkFloors.push(s.floors); d.wkAct.push(Math.round(s.imWeek / 6)); continue; }
+    d.wkSteps.push(Math.round(G.clamp(s.stepGoal * (0.85 + G.noise(i * 1.9 + 0.4) * 0.45), 1500, 30000)));
+    d.wkFloors.push(Math.round(G.clamp(s.floorsGoal * (0.9 + G.noise(i * 2.3 + 1.1) * 0.7), 0, 60)));
+    d.wkAct.push(Math.round(G.clamp(25 + G.noise(i * 1.3 + 2.2) * 40, 0, 120)));
+  }
+  const order = [0, 2, 4, 5, 1, 3, 6];
+  let mask = 0, n = 0;
+  for (const day of order) {
+    if (n >= (s.trainDays ?? 3)) break;
+    if (day <= d.dayIdx) { mask |= 1 << day; n++; }
+  }
+  for (let i = 0; i <= d.dayIdx; i++) d.wkAct[i] = (mask >> i) & 1 ? Math.max(d.wkAct[i], 45) : Math.min(d.wkAct[i], 25);
+  d.trainMask = mask;
+  d.trainDays = n;
   d.sunrise = AST.cross(doy, d.lat, d.lon, tz, -0.833, true);
   d.sunset = AST.cross(doy, d.lat, d.lon, tz, -0.833, false);
   d.moon = AST.moon(unix);
