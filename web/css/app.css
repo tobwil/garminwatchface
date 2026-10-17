@@ -102,6 +102,7 @@ h2 { font-size: 1.15rem; font-weight: 700; text-transform: uppercase; letter-spa
 .stage .btn-primary { box-shadow: 0 6px 24px color-mix(in srgb, var(--face) 35%, transparent); }
 .btn-small { padding: 7px 12px; font-size: 0.8rem; background: var(--chip); color: var(--ink); }
 .btn-big { width: 100%; padding: 15px 18px; font-size: 1rem; }
+.btn-big + .btn-big { margin-top: 8px; }
 .btn[disabled] { opacity: 0.55; cursor: progress; }
 
 /* ---------------------------------------------------------------- panel */

@@ -10,9 +10,11 @@ ohne SDK, ohne Konto, ohne Connect IQ Store.
 
 1. **Studio öffnen:** `site/FaceLab.html` im Browser öffnen (Doppelklick genügt, funktioniert offline).
    Die Datei entsteht mit `node tools/bundle.mjs` (siehe unten) oder als Artefakt der GitHub Action.
-2. Design wählen, Variante/Farben/Datenfelder einstellen, unten auf **„Watchface erzeugen (.zip)“**.
-3. ZIP entpacken, Uhr per USB anschließen (Mac: [OpenMTP](https://openmtp.ganeshrvel.com/)),
-   die `.prg`-Datei nach `GARMIN/APPS` kopieren, Uhr trennen.
+2. Design wählen, Variante/Farben/Datenfelder einstellen.
+3. Uhr per USB anschließen und auf **„Direkt auf die Uhr übertragen (USB)“** klicken (Chrome, Edge oder
+   Brave; WebUSB, kein Zusatzprogramm nötig), Forerunner im Dialog wählen, Uhr trennen.
+   Ohne Chromium-Browser: **„Watchface erzeugen (.zip)“**, ZIP entpacken und die `.prg` mit
+   [OpenMTP](https://openmtp.ganeshrvel.com/) nach `GARMIN/APPS` kopieren.
 4. Auf der Uhr: Watchface lange drücken → Watchface wählen → dein neues Design.
 
 Der Name bestimmt den Platz auf der Uhr: Mit gleichem Namen neu erzeugen und die Datei ersetzen

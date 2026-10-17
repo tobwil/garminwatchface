@@ -128,13 +128,15 @@
             <p class="err" id="codeErr" hidden></p>
           </details>
         </div>
-        <button class="btn btn-primary btn-big" id="download" type="button">Watchface erzeugen (.zip)</button>
+        <button class="btn btn-primary btn-big" id="usbSend" type="button">Direkt auf die Uhr übertragen (USB)</button>
+        <button class="btn btn-ghost btn-big" id="download" type="button">Watchface erzeugen (.zip)</button>
         <p class="status" id="dlStatus" role="status"></p>
+        <p class="fine" id="usbHint"></p>
         <ol class="steps">
-          <li><b>ZIP entpacken.</b> Darin liegt eine <span class="mono">.prg</span>-Datei – das ist dein fertiges Watchface.</li>
-          <li><b>Uhr per USB anschließen.</b> Am Mac brauchst du dafür <span class="mono">OpenMTP</span> oder Android File Transfer.</li>
-          <li><b>Datei nach <span class="mono">GARMIN/APPS</span> kopieren</b> und die Uhr trennen.</li>
+          <li><b>Uhr per USB anschließen</b> und auf <i>Direkt auf die Uhr übertragen</i> klicken. Im Dialog die Forerunner auswählen.</li>
+          <li><b>Kabel abziehen.</b> Die Uhr installiert das Watchface beim Trennen.</li>
           <li><b>Aktivieren:</b> Auf der Uhr Watchface lange drücken → Watchface wählen → durchblättern. Gleicher Name ersetzt das vorhandene Watchface, ein neuer Name legt ein zusätzliches an.</li>
+          <li><b>Ohne Chrome/Edge/Brave:</b> ZIP erzeugen, entpacken und die <span class="mono">.prg</span> mit OpenMTP nach <span class="mono">GARMIN/APPS</span> kopieren.</li>
         </ol>
         <p class="fine">Variante, Akzentfarbe und Datenfelder kannst du später auch direkt an der Uhr im Watchface-Editor ändern. FTP, Gewicht und Ziele stehen im Menü <i>Einstellungen</i> des Watchfaces.</p>
       </div>

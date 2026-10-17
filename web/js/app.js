@@ -7,6 +7,7 @@ import { St } from "./engine/st.js";
 import { Store } from "./engine/model.js";
 import { patchPrg } from "./prg.js";
 import { makeZip } from "./zip.js";
+import { sendToWatch, usbSupported } from "./mtp.js";
 
 const MAX_ANIM_MS = 12000;
 const TAP_MS = 5000;
@@ -424,6 +425,11 @@ function bindInputs() {
   }
 
   $("download").onclick = generate;
+  if (usbSupported()) $("usbSend").onclick = sendUsb;
+  else {
+    $("usbSend").disabled = true;
+    $("usbHint").textContent = "Direkt-Übertragung per USB geht in Chrome, Edge oder Brave – hier bitte die ZIP nutzen.";
+  }
 }
 
 // ------------------------------------------------------------------ .prg generation
@@ -465,6 +471,41 @@ function readme(f, name, code, file) {
   ].join("\r\n");
 }
 
+async function buildPrg() {
+  const a = await loadAssets();
+  const f = byKey[state.key];
+  const cfg = cfgOf(state.key);
+  const code = encodeCode(state.key, cfg);
+  const name = ($("fname").value || f.name).trim().slice(0, 22) || f.name;
+  const tag = await sha6(state.key + "|" + name);
+  const prg = await patchPrg(b64(a.prgs[state.key]), {
+    code, name, baseName: f.name, baseAppId: b64(a.appIds[state.key]), uniqueSeed: state.key + "|" + name,
+  }, b64(a.key).buffer);
+  return { f, code, name, tag, prg, file: `FL_${state.key}_${tag}.prg` };
+}
+
+async function sendUsb() {
+  const btn = $("usbSend");
+  const st = $("dlStatus");
+  st.className = "status";
+  btn.disabled = true;
+  st.textContent = "Watchface wird gebaut und signiert …";
+  try {
+    const { prg, file, name } = await buildPrg();
+    await sendToWatch(file, prg, (m) => { st.textContent = m; });
+    st.textContent = `Auf der Uhr: ${name}. Jetzt das USB-Kabel abziehen – die Uhr installiert das Watchface beim Trennen.`;
+    st.classList.add("ok");
+  } catch (e) {
+    const code = e && e.code;
+    st.classList.add("bad");
+    st.textContent = code === "declined" ? "Keine Uhr ausgewählt. Ist sie per USB angeschlossen und entsperrt?"
+      : code === "busy" ? "Die Uhr ist von einem anderen Programm belegt (Garmin Express, OpenMTP, Android File Transfer, Fotos/Digitale Bilder). Programm schließen, Uhr kurz ab- und wieder anstecken, nochmal versuchen."
+      : "Übertragung fehlgeschlagen: " + (e && e.message ? e.message : e) + " – Uhr ab- und wieder anstecken und nochmal versuchen.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function generate() {
   const btn = $("download");
   const st = $("dlStatus");
@@ -472,16 +513,7 @@ async function generate() {
   btn.disabled = true;
   st.textContent = "Watchface wird gebaut und signiert …";
   try {
-    const a = await loadAssets();
-    const f = byKey[state.key];
-    const cfg = cfgOf(state.key);
-    const code = encodeCode(state.key, cfg);
-    const name = ($("fname").value || f.name).trim().slice(0, 22) || f.name;
-    const tag = await sha6(state.key + "|" + name);
-    const prg = await patchPrg(b64(a.prgs[state.key]), {
-      code, name, baseName: f.name, baseAppId: b64(a.appIds[state.key]), uniqueSeed: state.key + "|" + name,
-    }, b64(a.key).buffer);
-    const file = `FL_${state.key}_${tag}.prg`;
+    const { f, code, name, tag, prg, file } = await buildPrg();
     const zip = makeZip([{ name: file, data: prg }, { name: "ANLEITUNG.txt", data: readme(f, name, code, file) }]);
     const zipName = `FaceLab-${name.replace(/[^A-Za-z0-9ÄÖÜäöüß_-]+/g, "-")}-${tag}.zip`;
     const blob = new Blob([zip], { type: "application/zip" });
