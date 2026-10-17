@@ -266,6 +266,11 @@ function dragon() {
   return str(outline(g));
 }
 
+// breathing frame: everything above row `cut` one pixel lower (row `cut` dropped)
+function breathe(rows, cut) {
+  return [".".repeat(rows[0].length)].concat(rows.slice(0, cut), rows.slice(cut + 1));
+}
+
 const BAT_A = bat(true);
 const BAT_B = bat(false);
 const GOBLIN = goblin();
@@ -353,14 +358,14 @@ const FL_C = [
 ];
 
 const COIN = [
-  ".000.",
-  "02220",
-  "02120",
-  "02120",
-  "02120",
-  "03330",
-  ".000.",
-].map((r) => r);
+  ".0000.",
+  "011220",
+  "012230",
+  "012230",
+  "012230",
+  "022330",
+  ".0000.",
+];
 
 export default {
   HERO_A: spr(HERO),
@@ -369,12 +374,17 @@ export default {
   SLIME_A: spr(SLIME_A),
   SLIME_B: spr(SLIME_B),
   SKEL: spr(SKEL),
+  SKEL_B: spr(breathe(SKEL, 13)),
   BAT_A: spr(BAT_A),
   BAT_B: spr(BAT_B),
   GOBLIN: spr(GOBLIN),
+  GOBLIN_B: spr(breathe(GOBLIN, 14)),
   SHROOM: spr(SHROOM),
+  SHROOM_B: spr(breathe(SHROOM, 12)),
   GOLEM: spr(GOLEM),
+  GOLEM_B: spr(breathe(GOLEM, 13)),
   DRAGON: spr(DRAGON),
+  DRAGON_B: spr(breathe(DRAGON, 19)),
   CHEST_C: spr(CHEST_C),
   CHEST_O: spr(CHEST_O),
   FL_A: spr(FL_A),

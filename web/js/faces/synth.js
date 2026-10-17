@@ -81,9 +81,11 @@ const face = {
     dc.fillCircle(px, py, 5);
   },
 
-  // one pass of the time: hours right of the centre gap, minutes left, slanted square colon
+  // one pass of the time (centred on x): hours, slanted square colon, minutes
   time(dc, hh, mm, x, y, pen, col) {
     dc.setColor(col, -1);
+    const wh = F.stW(hh, 76);
+    x = x + (wh - F.stW(mm, 76)) / 2;
     F.st(dc, hh, x - 15, y, 76, pen, 2, 1.0, 0.15);
     F.st(dc, mm, x + 15, y, 76, pen, 0, 1.0, 0.15);
     const r = pen * 0.5 + 3;

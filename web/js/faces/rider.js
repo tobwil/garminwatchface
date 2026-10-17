@@ -88,7 +88,7 @@ function mountain(dc, sx, i, pal, st) {
       dc.fillRectangle(sx + cl * P, y, (cr - cl + 1) * P, P);
     } else if (r === sn) {
       dc.setColor(pal[7], -1);
-      dc.fillRectangle(sx + Math.floor(cl / 2) * P, y, P, P);
+      dc.fillRectangle(sx - Math.floor(-cl / 2) * P, y, P, P);
       dc.fillRectangle(sx, y, P, P);
       dc.fillRectangle(sx + Math.floor(cr / 2) * P, y, P, P);
     }
@@ -308,7 +308,7 @@ export default {
     // rider
     const fr = Math.floor((tt * v) / 120) % 4;
     const rs = fr === 0 ? SP.RIDER_0 : fr === 1 ? SP.RIDER_1 : fr === 2 ? SP.RIDER_2 : SP.RIDER_3;
-    if (st === 3) SPR.draw(dc, SP.RIDER_GLOW, rxp - P, RY - P, P, [G.dim(acc, 0.28)], false);
+    if (st >= 2) SPR.draw(dc, SP.RIDER_GLOW, rxp - P, RY - P, P, [st === 2 ? GB[0] : G.dim(acc, 0.28)], false);
     SPR.draw(dc, rs, rxp, RY, P, riderPal(st, acc), false);
 
     // confetti burst at the finish line

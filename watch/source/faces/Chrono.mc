@@ -290,7 +290,7 @@ class FaceChrono extends Face {
         // ------------------------------------------------------------ hands
         var hDeg = (d.h % 12) * 30 + d.m * 0.5 + d.s / 120.0;
         var mDeg = d.m * 6 + d.s * 0.1;
-        var sec = a.live ? d.s + (a.t % 1000) / 1000.0 : d.s.toFloat();
+        var sec = a.live ? d.s + a.ms / 1000.0 : d.s.toFloat();
         var hp = G.spring(G.stag(p, 1, 0.08, 0.82));
         var mp = G.spring(G.stag(p, 1, 0.14, 0.8));
         var sp = G.spring(G.stag(p, 1, 0.22, 0.78));

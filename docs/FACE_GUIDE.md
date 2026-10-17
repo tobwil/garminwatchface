@@ -81,6 +81,7 @@ History arrays can contain `-1` gaps and may be empty on the watch – always gu
 * `a.intro` 0→1 linearly over 1.4 s after the wrist is raised (always 1.0 when animations are off
   or in the watch-face editor). Use `G.ease/easeInOut/spring/stag` to shape it.
 * `a.t` ms since wake. `a.live` true while the watch is awake & animating.
+* `a.ms` ms since the clock second last changed (0..999) – use `d.s + a.ms/1000` for sweeping seconds hands.
 * `fps()` = ambient frame rate after the intro (0 = static; max 20). Ambient motion must be a pure
   function of `a.t` + data (no per-frame state).
 * The frame at `intro = 1, live = false` must look complete and beautiful (that's what most people see).

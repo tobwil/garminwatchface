@@ -147,7 +147,7 @@ function loop(ts) {
   cachedData.s = sec;
   state.dirty = false;
   useStore(key);
-  const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating };
+  const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating, ms: dt.getMilliseconds() };
   render(ctx, face, cachedData, a, state.aod);
   if (!mini.hidden) {
     const m = miniCanvas.getContext("2d");
@@ -211,7 +211,7 @@ function drawTile(key, t) {
   const cfg = cfgOf(key);
   useStore(key);
   const d = dataFor(key, cfg, now());
-  const a = t === undefined ? { t: 99999, intro: 1, live: false } : { t, intro: Math.min(1, t / INTRO_MS), live: true };
+  const a = t === undefined ? { t: 99999, intro: 1, live: false, ms: 0 } : { t, intro: Math.min(1, t / INTRO_MS), live: true, ms: Math.floor(t) % 1000 };
   render(tile.ctx, FACES[key], d, a, false);
 }
 function refreshTile(key) { drawTile(key); }

@@ -25,7 +25,7 @@ export default {
       G.tick(dc, cx, cy, big ? 200 : 207, 219, deg);
     }
     if (a.live) {
-      const sd = d.s * 6 + (a.t % 1000) * 0.006;
+      const sd = d.s * 6 + a.ms * 0.006;
       dc.setColor(0xffffff, -1);
       dc.setPenWidth(5);
       G.tick(dc, cx, cy, 196, 222, sd);

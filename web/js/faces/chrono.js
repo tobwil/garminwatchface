@@ -235,7 +235,7 @@ export default {
     // ---------------------------------------------------------------- hands
     const hDeg = (d.h % 12) * 30 + d.m * 0.5 + d.s / 120;
     const mDeg = d.m * 6 + d.s * 0.1;
-    const sec = a.live ? d.s + (a.t % 1000) / 1000 : d.s;
+    const sec = a.live ? d.s + a.ms / 1000 : d.s;
     const hp = G.spring(G.stag(p, 1, 0.08, 0.82));
     const mp = G.spring(G.stag(p, 1, 0.14, 0.8));
     const sp = G.spring(G.stag(p, 1, 0.22, 0.78));

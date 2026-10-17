@@ -34,6 +34,26 @@ function blob(W, H, o) {
   return { w: W, h: H, rows };
 }
 
+// puffy pillow: 0 outline, 1 main, 2 highlight, 3 tassel
+function pillow(W, H) {
+  const rows = [];
+  for (let y = 0; y < H; y++) {
+    let r = "";
+    const ins = [3, 1, 0, 0, 0, 1, 3][y]; // side bulge
+    for (let x = 0; x < W; x++) {
+      const e = Math.min(x, W - 1 - x);
+      if ((y === 2 || y === 3) && e < 1) { r += "3"; continue; }
+      if (e < ins) { r += "."; continue; }
+      if (y === 0 || y === H - 1 || e === ins || (e === 1 && y > 1 && y < 5)) { r += "0"; continue; }
+      if (y === 1 && e > ins + 1) { r += "2"; continue; }
+      if (y === 4 && e > 4 && x % 5 === 2) { r += "0"; continue; }
+      r += "1";
+    }
+    rows.push(r);
+  }
+  return { w: W, h: H, rows };
+}
+
 export default {
   // body frames (face anchor: see FY in the face code)
   BODY: blob(24, 22, { ear: 2, ex: 6.5, foot: 1, fx: 5.5 }),
@@ -126,20 +146,14 @@ export default {
     "0111110",
     "0000000",
   ] },
-  SWEAT: { w: 3, h: 4, rows: [
-    ".0.",
-    ".0.",
-    "010",
-    ".0.",
+  SWEAT: { w: 4, h: 5, rows: [
+    "..0.",
+    ".00.",
+    "0100",
+    "0100",
+    ".00.",
   ] },
-  CUSHION: { w: 34, h: 6, rows: [
-    "...00000000000000000000000000000..",
-    ".002222222222222222222222222222200",
-    "0221111111111111111111111111111120",
-    "0111111111111111111111111111111110",
-    ".001111111111111111111111111111100",
-    "...00000000000000000000000000000..",
-  ] },
+  CUSHION: pillow(36, 7),
 
   // ---- egg (0 outline, 1 shell, 2 shell shade, 3 spots)
   EGG: { w: 16, h: 20, rows: [

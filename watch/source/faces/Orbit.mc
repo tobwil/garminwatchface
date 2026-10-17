@@ -339,7 +339,7 @@ class FaceOrbit extends Face {
 
         // seconds comet
         if (e3 > 0) {
-            var sec = s + (a.live ? (a.t % 1000) / 1000.0 : 0.0);
+            var sec = s + (a.live ? a.ms / 1000.0 : 0.0);
             var ang = sec * 6 - (1 - e3) * 270;
             var r = RS * e3;
             var cc = st == 3 ? 0xFFFFFF : acc;

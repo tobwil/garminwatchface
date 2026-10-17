@@ -268,15 +268,14 @@ class FaceTour extends Face {
             if (glow != -1) {
                 dc.setColor(glow, -1);
                 dc.setPenWidth(10);
-                for (var i = 0; i < e; i++) {
-                    dc.drawLine(RX[i], RY[i], RX[i + 1], RY[i + 1]);
+                for (var i = 0; i < e; i += 4) {
+                    dc.drawLine(RX[i], RY[i], RX[i + 4], RY[i + 4]);
                 }
             }
             dc.setColor(done, -1);
             dc.setPenWidth(4);
-            for (var i = 0; i < e; i++) {
-                dc.drawLine(RX[i], RY[i], RX[i + 1], RY[i + 1]);
-                dc.fillCircle(RX[i + 1], RY[i + 1], 1.8);
+            for (var i = 0; i < e; i += 2) {
+                dc.drawLine(RX[i], RY[i], RX[i + 2], RY[i + 2]);
             }
         }
         for (var i = solidEnd; i <= shown; i++) {
@@ -432,10 +431,10 @@ class FaceTour extends Face {
             var c1 = st == 2 ? 0xF1E6CC : (st == 1 ? acc : done);
             var c2 = st == 2 ? 0xF1E6CC : ink;
             dc.setColor(G.mix(bg, c1, lp), -1);
-            F.st(dc, s1, x0, ly - 1, 15, 3, 0, 1.0, 0);
+            F.st(dc, s1, x0, ly - 1, 15, 2, 0, 1.0, 0);
             dc.fillCircle(x0 + w1 + 10, ly - 1, 2.5);
             dc.setColor(G.mix(bg, c2, lp), -1);
-            F.st(dc, s2, x0 + w1 + 20, ly - 1, 15, 3, 0, 1.0, 0);
+            F.st(dc, s2, x0 + w1 + 20, ly - 1, 15, 2, 0, 1.0, 0);
         }
 
         // ---- stage profile of today

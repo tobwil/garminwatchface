@@ -52,7 +52,7 @@ function kelle(dc, x, y, deg, len, back, w, dr, dR, col) {
 }
 
 export default {
-  get fps() { return 20; },
+  fps: 20,
 
   draw(dc, d, a) {
     const st = d.cfg.style;

@@ -40,5 +40,5 @@ export function render(ctx, face, d, a, aod) {
 
 export function animState(t, cfg) {
   const intro = cfg.anim === 0 ? 1 : Math.max(0, Math.min(1, t / INTRO_MS));
-  return { t, intro, live: cfg.anim > 0 };
+  return { t, intro, live: cfg.anim > 0, ms: Math.floor(t) % 1000 };
 }

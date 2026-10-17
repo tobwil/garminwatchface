@@ -288,7 +288,7 @@ const face = {
 
     // seconds comet
     if (e3 > 0) {
-      const sec = s + (a.live ? (a.t % 1000) / 1000 : 0);
+      const sec = s + (a.live ? a.ms / 1000 : 0);
       const ang = sec * 6 - (1 - e3) * 270, r = RS * e3;
       const cc = st === 3 ? 0xffffff : acc;
       if (a.live) {

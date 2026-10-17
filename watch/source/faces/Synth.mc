@@ -113,9 +113,11 @@ class FaceSynth extends Face {
         dc.fillCircle(px, py, 5);
     }
 
-    // one pass of the time: hours right of the centre gap, minutes left, slanted square colon
+    // one pass of the time (centred on x): hours, slanted square colon, minutes
     hidden function time(dc as Dc, hh as String, mm as String, x, y, pen, col) as Void {
         dc.setColor(col, -1);
+        var wh = F.stW(hh, 76);
+        x = x + (wh - F.stW(mm, 76)) / 2.0;
         F.st(dc, hh, x - 15, y, 76, pen, 2, 1.0, 0.15);
         F.st(dc, mm, x + 15, y, 76, pen, 0, 1.0, 0.15);
         var r = pen * 0.5 + 3;

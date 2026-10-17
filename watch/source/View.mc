@@ -24,6 +24,8 @@ class FaceView extends WatchUi.WatchFace {
     hidden var _wake = 0;
     hidden var _period = 0;
     hidden var _edit = false;
+    hidden var _lastSec = -1;
+    hidden var _secAt = 0;
 
     function initialize(editMode as Boolean) {
         WatchFace.initialize();
@@ -148,7 +150,16 @@ class FaceView extends WatchUi.WatchFace {
             face.aod(dc, d);
             return;
         }
-        var t = System.getTimer() - _wake;
+        var now = System.getTimer();
+        var t = now - _wake;
+        if (d.s != _lastSec) {
+            _lastSec = d.s;
+            _secAt = now;
+        }
+        a.ms = now - _secAt;
+        if (a.ms > 999) {
+            a.ms = 999;
+        }
         a.t = t;
         a.live = !_sleeping && _timer != null;
         a.intro = (cfg.anim == 0 || _edit) ? 1.0 : G.clamp(t.toFloat() / INTRO_MS, 0.0, 1.0);

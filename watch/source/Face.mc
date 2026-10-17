@@ -7,6 +7,7 @@ class A {
     var t = 0;          // ms since the watch woke up (wrist raise / face shown)
     var intro = 1.0;    // 0..1 linear progress of the intro animation (INTRO_MS)
     var live = false;   // true while in high-power mode and animations are on
+    var ms = 0;         // ms since the clock second last changed (0..999), for sweeping hands
 
     function initialize() {
     }
