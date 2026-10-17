@@ -44,9 +44,9 @@ export class Dc {
     ctx.restore();
   }
   _fill() { const c = css(this.fg); if (c) { this.ctx.fillStyle = c; this.ctx.fill(); } }
-  _stroke() {
+  _stroke(cap) {
     const c = css(this.fg);
-    if (c) { const ctx = this.ctx; ctx.strokeStyle = c; ctx.lineWidth = this.pen; ctx.lineCap = "butt"; ctx.stroke(); }
+    if (c) { const ctx = this.ctx; ctx.strokeStyle = c; ctx.lineWidth = this.pen; ctx.lineCap = cap || "butt"; ctx.stroke(); }
   }
   fillCircle(x, y, r) { if (r <= 0) return; const c = this.ctx; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); this._fill(); }
   drawCircle(x, y, r) { if (r <= 0) return; const c = this.ctx; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); this._stroke(); }
@@ -61,7 +61,9 @@ export class Dc {
     else c.arc(x, y, r, s, e, dir === ARC_CCW);
     this._stroke();
   }
-  drawLine(x1, y1, x2, y2) { const c = this.ctx; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); this._stroke(); }
+  // thick lines get round caps: the watch renders joined polyline segments seamlessly,
+  // butt caps on the canvas would leave visible seams inside stroke-font glyphs
+  drawLine(x1, y1, x2, y2) { const c = this.ctx; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); this._stroke(this.pen >= 4 ? "round" : "butt"); }
   drawPoint(x, y) { const c = css(this.fg); if (c) { this.ctx.fillStyle = c; this.ctx.fillRect(x, y, 1, 1); } }
   fillRectangle(x, y, w, h) { const c = css(this.fg); if (c) { this.ctx.fillStyle = c; this.ctx.fillRect(x, y, w, h); } }
   drawRectangle(x, y, w, h) { const c = this.ctx; c.beginPath(); c.rect(x, y, w, h); this._stroke(); }

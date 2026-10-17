@@ -47,6 +47,13 @@ class FaceView extends WatchUi.WatchFace {
         if (!(Toybox has :Complications) || _edit) {
             return;
         }
+        // register the change callback BEFORE subscribing: an update that arrives with no
+        // callback registered makes the system fail invoking it ("Symbol Not Found")
+        try {
+            Complications.registerComplicationChangeCallback(method(:onComplicationChanged));
+        } catch (e) {
+            return;
+        }
         var types = [23, 22, 21, 25, 24, 20, 19, 26, 27, 28, 29, 30, 35, 36, 42, 15, 16, 38, 18];
         for (var i = 0; i < types.size(); i++) {
             try {
@@ -54,6 +61,10 @@ class FaceView extends WatchUi.WatchFace {
             } catch (e) {
             }
         }
+    }
+
+    // A subscribed complication changed: values are re-read on the next minute refresh.
+    function onComplicationChanged(id as Complications.Id) as Void {
     }
 
     function onShow() as Void {

@@ -229,10 +229,11 @@ class FaceTour extends Face {
 
         // ---- background
         if (st == 2) {
-            dc.setColor(0xE6D6B2, -1);
-            dc.fillCircle(CX, CY, 227);
             dc.setColor(bg, -1);
-            dc.fillCircle(CX, CY, 214);
+            dc.fillCircle(CX, CY, 215);
+            dc.setColor(0xE6D6B2, -1);
+            dc.setPenWidth(14);
+            dc.drawCircle(CX, CY, 221);
             dc.setColor(0xD8C49C, -1);
             dc.setPenWidth(2);
             dc.drawCircle(CX, CY, 220);
@@ -402,10 +403,8 @@ class FaceTour extends Face {
             dc.setColor(ink, -1);
             F.st(dc, ts, CX, 167, 66, 5, 1, tp, 0);
         } else {
-            dc.setColor(0x123A73, -1);
-            F.st(dc, ts, CX, 167, 66, 13, 1, tp, 0);
             dc.setColor(ink, -1);
-            F.st(dc, ts, CX, 167, 66, 5, 1, tp, 0);
+            F.st(dc, ts, CX, 167, 66, 6, 1, tp, 0);
         }
         dc.setColor(G.mix(bg, sub, tp), -1);
         F.px(dc, "KW " + d.wk, CX, 100, 2, 1, 0);

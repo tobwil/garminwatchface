@@ -238,9 +238,9 @@ export default {
           const q = stadPt(za, (R_IN + 21) * z, LU[k]);
           let fl = 1.0;
           if (live) fl = 0.85 + 0.15 * G.noise(t / 160.0 + k * 3.7);
-          for (let j = 0; j < 3; j++) {
-            dc.setColor(G.mix(C[1], 0xffd59a, (0.09 + j * 0.16) * fl * fade), -1);
-            dc.fillCircle(q[0], q[1], (19 - j * 6) * z);
+          for (let j = 0; j < 2; j++) {
+            dc.setColor(G.mix(C[1], 0xffd59a, (0.12 + j * 0.2) * fl * fade), -1);
+            dc.fillCircle(q[0], q[1], (19 - j * 8) * z);
           }
         }
       }

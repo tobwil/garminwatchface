@@ -16,7 +16,7 @@ if [ "${1:-}" = "--inner" ]; then
   shift
   PRG=$1; OUT=$2; SECS=$3; LOG=$4
   ip link set lo up 2>/dev/null
-  (cd /opt/ciq/sim && LD_LIBRARY_PATH=$LIBS exec "$SDK/bin/simulator" </dev/null >/dev/null 2>&1) &
+  (cd /opt/ciq/sim && LD_LIBRARY_PATH=$LIBS exec "$SDK/bin/simulator" </dev/null >"${SIM_LOG:-/dev/null}" 2>&1) &
   SIMPID=$!
   for i in $(seq 1 80); do
     xwininfo -root -tree 2>/dev/null | grep -q '("simulator" "Simulator")' && break
