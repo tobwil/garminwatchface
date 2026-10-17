@@ -586,7 +586,7 @@ class FaceSkelett extends Face {
         // hands: dim metal with lume
         var md = d.m * 6;
         var hd = (d.h % 12) * 30 + d.m * 0.5;
-        var lu = st == 2 ? 0x3A5A66 : 0x4A5A40;
+        var lu = st == 2 ? 0x4A7A8A : 0x6A8A5C;
         for (var k = 0; k < 2; k++) {
             var deg = k == 0 ? hd : md;
             var len = k == 0 ? 112 : 170;

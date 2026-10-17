@@ -47,6 +47,7 @@ class FaceNixie extends Face {
     ];
 
     hidden var _fx = 0; // ambient frame rate (set in draw)
+    hidden var _pin = null; // dekatron pin coordinates, computed on first use
 
     function initialize() {
         Face.initialize();
@@ -84,7 +85,7 @@ class FaceNixie extends Face {
         if (cols[2] == 0 || dg < 0) {
             return;
         }
-        var pens = [s * 3.1, s * 1.7, s * 0.78, (s * 0.3 > 2 ? s * 0.3 : 2)];
+        var pens = [s * 2.7, s * 1.6, s * 0.78, (s * 0.3 > 2 ? s * 0.3 : 2)];
         for (var k = big ? 0 : 1; k < 4; k++) {
             dc.setColor(cols[k], -1);
             var pw = Math.round(pens[k]).toNumber();
@@ -147,12 +148,12 @@ class FaceNixie extends Face {
     hidden function mesh(dc as Dc, x1, y1, x2, y2, col) as Void {
         dc.setColor(col, -1);
         dc.setPenWidth(1);
-        for (var m = Math.floor(x1 - y2).toNumber() + 5; m < x2 - y1; m += 10) {
+        for (var m = Math.floor(x1 - y2).toNumber() + 5; m < x2 - y1; m += 11) {
             var a = x1 - m > y1 ? x1 - m : y1;
             var b = x2 - m < y2 ? x2 - m : y2;
             dc.drawLine(a + m, a, b + m, b);
         }
-        for (var n = Math.floor(x1 + y1).toNumber() + 5; n < x2 + y2; n += 10) {
+        for (var n = Math.floor(x1 + y1).toNumber() + 5; n < x2 + y2; n += 11) {
             var a = n - x2 > y1 ? n - x2 : y1;
             var b = n - x1 < y2 ? n - x1 : y2;
             dc.drawLine(n - a, a, n - b, b);
@@ -191,7 +192,7 @@ class FaceNixie extends Face {
         var t = a.t;
         var acc = d.accent;
         var seed = d.wakeN * 7 + 3;
-        _fx = live ? (p < 1 ? 20 : (st == 3 ? 20 : 10)) : 0;
+        _fx = live ? (p < 1 ? 20 : (st == 3 ? 15 : 10)) : 0;
 
         // palette
         var cGlass = st == 2 ? 0x2B3A46 : 0x2E3133;
@@ -206,20 +207,34 @@ class FaceNixie extends Face {
 
         // ---- dekatron ring (style 3): 60 cathode pins, a glow dot runs round = seconds
         if (st == 3) {
-            dc.setColor(0x26292B, -1);
+            // glass rim: reflections only (full circles are expensive on the watch)
+            dc.setColor(0x34383B, -1);
             dc.setPenWidth(1);
-            dc.drawCircle(227, 227, 219);
-            dc.drawCircle(227, 227, 193);
+            G.arcC(dc, 227, 227, 219, 290, 350);
+            G.arcC(dc, 227, 227, 219, 110, 170);
+            G.arcC(dc, 227, 227, 193, 300, 340);
             // seconds index 0..50 outside the time area
             dc.setColor(0x4A4440, -1);
             for (var i = 0; i < 6; i++) {
                 var lb = "" + i * 10;
                 F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
             }
+            if (_pin == null) {
+                var pn = new [240];
+                for (var i = 0; i < 60; i++) {
+                    var r1 = i % 5 == 0 ? 199 : 202;
+                    pn[i * 4] = G.ptX(227, r1, i * 6);
+                    pn[i * 4 + 1] = G.ptY(227, r1, i * 6);
+                    pn[i * 4 + 2] = G.ptX(227, 210, i * 6);
+                    pn[i * 4 + 3] = G.ptY(227, 210, i * 6);
+                }
+                _pin = pn;
+            }
+            var pin = _pin as Array;
             dc.setPenWidth(3);
             for (var i = 0; i < 60; i++) {
                 dc.setColor(i % 5 == 0 ? 0x5A5550 : 0x3A3633, -1);
-                G.tick(dc, 227, 227, i % 5 == 0 ? 199 : 202, 210, i * 6);
+                dc.drawLine(pin[i * 4], pin[i * 4 + 1], pin[i * 4 + 2], pin[i * 4 + 3]);
             }
             // glow position: jumps pin to pin, gliding over the guide cathodes in the first 160 ms
             var sec = d.s;
@@ -262,10 +277,8 @@ class FaceNixie extends Face {
             // blue LED underglow
             for (var i = 0; i < 4; i++) {
                 var tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
-                dc.setColor(G.dim(0x0C3050, warm), -1);
-                dc.fillEllipse(tx + tw / 2.0, by - 6, tw * 0.42, 16);
-                dc.setColor(G.dim(0x1A5A8A, warm), -1);
-                dc.fillEllipse(tx + tw / 2.0, by - 2, tw * 0.3, 6);
+                dc.setColor(G.dim(0x0F3A60, warm), -1);
+                dc.fillEllipse(tx + tw / 2.0, by - 5, tw * 0.4, 13);
             }
         }
 
@@ -307,7 +320,7 @@ class FaceNixie extends Face {
             }
             // the unlit cathode stack (wire tangle)
             dc.setPenWidth(1);
-            for (var q = 0; q < 5; q++) {
+            for (var q = 0; q < 4; q++) {
                 var z = (q * 7 + 3) % 10;
                 if (z == dg) {
                     continue;
@@ -368,9 +381,6 @@ class FaceNixie extends Face {
             var cols = b == 1 ? P1 : pal(st, acc, b);
             dc.setColor(G.dim(cols[0], 0.8), -1);
             dc.fillEllipse(cx, cy, sw * 0.4, sh * 0.36);
-            dc.setPenWidth(1);
-            dc.setColor(G.dim(cGhost, 0.8), -1);
-            glyph(dc, 8, cx, cy, ss, 1, false);
             glow(dc, dg, cx, cy, ss, cols, false);
             if (i == 1) {
                 // decimal point cathode

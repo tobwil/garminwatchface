@@ -46,6 +46,7 @@ const LAY = [
 ];
 
 let fx = 0; // ambient frame rate (set in draw)
+let PIN = null; // dekatron pin coordinates, computed on first use
 
 // one digit wire set; s = px per unit, caps = round ends for thick pens
 function glyph(dc, dg, cx, cy, s, pen, caps) {
@@ -66,7 +67,7 @@ function glyph(dc, dg, cx, cy, s, pen, caps) {
 // glowing digit: 4 passes (wide halo, halo, body, hot core)
 function glow(dc, dg, cx, cy, s, cols, big) {
   if (cols[2] === 0 || dg < 0) return;
-  const pens = [s * 3.1, s * 1.7, s * 0.78, Math.max(2, s * 0.3)];
+  const pens = [s * 2.7, s * 1.6, s * 0.78, Math.max(2, s * 0.3)];
   for (let k = big ? 0 : 1; k < 4; k++) {
     dc.setColor(cols[k], -1);
     const pw = Math.round(pens[k]);
@@ -124,11 +125,11 @@ function nStr(dc, s, cx, cy, h, w, cols) {
 function mesh(dc, x1, y1, x2, y2, col) {
   dc.setColor(col, -1);
   dc.setPenWidth(1);
-  for (let m = Math.floor(x1 - y2) + 5; m < x2 - y1; m += 10) {
+  for (let m = Math.floor(x1 - y2) + 5; m < x2 - y1; m += 11) {
     const a = Math.max(y1, x1 - m), b = Math.min(y2, x2 - m);
     dc.drawLine(a + m, a, b + m, b);
   }
-  for (let n = Math.floor(x1 + y1) + 5; n < x2 + y2; n += 10) {
+  for (let n = Math.floor(x1 + y1) + 5; n < x2 + y2; n += 11) {
     const a = Math.max(y1, n - x2), b = Math.min(y2, n - x1);
     dc.drawLine(n - a, a, n - b, b);
   }
@@ -162,7 +163,7 @@ export default {
     const t = a.t;
     const acc = d.accent;
     const seed = d.wakeN * 7 + 3;
-    fx = live ? (p < 1 ? 20 : st === 3 ? 20 : 10) : 0;
+    fx = live ? (p < 1 ? 20 : st === 3 ? 15 : 10) : 0;
 
     // palette
     const cGlass = st === 2 ? 0x2b3a46 : 0x2e3133;
@@ -177,20 +178,29 @@ export default {
 
     // ---- dekatron ring (style 3): 60 cathode pins, a glow dot runs round = seconds
     if (st === 3) {
-      dc.setColor(0x26292b, -1);
+      // glass rim: reflections only (full circles are expensive on the watch)
+      dc.setColor(0x34383b, -1);
       dc.setPenWidth(1);
-      dc.drawCircle(227, 227, 219);
-      dc.drawCircle(227, 227, 193);
+      G.arcC(dc, 227, 227, 219, 290, 350);
+      G.arcC(dc, 227, 227, 219, 110, 170);
+      G.arcC(dc, 227, 227, 193, 300, 340);
       // seconds index 0..50 outside the time area
       dc.setColor(0x4a4440, -1);
       for (let i = 0; i < 6; i++) {
         const lb = "" + i * 10;
         F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
       }
+      if (PIN === null) {
+        PIN = [];
+        for (let i = 0; i < 60; i++) {
+          const r1 = i % 5 === 0 ? 199 : 202;
+          PIN.push(G.ptX(227, r1, i * 6), G.ptY(227, r1, i * 6), G.ptX(227, 210, i * 6), G.ptY(227, 210, i * 6));
+        }
+      }
       dc.setPenWidth(3);
       for (let i = 0; i < 60; i++) {
         dc.setColor(i % 5 === 0 ? 0x5a5550 : 0x3a3633, -1);
-        G.tick(dc, 227, 227, i % 5 === 0 ? 199 : 202, 210, i * 6);
+        dc.drawLine(PIN[i * 4], PIN[i * 4 + 1], PIN[i * 4 + 2], PIN[i * 4 + 3]);
       }
       // glow position: jumps pin to pin, gliding over the guide cathodes in the first 160 ms
       const sec = d.s;
@@ -228,10 +238,8 @@ export default {
       // blue LED underglow
       for (let i = 0; i < 4; i++) {
         const tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
-        dc.setColor(G.dim(0x0c3050, warm), -1);
-        dc.fillEllipse(tx + tw / 2, by - 6, tw * 0.42, 16);
-        dc.setColor(G.dim(0x1a5a8a, warm), -1);
-        dc.fillEllipse(tx + tw / 2, by - 2, tw * 0.3, 6);
+        dc.setColor(G.dim(0x0f3a60, warm), -1);
+        dc.fillEllipse(tx + tw / 2, by - 5, tw * 0.4, 13);
       }
     }
 
@@ -270,7 +278,7 @@ export default {
       }
       // the unlit cathode stack (wire tangle)
       dc.setPenWidth(1);
-      for (let q = 0; q < 5; q++) {
+      for (let q = 0; q < 4; q++) {
         const z = (q * 7 + 3) % 10;
         if (z === dg) continue;
         dc.setColor(q % 2 === 0 ? cGhost : G.dim(cGhost, 0.72), -1);
@@ -323,9 +331,6 @@ export default {
       const cols = b === 1 ? P1 : pal(st, acc, b);
       dc.setColor(G.dim(cols[0], 0.8), -1);
       dc.fillEllipse(cx, cy, sw * 0.4, sh * 0.36);
-      dc.setPenWidth(1);
-      dc.setColor(G.dim(cGhost, 0.8), -1);
-      glyph(dc, 8, cx, cy, ss, 1, false);
       glow(dc, dg, cx, cy, ss, cols, false);
       if (i === 1) {
         // decimal point cathode

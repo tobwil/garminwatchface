@@ -474,7 +474,7 @@ export default {
     F.px(dc, "" + d.day, 358 + o[0], 219 + o[1], 2, 1, 0);
     // hands: dim metal with lume
     const md = d.m * 6, hd = (d.h % 12) * 30 + d.m * 0.5;
-    const lu = st === 2 ? 0x3a5a66 : 0x4a5a40;
+    const lu = st === 2 ? 0x4a7a8a : 0x6a8a5c;
     for (let k = 0; k < 2; k++) {
       const deg = k === 0 ? hd : md;
       const len = k === 0 ? 112 : 170, w = k === 0 ? 9 : 7;
