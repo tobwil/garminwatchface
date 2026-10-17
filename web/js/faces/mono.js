@@ -7,6 +7,9 @@ import { St } from "../engine/st.js";
 export default {
   fps: 10,
 
+  // everything but the second marker is static for a minute
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const acc = d.accent;
@@ -18,7 +21,7 @@ export default {
     const lit = Math.floor(G.clamp(frac, 0, 1) * 60);
     const shown = Math.floor(G.ease(p) * 60);
     dc.setPenWidth(3);
-    for (let i = 0; i < shown; i++) {
+    for (let i = 0; i < shown && !a.bg; i++) {
       const deg = i * 6;
       const big = i % 5 === 0;
       dc.setColor(i < lit ? acc : 0x333333, -1);
@@ -30,6 +33,7 @@ export default {
       dc.setPenWidth(5);
       G.tick(dc, cx, cy, 196, 222, sd);
     }
+    if (a.bg) return;
 
     // date
     dc.setColor(0xbbbbbb, -1);

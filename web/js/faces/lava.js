@@ -106,7 +106,11 @@ let fpsV = 10; // slower wax (cold outside) needs fewer frames
 const face = {
   get fps() { return fpsV; },
 
+  // static layer: background, halo, liquid, date, slots; the wax, the glass over it and the time move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const c = PAL[st - 1];
     const acc = d.accent;
@@ -123,119 +127,124 @@ const face = {
     const T = a.t + 5200 * G.ease(p);
     const br = 0.9 + 0.1 * Math.sin(a.t / 900.0);
 
-    // background: vertical gradient bands
-    for (let i = 0; i < 12; i++) {
-      dc.setColor(G.mix(c[0], c[1], i / 11.0), -1);
-      dc.fillRectangle(0, i * 38, 454, 38);
+    if (S) {
+      // background: vertical gradient bands
+      for (let i = 0; i < 12; i++) {
+        dc.setColor(G.mix(c[0], c[1], i / 11.0), -1);
+        dc.fillRectangle(0, i * 38, 454, 38);
+      }
+      // glow halo around the glass
+      for (let i = 0; i < 3; i++) {
+        dc.setColor(G.mix(c[1], c[2], (0.1 + i * 0.09) * L * br), -1);
+        dc.fillPolygon(glassPoly(30 - i * 10, 0));
+      }
+      // liquid: 7 slices following the profile, darker at the top, lit from below
+      for (let i = 0; i < 7; i++) {
+        dc.setColor(G.dim(G.mix(c[3], c[4], i / 6.0), L), -1);
+        dc.fillPolygon([[CX - PW[i], PY[i]], [CX + PW[i], PY[i]], [CX + PW[i + 1], PY[i + 1] + 1], [CX - PW[i + 1], PY[i + 1] + 1]]);
+      }
+      dc.setColor(G.dim(G.mix(c[4], c[2], 0.22 * br), L), -1);
+      dc.fillEllipse(CX, 330, 92, 34);
     }
-    // glow halo around the glass
-    for (let i = 0; i < 3; i++) {
-      dc.setColor(G.mix(c[1], c[2], (0.1 + i * 0.09) * L * br), -1);
-      dc.fillPolygon(glassPoly(30 - i * 10, 0));
-    }
-    // liquid: 7 slices following the profile, darker at the top, lit from below
-    for (let i = 0; i < 7; i++) {
-      dc.setColor(G.dim(G.mix(c[3], c[4], i / 6.0), L), -1);
-      dc.fillPolygon([[CX - PW[i], PY[i]], [CX + PW[i], PY[i]], [CX + PW[i + 1], PY[i + 1] + 1], [CX - PW[i + 1], PY[i + 1] + 1]]);
-    }
-    dc.setColor(G.dim(G.mix(c[4], c[2], 0.22 * br), L), -1);
-    dc.fillEllipse(CX, 330, 92, 34);
 
-    // ---- wax: blob centres
-    const bx = [0, 0, 0, 0, 0], by = [0, 0, 0, 0, 0], ba = [0, 0, 0, 0, 0], bb = [0, 0, 0, 0, 0], bh = [0, 0, 0, 0, 0];
-    for (let i = 0; i < 5; i++) {
-      const ph = frac(T / (per * BP[i]) + BO[i] + seed * (i + 1));
-      const u = 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI);
-      const v = Math.abs(Math.sin(ph * 2 * Math.PI));
-      const y = Y_BOT - u * (Y_BOT - Y_TOP);
-      const r = BR[i] * (1.0 - 0.12 * u);
-      const ea = r * (1 - 0.1 * v), eb = r * (1 + 0.2 * v);
-      let lim = hwAt(y - eb * 0.7) - ea - 5;
-      if (lim < 0) lim = 0;
-      let x = CX + BX[i] * (hwAt(y) - r) + 9 * G.noise(T / 5200.0 + i * 2.7);
-      x = G.clamp(x, CX - lim, CX + lim);
-      bx[i] = x; by[i] = y; ba[i] = ea; bb[i] = eb;
-      bh[i] = 322 - 150 * u;
-    }
-    const bump = [0, 0, 0];
-    for (let j = 0; j < 3; j++) bump[j] = 13 + 7 * Math.sin(T / 1700.0 + j * 2.1);
-    // two passes: rim (full size) then core (shrunk, shifted down: lit from the bulb below)
-    for (let pass = 0; pass < 2; pass++) {
-      const k = pass === 0 ? 1.0 : 0.66;
-      const oy = pass === 0 ? 0 : 3;
-      const sat = pass === 0 ? 0.92 : 0.55;
-      dc.setColor(G.dim(st === 3 ? G.hsv(186, sat, 1.0) : c[5 + pass], L), -1);
-      dc.fillEllipse(CX, 66, 38 * k, 12 * k);
-      if (st === 3) dc.setColor(G.dim(G.hsv(322, sat, 1.0), L), -1);
-      dc.fillEllipse(CX, POOL_Y + oy, (hwAt(POOL_Y) + 2) * (pass === 0 ? 1 : 0.86), 32 * k);
-      for (let j = 0; j < 3; j++) dc.fillCircle(CX - 54 + j * 54, 318 + oy + (1 - k) * 8, bump[j] * k);
+    if (M) {
+      // ---- wax: blob centres
+      const bx = [0, 0, 0, 0, 0], by = [0, 0, 0, 0, 0], ba = [0, 0, 0, 0, 0], bb = [0, 0, 0, 0, 0], bh = [0, 0, 0, 0, 0];
       for (let i = 0; i < 5; i++) {
-        if (st === 3) dc.setColor(G.dim(G.hsv(bh[i], sat, 1.0), L), -1);
-        dc.fillEllipse(bx[i], by[i] + oy, ba[i] * k, bb[i] * k);
-        // necks: to the pool, to the top, to other blobs
-        neck(dc, bx[i], 326 + oy, 14, bx[i], by[i] + oy, ba[i], k);
-        neck(dc, bx[i], 66, 10, bx[i], by[i] + oy, ba[i], k);
-        for (let j = i + 1; j < 5; j++) neck(dc, bx[i], by[i] + oy, ba[i], bx[j], by[j] + oy, ba[j], k);
+        const ph = frac(T / (per * BP[i]) + BO[i] + seed * (i + 1));
+        const u = 0.5 - 0.5 * Math.cos(ph * 2 * Math.PI);
+        const v = Math.abs(Math.sin(ph * 2 * Math.PI));
+        const y = Y_BOT - u * (Y_BOT - Y_TOP);
+        const r = BR[i] * (1.0 - 0.12 * u);
+        const ea = r * (1 - 0.1 * v), eb = r * (1 + 0.2 * v);
+        let lim = hwAt(y - eb * 0.7) - ea - 5;
+        if (lim < 0) lim = 0;
+        let x = CX + BX[i] * (hwAt(y) - r) + 9 * G.noise(T / 5200.0 + i * 2.7);
+        x = G.clamp(x, CX - lim, CX + lim);
+        bx[i] = x; by[i] = y; ba[i] = ea; bb[i] = eb;
+        bh[i] = 322 - 150 * u;
+      }
+      const bump = [0, 0, 0];
+      for (let j = 0; j < 3; j++) bump[j] = 13 + 7 * Math.sin(T / 1700.0 + j * 2.1);
+      // two passes: rim (full size) then core (shrunk, shifted down: lit from the bulb below)
+      for (let pass = 0; pass < 2; pass++) {
+        const k = pass === 0 ? 1.0 : 0.66;
+        const oy = pass === 0 ? 0 : 3;
+        const sat = pass === 0 ? 0.92 : 0.55;
+        dc.setColor(G.dim(st === 3 ? G.hsv(186, sat, 1.0) : c[5 + pass], L), -1);
+        dc.fillEllipse(CX, 66, 38 * k, 12 * k);
+        if (st === 3) dc.setColor(G.dim(G.hsv(322, sat, 1.0), L), -1);
+        dc.fillEllipse(CX, POOL_Y + oy, (hwAt(POOL_Y) + 2) * (pass === 0 ? 1 : 0.86), 32 * k);
+        for (let j = 0; j < 3; j++) dc.fillCircle(CX - 54 + j * 54, 318 + oy + (1 - k) * 8, bump[j] * k);
+        for (let i = 0; i < 5; i++) {
+          if (st === 3) dc.setColor(G.dim(G.hsv(bh[i], sat, 1.0), L), -1);
+          dc.fillEllipse(bx[i], by[i] + oy, ba[i] * k, bb[i] * k);
+          // necks: to the pool, to the top, to other blobs
+          neck(dc, bx[i], 326 + oy, 14, bx[i], by[i] + oy, ba[i], k);
+          neck(dc, bx[i], 66, 10, bx[i], by[i] + oy, ba[i], k);
+          for (let j = i + 1; j < 5; j++) neck(dc, bx[i], by[i] + oy, ba[i], bx[j], by[j] + oy, ba[j], k);
+        }
+      }
+      // hot spots near the bottom of the blobs that are still warm (lower half of the lamp)
+      for (let i = 0; i < 5; i++) {
+        const u = (322 - bh[i]) / 150.0;
+        if (ba[i] > 18 && u < 0.5) {
+          dc.setColor(G.dim(G.mix(c[6], c[7], 1 - u * 2), L), -1);
+          dc.fillEllipse(bx[i] - ba[i] * 0.15, by[i] + bb[i] * 0.42, ba[i] * 0.34, bb[i] * 0.18);
+        }
+      }
+      dc.setColor(G.dim(c[7], L), -1);
+      dc.fillEllipse(CX - 20, POOL_Y - 12, 44, 7);
+
+      // ---- glass: edge lines + reflection stripes
+      dc.setColor(G.dim(c[8], L * 0.8), -1);
+      dc.setPenWidth(2);
+      for (let i = 0; i < 7; i++) {
+        dc.drawLine(CX - PW[i], PY[i], CX - PW[i + 1], PY[i + 1]);
+        dc.drawLine(CX + PW[i], PY[i], CX + PW[i + 1], PY[i + 1]);
+      }
+      dc.setColor(G.dim(G.mix(c[4], 0xffffff, 0.38), L), -1);
+      dc.fillPolygon([[CX - 34, 84], [CX - 26, 84], [CX - 66, 262], [CX - 80, 262]]);
+      dc.setColor(G.dim(G.mix(c[4], 0xffffff, 0.22), L), -1);
+      dc.fillPolygon([[CX - 80, 272], [CX - 68, 272], [CX - 72, 292], [CX - 86, 292]]);
+      dc.fillPolygon([[CX + 66, 200], [CX + 72, 200], [CX + 92, 284], [CX + 86, 284]]);
+
+      // ---- metal: cap, collar, base
+      metal(dc, c, 26, 22, 58, 50, L);
+      metal(dc, c, 58, 52, 68, 52, L * 0.8);
+      metal(dc, c, 336, 104, 350, 104, L * 0.85);
+      metal(dc, c, 350, 92, 454, 150, L);
+      dc.setColor(G.dim(c[12], L * 0.7), -1);
+      dc.fillRectangle(CX - 104, 349, 208, 3);
+      if (st === 3) {
+        // neon outline on the dark metal
+        dc.setColor(G.dim(c[8], L), -1);
+        dc.drawLine(CX - 92, 352, CX - 150, 454);
+        dc.drawLine(CX + 92, 352, CX + 150, 454);
+        dc.drawLine(CX - 22, 26, CX + 22, 26);
+      }
+
+      // ---- time inside the glass: hours over minutes, rising up like wax
+      const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
+      const mm = G.pad2(d.m);
+      const p1 = G.spring(G.stag(p, 0, 0.12, 0.6));
+      const p2 = G.spring(G.stag(p, 1, 0.12, 0.6));
+      const ty1 = 168 + (1 - p1) * 70, ty2 = 258 + (1 - p2) * 70;
+      if (p1 > 0) {
+        dc.setColor(c[10], -1);
+        F.st(dc, hh, CX + 3, ty1 + 4, 70, 12, 1, 1.0, 0);
+        dc.setColor(G.mix(c[10], c[9], G.clamp(p1, 0, 1)), -1);
+        F.st(dc, hh, CX, ty1, 70, 8, 1, 1.0, 0);
+      }
+      if (p2 > 0) {
+        dc.setColor(c[10], -1);
+        F.st(dc, mm, CX + 3, ty2 + 4, 70, 12, 1, 1.0, 0);
+        dc.setColor(G.mix(c[10], c[9], G.clamp(p2, 0, 1)), -1);
+        F.st(dc, mm, CX, ty2, 70, 8, 1, 1.0, 0);
       }
     }
-    // hot spots near the bottom of the blobs that are still warm (lower half of the lamp)
-    for (let i = 0; i < 5; i++) {
-      const u = (322 - bh[i]) / 150.0;
-      if (ba[i] > 18 && u < 0.5) {
-        dc.setColor(G.dim(G.mix(c[6], c[7], 1 - u * 2), L), -1);
-        dc.fillEllipse(bx[i] - ba[i] * 0.15, by[i] + bb[i] * 0.42, ba[i] * 0.34, bb[i] * 0.18);
-      }
-    }
-    dc.setColor(G.dim(c[7], L), -1);
-    dc.fillEllipse(CX - 20, POOL_Y - 12, 44, 7);
 
-    // ---- glass: edge lines + reflection stripes
-    dc.setColor(G.dim(c[8], L * 0.8), -1);
-    dc.setPenWidth(2);
-    for (let i = 0; i < 7; i++) {
-      dc.drawLine(CX - PW[i], PY[i], CX - PW[i + 1], PY[i + 1]);
-      dc.drawLine(CX + PW[i], PY[i], CX + PW[i + 1], PY[i + 1]);
-    }
-    dc.setColor(G.dim(G.mix(c[4], 0xffffff, 0.38), L), -1);
-    dc.fillPolygon([[CX - 34, 84], [CX - 26, 84], [CX - 66, 262], [CX - 80, 262]]);
-    dc.setColor(G.dim(G.mix(c[4], 0xffffff, 0.22), L), -1);
-    dc.fillPolygon([[CX - 80, 272], [CX - 68, 272], [CX - 72, 292], [CX - 86, 292]]);
-    dc.fillPolygon([[CX + 66, 200], [CX + 72, 200], [CX + 92, 284], [CX + 86, 284]]);
-
-    // ---- metal: cap, collar, base
-    metal(dc, c, 26, 22, 58, 50, L);
-    metal(dc, c, 58, 52, 68, 52, L * 0.8);
-    metal(dc, c, 336, 104, 350, 104, L * 0.85);
-    metal(dc, c, 350, 92, 454, 150, L);
-    dc.setColor(G.dim(c[12], L * 0.7), -1);
-    dc.fillRectangle(CX - 104, 349, 208, 3);
-    if (st === 3) {
-      // neon outline on the dark metal
-      dc.setColor(G.dim(c[8], L), -1);
-      dc.drawLine(CX - 92, 352, CX - 150, 454);
-      dc.drawLine(CX + 92, 352, CX + 150, 454);
-      dc.drawLine(CX - 22, 26, CX + 22, 26);
-    }
-
-    // ---- time inside the glass: hours over minutes, rising up like wax
-    const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
-    const mm = G.pad2(d.m);
-    const p1 = G.spring(G.stag(p, 0, 0.12, 0.6));
-    const p2 = G.spring(G.stag(p, 1, 0.12, 0.6));
-    const ty1 = 168 + (1 - p1) * 70, ty2 = 258 + (1 - p2) * 70;
-    if (p1 > 0) {
-      dc.setColor(c[10], -1);
-      F.st(dc, hh, CX + 3, ty1 + 4, 70, 12, 1, 1.0, 0);
-      dc.setColor(G.mix(c[10], c[9], G.clamp(p1, 0, 1)), -1);
-      F.st(dc, hh, CX, ty1, 70, 8, 1, 1.0, 0);
-    }
-    if (p2 > 0) {
-      dc.setColor(c[10], -1);
-      F.st(dc, mm, CX + 3, ty2 + 4, 70, 12, 1, 1.0, 0);
-      dc.setColor(G.mix(c[10], c[9], G.clamp(p2, 0, 1)), -1);
-      F.st(dc, mm, CX, ty2, 70, 8, 1, 1.0, 0);
-    }
-
+    if (!S) return;
     // ---- date (left)
     const q1 = G.ease(G.stag(p, 2, 0.12, 0.5));
     if (q1 > 0) {

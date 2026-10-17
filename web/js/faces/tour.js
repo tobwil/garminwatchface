@@ -161,7 +161,11 @@ function fmtKm(v) { return "" + Math.floor(v); }
 export default {
   fps: 10,
 
+  // static layer: map, route, stages, time, profile, jerseys; pulse, rider and shimmer move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     geo();
     const st = d.cfg.style;
     const acc = d.accent;
@@ -178,69 +182,71 @@ export default {
       bg = 0x07102a; ink = 0xe8f0ff; sub = 0x7f93c4; done = 0x27e3ff; fut = 0x2a3f75; tod = 0x9fdcff; rest = 0x34497f; glow = 0x0b3d63;
     }
     const won = st === 2 ? G.mix(acc, 0x8b5a2b, 0.1) : acc;
-
-    // ---- background
-    if (st === 2) {
-      dc.setColor(bg, -1);
-      dc.fillCircle(CX, CY, 215);
-      dc.setColor(0xe6d6b2, -1);
-      dc.setPenWidth(14);
-      dc.drawCircle(CX, CY, 221);
-      dc.setColor(0xd8c49c, -1);
-      dc.setPenWidth(2);
-      dc.drawCircle(CX, CY, 220);
-      let s = 4711;
-      dc.setColor(0xe0cfa9, -1);
-      for (let i = 0; i < 46; i++) {
-        s = G.rnd(s);
-        const ang = G.rf(s) * 360;
-        s = G.rnd(s);
-        const r = Math.sqrt(G.rf(s)) * 205;
-        dc.fillRectangle(G.ptX(CX, r, ang), G.ptY(CY, r, ang), 2, 2);
-      }
-    } else if (st === 3) {
-      dc.setColor(bg, -1);
-      dc.fillCircle(CX, CY, 227);
-      let s = 1234;
-      for (let i = 0; i < 28; i++) {
-        s = G.rnd(s);
-        const ang = G.rf(s) * 360;
-        s = G.rnd(s);
-        const r = 30 + G.rf(s) * 190;
-        dc.setColor(i % 3 === 0 ? 0x4a5f9a : 0x26386a, -1);
-        dc.fillRectangle(G.ptX(CX, r, ang), G.ptY(CY, r, ang), 2, 2);
-      }
-    }
-
-    // ---- route
     const rp = G.easeInOut(G.clamp(p / 0.7, 0, 1));
-    const shown = Math.floor(rp * (NS - 1) + 0.001);
-    const solidEnd = di * SEG;
-    if (shown > 0 && solidEnd > 0) {
-      const e = Math.min(shown, solidEnd);
-      if (glow !== -1) {
-        dc.setColor(glow, -1);
-        dc.setPenWidth(10);
-        for (let i = 0; i < e; i += 4) dc.drawLine(RX[i], RY[i], RX[i + 4], RY[i + 4]);
-      }
-      dc.setColor(done, -1);
-      dc.setPenWidth(4);
-      for (let i = 0; i < e; i += 2) dc.drawLine(RX[i], RY[i], RX[i + 2], RY[i + 2]);
-    }
-    for (let i = solidEnd; i <= shown; i++) {
-      const tday = i < solidEnd + SEG;
-      dc.setColor(tday ? tod : fut, -1);
-      dc.fillCircle(RX[i], RY[i], tday ? 2.2 : 1.9);
-    }
 
-    // ---- START / ZIEL
-    dc.setColor(ink, -1);
-    dc.setPenWidth(4);
-    dc.drawLine(RX[0] - 9, RY[0] + 3, RX[0] + 9, RY[0] - 3);
-    dc.setColor(sub, -1);
-    F.px(dc, "START", RX[0] + 14, RY[0] - 2, 2, 0, 0);
-    if (shown >= NS - 1) {
-      F.px(dc, "ZIEL", RX[NS - 1] - 14, RY[NS - 1] + 5, 2, 2, 0);
+    if (S) {
+      // ---- background
+      if (st === 2) {
+        dc.setColor(bg, -1);
+        dc.fillCircle(CX, CY, 215);
+        dc.setColor(0xe6d6b2, -1);
+        dc.setPenWidth(14);
+        dc.drawCircle(CX, CY, 221);
+        dc.setColor(0xd8c49c, -1);
+        dc.setPenWidth(2);
+        dc.drawCircle(CX, CY, 220);
+        let s = 4711;
+        dc.setColor(0xe0cfa9, -1);
+        for (let i = 0; i < 46; i++) {
+          s = G.rnd(s);
+          const ang = G.rf(s) * 360;
+          s = G.rnd(s);
+          const r = Math.sqrt(G.rf(s)) * 205;
+          dc.fillRectangle(G.ptX(CX, r, ang), G.ptY(CY, r, ang), 2, 2);
+        }
+      } else if (st === 3) {
+        dc.setColor(bg, -1);
+        dc.fillCircle(CX, CY, 227);
+        let s = 1234;
+        for (let i = 0; i < 28; i++) {
+          s = G.rnd(s);
+          const ang = G.rf(s) * 360;
+          s = G.rnd(s);
+          const r = 30 + G.rf(s) * 190;
+          dc.setColor(i % 3 === 0 ? 0x4a5f9a : 0x26386a, -1);
+          dc.fillRectangle(G.ptX(CX, r, ang), G.ptY(CY, r, ang), 2, 2);
+        }
+      }
+
+      // ---- route
+      const shown = Math.floor(rp * (NS - 1) + 0.001);
+      const solidEnd = di * SEG;
+      if (shown > 0 && solidEnd > 0) {
+        const e = Math.min(shown, solidEnd);
+        if (glow !== -1) {
+          dc.setColor(glow, -1);
+          dc.setPenWidth(10);
+          for (let i = 0; i < e; i += 4) dc.drawLine(RX[i], RY[i], RX[i + 4], RY[i + 4]);
+        }
+        dc.setColor(done, -1);
+        dc.setPenWidth(4);
+        for (let i = 0; i < e; i += 2) dc.drawLine(RX[i], RY[i], RX[i + 2], RY[i + 2]);
+      }
+      for (let i = solidEnd; i <= shown; i++) {
+        const tday = i < solidEnd + SEG;
+        dc.setColor(tday ? tod : fut, -1);
+        dc.fillCircle(RX[i], RY[i], tday ? 2.2 : 1.9);
+      }
+
+      // ---- START / ZIEL
+      dc.setColor(ink, -1);
+      dc.setPenWidth(4);
+      dc.drawLine(RX[0] - 9, RY[0] + 3, RX[0] + 9, RY[0] - 3);
+      dc.setColor(sub, -1);
+      F.px(dc, "START", RX[0] + 14, RY[0] - 2, 2, 0, 0);
+      if (shown >= NS - 1) {
+        F.px(dc, "ZIEL", RX[NS - 1] - 14, RY[NS - 1] + 5, 2, 2, 0);
+      }
     }
 
     // ---- stage dots
@@ -259,6 +265,7 @@ export default {
         dc.setPenWidth(2);
         dc.drawCircle(x, y, 9 + ph * 12);
       }
+      if (!S) continue; // over the cached layer only the pulse ring moves
       if (isW) {
         const r = 8 * sc;
         if (glow !== -1) { dc.setColor(G.dim(won, 0.3), -1); dc.fillCircle(x, y, r + 5); }
@@ -316,7 +323,7 @@ export default {
     }
 
     // ---- rider on today's stage
-    if (p > 0.75) {
+    if (p > 0.75 && M) {
       let f;
       if (live) f = (t % 5200) / 5200.0;
       else f = G.clamp(d.mins / 1440.0, 0.08, 0.92);
@@ -325,57 +332,59 @@ export default {
       rider(dc, rp2[0], rp2[1] - 2, rp2[2], st === 1 ? acc : (st === 2 ? 0x8b2a1b : 0xff5ad1), ink, live ? (t % 600) * 0.6 : 40);
     }
 
-    // ---- time
-    const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
-    const ts = hh + ":" + G.pad2(d.m);
-    const tp = G.ease(G.clamp(p * 1.5, 0, 1));
-    if (st === 1) {
-      dc.setColor(ink, -1);
-      F.st(dc, ts, CX, 167, 66, 8, 1, tp, 0.12);
-    } else if (st === 2) {
-      dc.setColor(ink, -1);
-      F.st(dc, ts, CX, 167, 66, 5, 1, tp, 0);
-    } else {
-      dc.setColor(ink, -1);
-      F.st(dc, ts, CX, 167, 66, 6, 1, tp, 0);
-    }
-    dc.setColor(G.mix(bg, sub, tp), -1);
-    F.px(dc, "KW " + d.wk, CX, 100, 2, 1, 0);
-
-    // ---- stage line: "ETAPPE 5 · FREITAG"
-    const lp = G.ease(G.stag(p, 3, 0.1, 0.4));
-    if (lp > 0) {
-      const s1 = "ETAPPE " + (di + 1);
-      const s2 = DAYN[di];
-      const w1 = F.stW(s1, 15), w2 = F.stW(s2, 15);
-      const x0 = CX - (w1 + 20 + w2) / 2;
-      const ly = 226;
-      if (st === 2) {
-        // vintage ribbon
-        const rw = w1 + w2 + 56;
-        dc.setColor(0x6e4423, -1);
-        dc.fillPolygon([[CX - rw / 2 - 14, ly - 10], [CX - rw / 2 + 4, ly - 10], [CX - rw / 2 + 4, ly + 14], [CX - rw / 2 - 14, ly + 14], [CX - rw / 2 - 7, ly + 2]]);
-        dc.fillPolygon([[CX + rw / 2 + 14, ly - 10], [CX + rw / 2 - 4, ly - 10], [CX + rw / 2 - 4, ly + 14], [CX + rw / 2 + 14, ly + 14], [CX + rw / 2 + 7, ly + 2]]);
-        dc.setColor(0x8b5a2b, -1);
-        dc.fillRectangle(CX - rw / 2, ly - 14, rw, 26);
+    if (S) {
+      // ---- time
+      const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
+      const ts = hh + ":" + G.pad2(d.m);
+      const tp = G.ease(G.clamp(p * 1.5, 0, 1));
+      if (st === 1) {
+        dc.setColor(ink, -1);
+        F.st(dc, ts, CX, 167, 66, 8, 1, tp, 0.12);
+      } else if (st === 2) {
+        dc.setColor(ink, -1);
+        F.st(dc, ts, CX, 167, 66, 5, 1, tp, 0);
+      } else {
+        dc.setColor(ink, -1);
+        F.st(dc, ts, CX, 167, 66, 6, 1, tp, 0);
       }
-      const c1 = st === 2 ? 0xf1e6cc : (st === 1 ? acc : done);
-      const c2 = st === 2 ? 0xf1e6cc : ink;
-      dc.setColor(G.mix(bg, c1, lp), -1);
-      F.st(dc, s1, x0, ly - 1, 15, 2, 0, 1.0, 0);
-      dc.fillCircle(x0 + w1 + 10, ly - 1, 2.5);
-      dc.setColor(G.mix(bg, c2, lp), -1);
-      F.st(dc, s2, x0 + w1 + 20, ly - 1, 15, 2, 0, 1.0, 0);
-    }
+      dc.setColor(G.mix(bg, sub, tp), -1);
+      F.px(dc, "KW " + d.wk, CX, 100, 2, 1, 0);
 
-    // ---- stage profile of today
-    const pp = G.ease(G.stag(p, 4, 0.1, 0.4));
-    if (pp > 0) {
-      const trained = ((d.trainMask >> di) & 1) === 1;
-      const pc = st === 2 ? (trained ? 0x8b5a2b : 0xc9b48e) : st === 3 ? (trained ? 0x27a6c9 : 0x24386c) : (trained ? G.dim(acc, 0.75) : 0x3a3a3a);
-      profile(dc, CX - 70, 282, TYP[di], di, pc, st === 2 ? ink : (trained ? acc : sub), pp);
-      dc.setColor(sub, -1);
-      F.px(dc, TYPN[TYP[di]], CX, 288, 2, 1, 0);
+      // ---- stage line: "ETAPPE 5 · FREITAG"
+      const lp = G.ease(G.stag(p, 3, 0.1, 0.4));
+      if (lp > 0) {
+        const s1 = "ETAPPE " + (di + 1);
+        const s2 = DAYN[di];
+        const w1 = F.stW(s1, 15), w2 = F.stW(s2, 15);
+        const x0 = CX - (w1 + 20 + w2) / 2;
+        const ly = 226;
+        if (st === 2) {
+          // vintage ribbon
+          const rw = w1 + w2 + 56;
+          dc.setColor(0x6e4423, -1);
+          dc.fillPolygon([[CX - rw / 2 - 14, ly - 10], [CX - rw / 2 + 4, ly - 10], [CX - rw / 2 + 4, ly + 14], [CX - rw / 2 - 14, ly + 14], [CX - rw / 2 - 7, ly + 2]]);
+          dc.fillPolygon([[CX + rw / 2 + 14, ly - 10], [CX + rw / 2 - 4, ly - 10], [CX + rw / 2 - 4, ly + 14], [CX + rw / 2 + 14, ly + 14], [CX + rw / 2 + 7, ly + 2]]);
+          dc.setColor(0x8b5a2b, -1);
+          dc.fillRectangle(CX - rw / 2, ly - 14, rw, 26);
+        }
+        const c1 = st === 2 ? 0xf1e6cc : (st === 1 ? acc : done);
+        const c2 = st === 2 ? 0xf1e6cc : ink;
+        dc.setColor(G.mix(bg, c1, lp), -1);
+        F.st(dc, s1, x0, ly - 1, 15, 2, 0, 1.0, 0);
+        dc.fillCircle(x0 + w1 + 10, ly - 1, 2.5);
+        dc.setColor(G.mix(bg, c2, lp), -1);
+        F.st(dc, s2, x0 + w1 + 20, ly - 1, 15, 2, 0, 1.0, 0);
+      }
+
+      // ---- stage profile of today
+      const pp = G.ease(G.stag(p, 4, 0.1, 0.4));
+      if (pp > 0) {
+        const trained = ((d.trainMask >> di) & 1) === 1;
+        const pc = st === 2 ? (trained ? 0x8b5a2b : 0xc9b48e) : st === 3 ? (trained ? 0x27a6c9 : 0x24386c) : (trained ? G.dim(acc, 0.75) : 0x3a3a3a);
+        profile(dc, CX - 70, 282, TYP[di], di, pc, st === 2 ? ink : (trained ? acc : sub), pp);
+        dc.setColor(sub, -1);
+        F.px(dc, TYPN[TYP[di]], CX, 288, 2, 1, 0);
+      }
     }
 
     // ---- jerseys
@@ -392,6 +401,11 @@ export default {
       const fill = G.clamp(fr[k], 0, 1) * G.ease(G.stag(p - 0.35, k, 0.1, 0.45));
       const worn = fr[k] >= 1 && p >= 1;
       const sp = worn && live ? ((t + k * 400) % 2400) / 2400.0 : (worn ? 0.15 + k * 0.1 : -1);
+      if (!S) {
+        // over the cached layer only a won jersey shimmers
+        if (worn && live) jersey(dc, JX[k], JY, 0.82 * js, k, fill, worn, st, bg, sp);
+        continue;
+      }
       jersey(dc, JX[k], JY, 0.82 * js, k, fill, worn, st, bg, sp);
       const vc = worn ? (st === 2 ? ink : (k === 2 ? 0xffffff : G.mix(JCOL[k], 0xffffff, 0.2))) : ink;
       dc.setColor(G.mix(bg, vc, jp), -1);

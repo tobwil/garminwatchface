@@ -335,6 +335,17 @@ class FaceBlock extends Face {
         return hi;
     }
 
+    // no static layer: the game logic runs in every draw, and building the layer would run it twice
+    // in one frame (watchdog); drawn in full it is cheap enough
+    function bgKey(d as D) as Number {
+        return -1;
+    }
+
+    // the pieces raining in are the reveal
+    function reveal() as Boolean {
+        return false;
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var p = a.intro;
@@ -383,6 +394,24 @@ class FaceBlock extends Face {
         var on0 = d.is24 || hv >= 10;
         var c0 = freeCol((k0 + ct) % 7, dv, ct, on0);
         var cA = freeCol((ka + ct) % 7, dv, ct, on0);
+        if (a.bg && ph < 5) {
+            // intro and line-clear sequence repaint everything; afterwards only ghost and piece move
+            dc.setColor(0x000000, -1);
+            dc.fillRectangle(0, 0, 454, 454);
+            a.bg = false;
+        }
+        if (a.bg) {
+            dc.setClip(X0, Y0, 200, NR * C);
+            ghost(dc, st, ka, st == 2 ? GB[1] : G.dim(pcol(st, cA), live ? 0.35 + 0.2 * Math.sin(t / 300.0) : 0.45));
+            var flat0 = live && (t - tl) % 2600 > 1900;
+            if (flat0) {
+                piece(dc, st, SP, ka * 8, 4, 0, 3, cA, X0, Y0, C);
+            } else {
+                piece(dc, st, SH, ka * 8, 4, ka == 0 ? 1 : 0, 4, cA, X0, Y0, C);
+            }
+            dc.clearClip();
+            return;
+        }
 
         // ---------------- background
         if (st == 2) {
@@ -469,7 +498,7 @@ class FaceBlock extends Face {
             F.px(dc, CL[k0] == 7 ? "DREIFACH!" : "DOPPEL!", 227, Y0 + 12, 2, 1, 0);
         } else {
             floor(dc, st, ka, fseed, 0, fy);
-            if (ph != 4) {
+            if (ph != 4 && !a.so) {
                 var pl = p >= 1 ? 1.0 : G.clamp((p - 0.85) / 0.1, 0.0, 1.0);
                 ghost(dc, st, ka, st == 2 ? GB[1] : G.dim(pcol(st, cA), (live && ph == 5) ? 0.35 + 0.2 * Math.sin(t / 300.0) : 0.45 * pl));
             }
@@ -478,7 +507,7 @@ class FaceBlock extends Face {
         if (ph == 1) {
             var n = (t - 1650) / g;
             piece(dc, st, SH, k0 * 8, 4, 13 - nf + (n < nf ? n : nf), 4, c0, X0, Y0, C);
-        } else if (ph != 2 && ph != 3 && p > 0.86) {
+        } else if (ph != 2 && ph != 3 && p > 0.86 && !a.so) {
             // waiting at the spawn: during idle it sometimes tries the flat orientation
             var flat = live && ph == 5 && (t - tl) % 2600 > 1900;
             if (flat) {

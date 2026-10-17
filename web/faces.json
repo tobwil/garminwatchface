@@ -1274,6 +1274,653 @@
           17
         ]
       }
+    },
+    {
+      "key": "FARM",
+      "cls": "FaceFarm",
+      "file": "Farm.mc",
+      "js": "farm.js",
+      "name": "Pixel-Hof",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Ein kleiner Hof, der mit dir wächst: Die Schritte lassen das Feld sprießen, das Huhn pickt, Sonne und Mond stehen dort, wo sie wirklich stehen.",
+      "styles": [
+        "Sommer",
+        "Herbst",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "farm"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFC83A",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          38
+        ]
+      }
+    },
+    {
+      "key": "CAMP",
+      "cls": "FaceCamp",
+      "file": "Camp.mc",
+      "js": "camp.js",
+      "name": "Lagerfeuer",
+      "tags": [
+        "pixel",
+        "ohnesport",
+        "daten"
+      ],
+      "blurb": "Ein Zelt unter echtem Sternenhimmel: Das Feuer brennt so hoch wie deine Body Battery, Funken steigen, der Mond zeigt seine echte Phase.",
+      "styles": [
+        "Wald",
+        "Strand",
+        "Winter"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "camp"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF8A2B",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          42,
+          38
+        ]
+      }
+    },
+    {
+      "key": "MOON",
+      "cls": "FaceMoon",
+      "file": "Moon.mc",
+      "js": "moon.js",
+      "name": "Mondflug",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Von der Startrampe zum Mond: Die Rakete steigt mit deinem Wochenziel – Höhenmeter, Rad-km oder Trainingstage. Bei 100 % landet sie.",
+      "styles": [
+        "Retro",
+        "Blaupause",
+        "Gameboy"
+      ],
+      "uses": [
+        "src",
+        "bike",
+        "days"
+      ],
+      "sprites": [
+        "moon"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF4A3A",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "MAP",
+      "cls": "FaceMap",
+      "file": "Map.mc",
+      "js": "map.js",
+      "name": "Schatzkarte",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Eine Seekarte auf Pergament: Dein Schiff segelt Insel um Insel zum roten X, angetrieben vom Wochenziel. Am Ziel öffnet sich die Truhe.",
+      "styles": [
+        "Pergament",
+        "Nacht",
+        "Gameboy"
+      ],
+      "uses": [
+        "src",
+        "bike",
+        "days",
+        "slots"
+      ],
+      "sprites": [
+        "map"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "C0392B",
+        "dcol": "FFFFFF",
+        "slots": [
+          20,
+          23,
+          2
+        ]
+      }
+    },
+    {
+      "key": "LIGHT",
+      "cls": "FaceLight",
+      "file": "Light.mc",
+      "js": "light.js",
+      "name": "Leuchtturm",
+      "tags": [
+        "pixel",
+        "ohnesport"
+      ],
+      "blurb": "Ein Leuchtturm und sein Wärter nach echtem Sonnenstand: Tagsüber angelt er und winkt den Schiffen, in der Dämmerung steigt er hinauf und zündet das Licht, nachts kreist der Kegel über die See.",
+      "styles": [
+        "Küste",
+        "Sturm",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "light"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD23A",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          23,
+          17
+        ]
+      }
+    },
+    {
+      "key": "TRAIN",
+      "cls": "FaceTrain",
+      "file": "Train.mc",
+      "js": "train.js",
+      "name": "Pixel-Zug",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Eine Dampflok dampft durch die Landschaft: Jeder Trainingstag der Woche hängt einen beladenen Waggon an, das Wochenziel ist der Bahnhof.",
+      "styles": [
+        "Dampf",
+        "Nacht",
+        "Gameboy"
+      ],
+      "uses": [
+        "days",
+        "slots"
+      ],
+      "sprites": [
+        "train"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB13B",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "key": "OFFICE",
+      "cls": "FaceOffice",
+      "file": "Office.mc",
+      "js": "office.js",
+      "name": "Büro",
+      "tags": [
+        "pixel",
+        "daten",
+        "wild"
+      ],
+      "blurb": "Ein Arbeitstag im Pixel-Büro: morgens Kaffee, mittags Kantine, der Aktenstapel wächst mit deinem Stress, um fünf ist Feierabend – und nachts kommt die Putzkraft.",
+      "styles": [
+        "Großraum",
+        "Homeoffice",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "office"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3AA0FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          22,
+          23,
+          2
+        ]
+      }
+    },
+    {
+      "key": "CLIMB",
+      "cls": "FaceClimb",
+      "file": "Climb.mc",
+      "js": "climb.js",
+      "name": "Bergsteiger",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Eine Expedition zum Gipfel in zwei Ebenen: In der Ferne das Massiv mit Route und Lagern, ganz nah der Bergsteiger auf dem Felsvorsprung. Jede Etage bringt ihn höher, nachts schläft er im Zelt, am Etagenziel steht er mit der Fahne auf dem Gipfelgrat.",
+      "styles": [
+        "Fels",
+        "Eis",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [
+        "climb"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF5A1F",
+        "dcol": "FFFFFF",
+        "slots": [
+          4,
+          23,
+          38
+        ]
+      }
+    },
+    {
+      "key": "RACE",
+      "cls": "FaceRace",
+      "file": "Race.mc",
+      "js": "race.js",
+      "name": "Rennfahrer",
+      "tags": [
+        "pixel",
+        "challenge",
+        "wild"
+      ],
+      "blurb": "Ein Pixel-Rennen über die Woche: Die Intensitätsminuten sind die Runden, leert sich die Body Battery, geht es in die Box. Beim Wochenziel winkt die Zielflagge.",
+      "styles": [
+        "Grand Prix",
+        "Rallye",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "race"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "E10600",
+        "dcol": "FFFFFF",
+        "slots": [
+          18,
+          23,
+          5
+        ]
+      }
+    },
+    {
+      "key": "POST",
+      "cls": "FacePost",
+      "file": "Post.mc",
+      "js": "post.js",
+      "name": "Postbote",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Der Postbote läuft seine Runde durch die Straße: deine Schritte sind sein Weg, jede Nachricht ein Brief in der Tasche. Am Abend leuchten die Fenster.",
+      "styles": [
+        "Stadt",
+        "Dorf",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "post"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFC400",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          17,
+          23
+        ]
+      }
+    },
+    {
+      "key": "BAKERY",
+      "cls": "FaceBakery",
+      "file": "Bakery.mc",
+      "js": "bakery.js",
+      "name": "Bäckerei",
+      "tags": [
+        "pixel",
+        "ohnesport"
+      ],
+      "blurb": "Eine kleine Backstube: nachts geht der Teig auf, früh am Morgen kommen die Brötchen aus dem Ofen, tagsüber füllt sich die Theke – und abends ist alles verkauft.",
+      "styles": [
+        "Backstube",
+        "Café",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "bakery"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "E8A04A",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          23,
+          2
+        ]
+      }
+    },
+    {
+      "key": "PXCHRONO",
+      "cls": "FacePxChrono",
+      "file": "PxChrono.mc",
+      "js": "pxchrono.js",
+      "name": "Pixel-Chronograph",
+      "tags": [
+        "pixel",
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Ein klassischer Chronograph, ganz aus Pixeln gesetzt: Hilfszifferblätter, Tachymeterskala und Zeiger in Treppchen-Optik. Beim Heben läuft die Stoppuhr einmal an.",
+      "styles": [
+        "Panda",
+        "Racing",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E8E0D0",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          1
+        ]
+      }
+    },
+    {
+      "key": "UBAHN",
+      "cls": "FaceUbahn",
+      "file": "Ubahn.mc",
+      "js": "ubahn.js",
+      "name": "U-Bahn-Netz",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Dein Tag als Netzplan: Sechs Linien fahren vom Hauptbahnhof zu ihrer Endstation – Schritte, Etagen, Aktivminuten, Body Battery, Schlaf und Kalorien. Die Abfahrtstafel zeigt die Zeit, im Ticker laufen Durchsagen mit allem, was die Uhr misst („U1: noch 2.580 Schritte bis zur Endstation“), eine Glocke läutet bei neuen Nachrichten.",
+      "styles": [
+        "Netzplan",
+        "Nacht",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB02A",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "BRIDGE",
+      "cls": "FaceBridge",
+      "file": "Bridge.mc",
+      "js": "bridge.js",
+      "name": "Kommandobrücke",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Du bist Captain eines Pixel-Raumschiffs, jedes Instrument ist ein Sensor: Schilde = Body Battery, der Reaktor pulsiert mit deinem Herzschlag, die Lebenserhaltung atmet mit dir, Stress löst Alarm aus. Dazu O2, Funk, Navigation, Orbit, Wetter und die echte Mondphase.",
+      "styles": [
+        "Raumschiff",
+        "Bernstein",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [
+        "bridge"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "C0392B",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "BODY",
+      "cls": "FaceBody",
+      "file": "Body.mc",
+      "js": "body.js",
+      "name": "Körperscan",
+      "tags": [
+        "pixel",
+        "daten"
+      ],
+      "blurb": "Eine Pixel-Anatomie von dir, live: Das Herz schlägt mit deinem Puls, die Lungen atmen mit deiner Atemfrequenz, das Gehirn glüht mit dem Stress, im Bauch sitzt die Body Battery. Beine laden sich mit Schritten auf, Arme mit Aktivminuten – dazu Schlaf, SpO2, Etagen, kcal und VO2max.",
+      "styles": [
+        "Röntgen",
+        "Lehrtafel",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [
+        "body"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "6AD8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "STATION",
+      "cls": "FaceStation",
+      "file": "Station.mc",
+      "js": "station.js",
+      "name": "Wetterstation",
+      "tags": [
+        "pixel",
+        "daten",
+        "ohnesport"
+      ],
+      "blurb": "Ein Pixel-Messgarten, in dem jedes Instrument echt misst: Das Schalenkreuz dreht sich mit der Windgeschwindigkeit, die Fahne zeigt die Windrichtung, Thermometer, Regenmesser und Barometer zeigen Temperatur, Regenchance und Luftdruck. Darüber wandert die Sonne ihren echten Bogen, nachts zeigt der Mond seine Phase.",
+      "styles": [
+        "Messgarten",
+        "Polar",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E03A3A",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          16,
+          15
+        ]
+      }
+    },
+    {
+      "key": "KIESEL",
+      "cls": "FaceKiesel",
+      "file": "Kiesel.mc",
+      "js": "kiesel.js",
+      "name": "Kiesel",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Eine Verbeugung vor der Pebble: Datum in Bitmap-Schrift, Haarlinien, große runde Ziffern, Schritte mit gerastertem Balken, Wetter, Akku- und Bluetooth-Symbol. Statisch wie E-Paper – nur beim Heben gleitet die Zeit herein.",
+      "styles": [
+        "Weiß",
+        "Schwarz",
+        "Farbe"
+      ],
+      "uses": [],
+      "sprites": [
+        "kiesel"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF5500",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "KTEXT",
+      "cls": "FaceKtext",
+      "file": "Ktext.mc",
+      "js": "ktext.js",
+      "name": "Kiesel Text",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Die legendäre Pebble Text Watch auf Deutsch: „zehn / zweiund / vierzig“ in Bitmap-Schrift, die Stunde fett. Beim Heben gleiten die Zeilen nacheinander von rechts herein.",
+      "styles": [
+        "Weiß",
+        "Schwarz",
+        "Farbe"
+      ],
+      "uses": [],
+      "sprites": [
+        "kiesel"
+      ],
+      "defaults": {
+        "style": 2,
+        "accent": "55AAFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "KANALOG",
+      "cls": "FaceKanalog",
+      "file": "Kanalog.mc",
+      "js": "kanalog.js",
+      "name": "Kiesel Analog",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Simple Analog wie auf der Pebble Time: zwölf kräftige Striche, schlichte Zeiger, roter Sekundenzeiger, Datum im Kästchen, Schritte und das durchgestrichene Bluetooth-Symbol. Beim Heben drehen die Zeiger ein.",
+      "styles": [
+        "Weiß",
+        "Schwarz",
+        "Farbe"
+      ],
+      "uses": [],
+      "sprites": [
+        "kiesel"
+      ],
+      "defaults": {
+        "style": 2,
+        "accent": "FF0055",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "KROLL",
+      "cls": "FaceKroll",
+      "file": "Kroll.mc",
+      "js": "kroll.js",
+      "name": "Kiesel Rolle",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Vier Ziffernwalzen hinter Fenstern im Geist der Pebble-Rollziffern: Beim Heben drehen sie wie ein Spielautomat und rasten von links nach rechts mit kleinem Nachfedern ein.",
+      "styles": [
+        "Weiß",
+        "Schwarz",
+        "Farbe"
+      ],
+      "uses": [],
+      "sprites": [
+        "kiesel"
+      ],
+      "defaults": {
+        "style": 3,
+        "accent": "FFAA00",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
     }
   ]
 }

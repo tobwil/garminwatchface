@@ -154,7 +154,11 @@ function hm12(d) { return d.is24 ? d.h : (d.h % 12 === 0 ? 12 : d.h % 12); }
 export default {
   get fps() { return fx; },
 
+  // static layer: tubes, rail, date tubes, neon windows; flicker, colon and dekatron glow move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const L = LAY[st - 1];
     const tw = L[0], th = L[1], ty = L[2], gp = L[3], cgp = L[4], gh = L[5];
@@ -178,31 +182,34 @@ export default {
 
     // ---- dekatron ring (style 3): 60 cathode pins, a glow dot runs round = seconds
     if (st === 3) {
-      // glass rim: reflections only (full circles are expensive on the watch)
-      dc.setColor(0x34383b, -1);
-      dc.setPenWidth(1);
-      G.arcC(dc, 227, 227, 219, 290, 350);
-      G.arcC(dc, 227, 227, 219, 110, 170);
-      G.arcC(dc, 227, 227, 193, 300, 340);
-      // seconds index 0..50 outside the time area
-      dc.setColor(0x4a4440, -1);
-      for (let i = 0; i < 6; i++) {
-        const lb = "" + i * 10;
-        F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
-      }
-      if (PIN === null) {
-        PIN = [];
+      if (S) {
+        // glass rim: reflections only (full circles are expensive on the watch)
+        dc.setColor(0x34383b, -1);
+        dc.setPenWidth(1);
+        G.arcC(dc, 227, 227, 219, 290, 350);
+        G.arcC(dc, 227, 227, 219, 110, 170);
+        G.arcC(dc, 227, 227, 193, 300, 340);
+        // seconds index 0..50 outside the time area
+        dc.setColor(0x4a4440, -1);
+        for (let i = 0; i < 6; i++) {
+          const lb = "" + i * 10;
+          F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
+        }
+        if (PIN === null) {
+          PIN = [];
+          for (let i = 0; i < 60; i++) {
+            const r1 = i % 5 === 0 ? 199 : 202;
+            PIN.push(G.ptX(227, r1, i * 6), G.ptY(227, r1, i * 6), G.ptX(227, 210, i * 6), G.ptY(227, 210, i * 6));
+          }
+        }
+        dc.setPenWidth(3);
         for (let i = 0; i < 60; i++) {
-          const r1 = i % 5 === 0 ? 199 : 202;
-          PIN.push(G.ptX(227, r1, i * 6), G.ptY(227, r1, i * 6), G.ptX(227, 210, i * 6), G.ptY(227, 210, i * 6));
+          dc.setColor(i % 5 === 0 ? 0x5a5550 : 0x3a3633, -1);
+          dc.drawLine(PIN[i * 4], PIN[i * 4 + 1], PIN[i * 4 + 2], PIN[i * 4 + 3]);
         }
       }
-      dc.setPenWidth(3);
-      for (let i = 0; i < 60; i++) {
-        dc.setColor(i % 5 === 0 ? 0x5a5550 : 0x3a3633, -1);
-        dc.drawLine(PIN[i * 4], PIN[i * 4 + 1], PIN[i * 4 + 2], PIN[i * 4 + 3]);
-      }
       // glow position: jumps pin to pin, gliding over the guide cathodes in the first 160 ms
+      if (M) {
       const sec = d.s;
       let pos = sec;
       if (live && p >= 1) pos = sec - 1 + G.easeInOut(G.clamp(a.ms / 160, 0, 1));
@@ -223,26 +230,28 @@ export default {
       dc.fillCircle(gx, gy, 5);
       dc.setColor(cd[3], -1);
       dc.fillCircle(gx, gy, 2.5);
+      }
     }
 
     // ---- base rail behind the sockets
     const by = ty + th - 12;
     const tot = 4 * tw + 2 * gp + cgp;
     const x0 = 227 - tot / 2;
-    dc.setColor(st === 2 ? 0x15191d : 0x15110e, -1);
-    dc.fillRoundedRectangle(x0 - 10, by + 4, tot + 20, 16, 6);
-    dc.setColor(st === 2 ? 0x46525c : 0x4a3a2c, -1);
-    dc.setPenWidth(1);
-    dc.drawLine(x0 - 4, by + 5, x0 + tot + 4, by + 5);
-    if (st === 2) {
-      // blue LED underglow
-      for (let i = 0; i < 4; i++) {
-        const tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
-        dc.setColor(G.dim(0x0f3a60, warm), -1);
-        dc.fillEllipse(tx + tw / 2, by - 5, tw * 0.4, 13);
+    if (S) {
+      dc.setColor(st === 2 ? 0x15191d : 0x15110e, -1);
+      dc.fillRoundedRectangle(x0 - 10, by + 4, tot + 20, 16, 6);
+      dc.setColor(st === 2 ? 0x46525c : 0x4a3a2c, -1);
+      dc.setPenWidth(1);
+      dc.drawLine(x0 - 4, by + 5, x0 + tot + 4, by + 5);
+      if (st === 2) {
+        // blue LED underglow
+        for (let i = 0; i < 4; i++) {
+          const tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
+          dc.setColor(G.dim(0x0f3a60, warm), -1);
+          dc.fillEllipse(tx + tw / 2, by - 5, tw * 0.4, 13);
+        }
       }
     }
-
     // ---- big tubes: HH MM
     const hh = hm12(d);
     // 12 h mode: the first tube stays dark before 10 o'clock (no leading zero)
@@ -270,6 +279,8 @@ export default {
         if (r < 0.3 && ph < 200) b = 0.55 + 0.45 * G.rf(G.rnd(Math.floor(t / 45) + i));
         else b = 1;
       }
+      // over the cached tubes only an ambient flicker redraws a tube
+      if (!S && (!(live && p >= 1) || b === 1)) continue;
       const cols = b === 1 ? P1 : pal(st, acc, b);
       // glass glow fill
       if (dg >= 0) {
@@ -314,6 +325,7 @@ export default {
       dc.fillCircle(227, ly, 2.5);
     }
 
+    if (!S) return;
     // ---- weekday + small date tubes (DD.MM)
     const dp = G.ease(G.clamp((p - 0.25) / 0.5, 0, 1));
     dc.setColor(G.dim(cLbl, dp), -1);

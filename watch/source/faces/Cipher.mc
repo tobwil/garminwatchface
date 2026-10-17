@@ -239,6 +239,15 @@ class FaceCipher extends Face {
         var scr = ms / 70;
         _busy = live && ms < DEC0 + DECL + 200;
         _lamp = st == 2 && live;
+        // the decryption episode repaints everything; afterwards only the lamp, the cursor and the
+        // seconds LEDs change over the cached plain text (S is the strings here)
+        if (a.bg && _busy) {
+            dc.setColor(0x000000, -1);
+            dc.fillRectangle(0, 0, 454, 454);
+        } else if (a.bg) {
+            after(dc, d, a, st, acc, dg, ms);
+            return;
+        }
 
         // ---- header (typed in)
         var key = 1000 + (G.rnd(d.wakeN * 7 + 3) % 9000);
@@ -449,6 +458,58 @@ class FaceCipher extends Face {
                     dc.setColor(on ? acc : 0x222222, -1);
                     dc.fillCircle(227 - 50 + k * 20, 410, on ? 4 : 3);
                 }
+            }
+        }
+    }
+
+    // static layer: the decrypted code and plain text
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
+    // the decryption is the reveal
+    function reveal() as Boolean {
+        return false;
+    }
+
+    // moving parts over the cached plain text
+    hidden function after(dc as Dc, d as D, a as A, st, acc, dg as Array<Number>, ms) as Void {
+        var live = a.live;
+        if (st == 2 && live) {
+            var hiS = lampSym(dg, ms - (DEC0 + DECL));
+            var glow = G.dim(acc, 0.2);
+            for (var i = 2; i < 4; i++) {
+                var code = MB[dg[i]];
+                for (var k = 0; k < 5; k++) {
+                    var h = hiS >= 0 && (i - 2) * 5 + k == hiS;
+                    sym(dc, (code & (16 >> k)) != 0, MX + k * 54 + 22, MY[i], 1.0, h ? G.mix(acc, 0xFFFFFF, 0.75) : acc, h ? G.dim(acc, 0.45) : glow);
+                }
+            }
+            // the signal lamp takes the place of the progress bar
+            dc.setColor(0x000000, -1);
+            dc.fillRectangle(137, 386, 180, 8);
+            var on = hiS >= 0;
+            dc.setColor(on ? G.dim(acc, 0.3) : 0x101010, -1);
+            dc.fillCircle(227, 400, 15);
+            dc.setColor(on ? acc : 0x2A2A2A, -1);
+            dc.fillCircle(227, 400, 9);
+            if (on) {
+                dc.setColor(G.mix(acc, 0xFFFFFF, 0.7), -1);
+                dc.fillCircle(227, 400, 4);
+            }
+        }
+        // blinking cursor after KLARTEXT
+        var tw = F.pxW("KLARTEXT", 2);
+        dc.setColor(live && (a.t / 500) % 2 != 0 ? 0x000000 : G.dim(acc, 0.8), -1);
+        dc.fillRectangle(227 + (tw + 14) / 2.0 - 10, 361, 10, 16);
+        // Binär: live seconds as six small LEDs under the bar
+        if (st == 1 && live) {
+            for (var k = 0; k < 6; k++) {
+                var on = (d.s & (32 >> k)) != 0;
+                dc.setColor(0x000000, -1);
+                dc.fillCircle(227 - 50 + k * 20, 410, 5);
+                dc.setColor(on ? acc : 0x222222, -1);
+                dc.fillCircle(227 - 50 + k * 20, 410, on ? 4 : 3);
             }
         }
     }

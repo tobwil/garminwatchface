@@ -25,7 +25,14 @@ class FaceGlitch extends Face {
         return k == 0 ? 0xFF2A4A : (k == 1 ? 0x00E5FF : 0xFFFFFF);
     }
 
+    // static layer: header, brackets, slots and the calm time; the glitch itself moves
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var p = a.intro;
         var t = a.t;
@@ -54,7 +61,7 @@ class FaceGlitch extends Face {
             var hz = 372;
             dc.setPenWidth(1);
             dc.setColor(0x6A1FB0, -1);
-            for (var j = -7; j <= 7; j++) {
+            for (var j = -7; j <= 7 && S; j++) {
                 dc.drawLine(cx + j * 14, hz, cx + j * 70, 454);
             }
             var ph = 0.4;
@@ -62,7 +69,7 @@ class FaceGlitch extends Face {
                 var q = t / 1400.0;
                 ph = q - Math.floor(q);
             }
-            for (var i = 0; i < 5; i++) {
+            for (var i = 0; i < 5 && M; i++) {
                 var f = (i + ph) / 5.0;
                 var y = hz + 82 * f * f;
                 dc.setColor(G.dim(0x8A2BE2, 0.4 + 0.6 * f), -1);
@@ -70,11 +77,12 @@ class FaceGlitch extends Face {
             }
             dc.setPenWidth(2);
             dc.setColor(0xFF4FD8, -1);
-            dc.drawLine(30, hz, 424, hz);
+            dc.drawLine(30, hz, 424, hz); // also over the moving grid lines
         }
 
         // ---- date header
         var tp = G.ease(p * 1.5 - 0.3);
+        if (S) {
         dc.setColor(G.dim(0x9A9A9A, tp), -1);
         F.px(dc, d.dowStr + " " + d.day + " " + d.monStr + " // KW " + d.wk, cx, 86, 2, 1, 0);
         dc.setColor(G.dim(c0, 0.8 * tp), -1);
@@ -92,11 +100,12 @@ class FaceGlitch extends Face {
             dc.drawLine(bx, by, bx + 14 * sx, by);
             dc.drawLine(bx, by, bx, by + 14 * sy);
         }
+        }
 
         var ts = G.timeStr(d);
         var o = k > 0.04 ? 1 + 12 * k : 0;
         var ytop = TY - TH / 2 - 12;
-        if (o > 0) {
+        if (o > 0 && M) {
             dc.setColor(c0, -1);
             F.st(dc, ts, cx - o, TY, TH, 9, 1, 1.0, 0);
             dc.setColor(c1, -1);
@@ -111,10 +120,13 @@ class FaceGlitch extends Face {
                 }
             }
         }
-        dc.setColor(c2, -1);
-        F.st(dc, ts, cx, TY, TH, 9, 1, 1.0, 0);
+        // the calm time lives in the static layer, a glitching one is redrawn every frame
+        if (o > 0 ? M : S) {
+            dc.setColor(c2, -1);
+            F.st(dc, ts, cx, TY, TH, 9, 1, 1.0, 0);
+        }
 
-        if (k > 0.08) {
+        if (k > 0.08 && M) {
             var bh = (TH + 24) / 6.0;
             var s2 = G.rnd(seed + 7);
             var shifted = 0;
@@ -166,7 +178,7 @@ class FaceGlitch extends Face {
         var msg = g < 0.34 ? "SYS STABIL" : (g < 0.67 ? "SYS UNRUHIG" : "SYS ÜBERLASTET");
         var scol = g < 0.34 ? (st == 3 ? acc : 0x3CFF9A) : (g < 0.67 ? 0xFFC02E : 0xFF3355);
         var nch = (msg.length() * G.clamp(p * 1.6 - 0.4, 0.0, 1.0)).toNumber();
-        if (nch > 0) {
+        if (nch > 0 && M) {
             var s3 = G.rnd(seed + 99);
             var out = "";
             for (var i = 0; i < nch; i++) {
@@ -183,7 +195,7 @@ class FaceGlitch extends Face {
         }
 
         // ---- data readout (3 slots)
-        for (var i = 0; i < 3; i++) {
+        for (var i = 0; i < 3 && S; i++) {
             var sp = G.stag(p, i, 0.1, 0.45);
             if (sp <= 0) {
                 continue;

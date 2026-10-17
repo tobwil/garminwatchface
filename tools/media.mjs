@@ -6,6 +6,7 @@
 // Frames are rendered in one page so stateful faces animate exactly like in the studio.
 // Usage: node tools/media.mjs [KEY ...]      (needs playwright and python3 + Pillow)
 //        node tools/media.mjs --day          only the time-lapses
+//        node tools/media.mjs --overview     only the overview grid
 import { createServer } from "node:http";
 import { readFile, mkdir, writeFile, rm } from "node:fs/promises";
 import { extname, join, dirname } from "node:path";
@@ -29,16 +30,18 @@ const STYLE_PX = 220;    // size of one face in the style strips
 const STEP = 100;        // ms between animation frames
 const END = 4500;        // ms of animation
 const HOLD = 1500;       // extra ms the last frame is shown
-const DAY = ["SUN", "RIDER", "STERNE", "WETTER", "AQUA", "ORBIT", "SKELETT", "BUDDY", "CITY", "SYNTH"];
+const DAY = ["SUN", "RIDER", "STERNE", "WETTER", "AQUA", "ORBIT", "SKELETT", "BUDDY", "CITY", "SYNTH",
+  "CAMP", "FARM", "LIGHT", "BAKERY", "POST", "OFFICE"];
 const DAY_STYLE = { CITY: 3 }; // time-lapse style where the default one ignores the sun
 const DAY_STEP = 15;     // minutes of the day between time-lapse frames
 const DAY_MS = 90;       // ms per time-lapse frame
 
 const meta = JSON.parse(await readFile(join(ROOT, "faces.json"), "utf8"));
 const dayOnly = process.argv.includes("--day");
-const want = process.argv.slice(2).filter((a) => a !== "--day");
-const faces = dayOnly ? [] : meta.faces.filter((f) => !want.length || want.includes(f.key));
-const dayFaces = DAY.filter((k) => !want.length || want.includes(k));
+const overviewOnly = process.argv.includes("--overview");
+const want = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const faces = dayOnly || overviewOnly ? [] : meta.faces.filter((f) => !want.length || want.includes(f.key));
+const dayFaces = overviewOnly ? [] : DAY.filter((k) => !want.length || want.includes(k));
 
 const server = createServer(async (req, res) => {
   try {
@@ -160,7 +163,8 @@ for (const k of dayFaces) {
 }
 
 // ---- overview grid of all designs (default style, final frame)
-if (!want.length && !dayOnly) {
+if ((!want.length && !dayOnly) || overviewOnly) {
+  await mkdir(work, { recursive: true });
   const files = [];
   for (const f of meta.faces) {
     const [u] = await frames(f.key, f.defaults.style || 1, [99999]);

@@ -191,6 +191,59 @@ class FaceQuest extends Face {
         return _S;
     }
 
+    // streak flame (fl: flicker -1..1)
+    hidden function flame(dc as Dc, fx, ty, sk, fl) as Void {
+        var sh = fl > 0.35 ? 1 : (fl < -0.35 ? -1 : 0);
+        dc.setColor(sk > 0 ? 0xFF6A1A : 0x4A4A4A, -1);
+        for (var r = 0; r < 9; r++) {
+            var b = FLO[r];
+            var o = r < 3 ? sh * 3 : 0;
+            for (var c = 0; c < 7; c++) {
+                if ((b & (64 >> c)) != 0) {
+                    dc.fillRectangle(fx + c * 3 + o, 48 + ty + r * 3, 3, 3);
+                }
+            }
+    }
+    if (sk > 0) {
+        dc.setColor(fl > 0.1 ? 0xFFF0A0 : 0xFFD23D, -1);
+        var lift = fl > 0.6 ? 1 : 0;
+        for (var r = 4 - lift; r < 9; r++) {
+            var b = FLI[r + lift];
+            for (var c = 0; c < 7; c++) {
+                if ((b & (64 >> c)) != 0) {
+                    dc.fillRectangle(fx + c * 3, 48 + ty + r * 3, 3, 3);
+                }
+            }
+        }
+    }
+    }
+
+    // celebration burst on top of the time (bb: intro progress)
+    hidden function burst(dc as Dc, st, acc, bb, celeb, cx) as Void {
+        var e = G.ease(bb / 0.8);
+        var fade = G.clamp((1 - bb) / 0.35, 0.0, 1.0);
+        dc.setColor(G.mix(0x000000, acc, fade), -1);
+        dc.setPenWidth(3);
+        for (var i = 0; i < 12; i++) {
+            var ang = i * 30 + 15;
+            var r0 = 60 + 40 * e;
+            var r1 = 72 + 56 * e;
+            dc.drawLine(G.ptX(cx, r0, ang), G.ptY(152, r0 * 0.4, ang), G.ptX(cx, r1, ang), G.ptY(152, r1 * 0.4, ang));
+    }
+    dc.setColor(G.mix(0x000000, 0xFFFFFF, fade), -1);
+    var bs = G.spring(bb / 0.5);
+    if (st == 1) {
+        F.px(dc, "+" + celeb + " XP", cx, 152 - 17 * bs, Math.round(1 + 4 * bs).toNumber(), 1, 0);
+    } else {
+        F.st(dc, "+" + celeb + " XP", cx, 152, 18 + 22 * bs, 4, 1, 1.0, 0);
+    }
+    }
+
+    // static layer: everything but the flame flicker and the celebration burst
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -207,6 +260,27 @@ class FaceQuest extends Face {
         var boss = d.dow == 0;
         var red = 0xFF4A3D;
         var good = st == 1 ? 0x3CD070 : 0x5FE08A;
+        if (a.bg) {
+            // moving parts on the cached layer: the flickering streak flame, the celebration burst
+            var lv0 = "LVL " + (levelOf(xp) + 1);
+            var lw0 = F.pxW(lv0, 3);
+            var fx0 = cx - (lw0 + 26 + 27 + F.pxW("" + sk, 3)) / 2.0 + lw0 + 26;
+            if (a.live && p >= 1) {
+                dc.setColor(0x000000, -1);
+                dc.fillRectangle(fx0 - 3, 48, 27, 27);
+                flame(dc, fx0, 0, sk, G.noise(a.t / 140.0));
+            }
+            if (celeb > 0 && p < 1) {
+                burst(dc, st, acc, p, celeb, cx);
+            }
+            if (celeb > 0 && p >= 1) {
+                St.set("celebrate", 0);
+                St.set("celebQ", 0);
+                _S[4] = 0;
+                _S[5] = 0;
+            }
+            return;
+        }
 
         // ---------------- XP ring
         var L = levelOf(xp);
@@ -250,30 +324,7 @@ class FaceQuest extends Face {
         }
         // flame (flickers in ambient)
         var fx = x0 + lw + 26;
-        var fl = a.live && p >= 1 ? G.noise(a.t / 140.0) : 0.0;
-        var sh = fl > 0.35 ? 1 : (fl < -0.35 ? -1 : 0);
-        dc.setColor(sk > 0 ? 0xFF6A1A : 0x4A4A4A, -1);
-        for (var r = 0; r < 9; r++) {
-            var b = FLO[r];
-            var o = r < 3 ? sh * 3 : 0;
-            for (var c = 0; c < 7; c++) {
-                if ((b & (64 >> c)) != 0) {
-                    dc.fillRectangle(fx + c * 3 + o, 48 + ty + r * 3, 3, 3);
-                }
-            }
-        }
-        if (sk > 0) {
-            dc.setColor(fl > 0.1 ? 0xFFF0A0 : 0xFFD23D, -1);
-            var lift = fl > 0.6 ? 1 : 0;
-            for (var r = 4 - lift; r < 9; r++) {
-                var b = FLI[r + lift];
-                for (var c = 0; c < 7; c++) {
-                    if ((b & (64 >> c)) != 0) {
-                        dc.fillRectangle(fx + c * 3, 48 + ty + r * 3, 3, 3);
-                    }
-                }
-            }
-        }
+        flame(dc, fx, ty, sk, a.live && p >= 1 ? G.noise(a.t / 140.0) : 0.0);
         dc.setColor(sk > 0 ? 0xFFFFFF : 0x777777, -1);
         F.px(dc, sks, fx + 27, 52 + ty, 3, 0, 0);
         // xp text
@@ -297,24 +348,7 @@ class FaceQuest extends Face {
         }
         // celebration burst (on top of the dimmed time)
         if (celeb > 0 && p < 1) {
-            var bb = p;
-            var e = G.ease(bb / 0.8);
-            var fade = G.clamp((1 - bb) / 0.35, 0.0, 1.0);
-            dc.setColor(G.mix(0x000000, acc, fade), -1);
-            dc.setPenWidth(3);
-            for (var i = 0; i < 12; i++) {
-                var ang = i * 30 + 15;
-                var r0 = 60 + 40 * e;
-                var r1 = 72 + 56 * e;
-                dc.drawLine(G.ptX(cx, r0, ang), G.ptY(152, r0 * 0.4, ang), G.ptX(cx, r1, ang), G.ptY(152, r1 * 0.4, ang));
-            }
-            dc.setColor(G.mix(0x000000, 0xFFFFFF, fade), -1);
-            var bs = G.spring(bb / 0.5);
-            if (st == 1) {
-                F.px(dc, "+" + celeb + " XP", cx, 152 - 17 * bs, Math.round(1 + 4 * bs).toNumber(), 1, 0);
-            } else {
-                F.st(dc, "+" + celeb + " XP", cx, 152, 18 + 22 * bs, 4, 1, 1.0, 0);
-            }
+            burst(dc, st, acc, p, celeb, cx);
         }
         dc.setColor(boss ? red : 0x8A8A8A, -1);
         F.px(dc, boss ? "SONNTAG: BOSS-QUEST!" : d.dowStr + " " + d.day + ". " + d.monStr, cx, 200, 2, 1, 0);
@@ -414,7 +448,7 @@ class FaceQuest extends Face {
         }
 
         // celebration shown -> clear
-        if (celeb > 0 && p >= 1) {
+        if (celeb > 0 && p >= 1 && !a.so) {
             St.set("celebrate", 0);
             St.set("celebQ", 0);
             _S[4] = 0;

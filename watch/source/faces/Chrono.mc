@@ -84,6 +84,11 @@ class FaceChrono extends Face {
         dc.drawLine(ex, ey, ax, ay);
     }
 
+    // static layer: cached, redrawn when the minute changes
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -92,201 +97,206 @@ class FaceChrono extends Face {
         var racing = st == 3;
         var R = racing ? 194 : 214; // outer edge of the minute track
 
-        // ------------------------------------------------------------ dial
-        if (panda) {
-            dc.setColor(0x1B1C1E, -1);
-            dc.fillCircle(CX, CY, 227);
-            dc.setColor(0x2A2B2E, -1);
-            dc.setPenWidth(2);
-            dc.drawCircle(CX, CY, R + 6);
-        }
+        if (!a.bg) {
+            // ------------------------------------------------------------ dial
+            if (panda) {
+                dc.setColor(0x1B1C1E, -1);
+                dc.fillCircle(CX, CY, 227);
+                dc.setColor(0x2A2B2E, -1);
+                dc.setPenWidth(2);
+                dc.drawCircle(CX, CY, R + 6);
+            }
 
-        // tachymeter bezel
-        if (racing) {
-            var tp = G.ease(p * 1.3);
-            dc.setColor(0x121212, -1);
-            dc.fillCircle(CX, CY, 227);
-            dc.setColor(0x000000, -1);
-            dc.fillCircle(CX, CY, 199);
-            dc.setColor(0x3A3A3A, -1);
+            // tachymeter bezel
+            if (racing) {
+                var tp = G.ease(p * 1.3);
+                dc.setColor(0x121212, -1);
+                dc.fillCircle(CX, CY, 227);
+                dc.setColor(0x000000, -1);
+                dc.fillCircle(CX, CY, 199);
+                dc.setColor(0x3A3A3A, -1);
+                dc.setPenWidth(1);
+                dc.drawCircle(CX, CY, 199);
+                var n = _tach.size();
+                for (var i = 0; i < n; i++) {
+                    var deg = 21600.0 / _tach[i];
+                    var q = G.stag(tp, i, 0.05, 0.4);
+                    if (q <= 0) {
+                        continue;
+                    }
+                    dc.setColor(0xFFFFFF, -1);
+                    dc.setPenWidth(2);
+                    G.tick(dc, CX, CY, 199, 204, deg);
+                    dc.setColor(G.dim(acc, q), -1);
+                    if (i == n - 1) {
+                        continue; // 60 sits under the 12 mark
+                    }
+                    F.st(dc, "" + _tach[i], G.ptX(CX, 214, deg), G.ptY(CY, 214, deg), 12, 2, 1, 1.0, 0);
+                }
+                dc.setColor(acc, -1);
+                dc.fillPolygon([[CX, 203], [CX - 6, 214], [CX + 6, 214]]);
+            }
+
+            // railroad minute track
+            var shown = (G.ease(p * 1.4) * 60).toNumber();
             dc.setPenWidth(1);
-            dc.drawCircle(CX, CY, 199);
-            var n = _tach.size();
-            for (var i = 0; i < n; i++) {
-                var deg = 21600.0 / _tach[i];
-                var q = G.stag(tp, i, 0.05, 0.4);
+            dc.setColor(panda ? 0x55575C : 0x3C3C3C, -1);
+            if (shown >= 60) {
+                dc.drawCircle(CX, CY, R);
+                dc.drawCircle(CX, CY, R - 8);
+            }
+            dc.setColor(panda ? 0xA6A8AD : 0x8A8A8A, -1);
+            dc.setPenWidth(2);
+            for (var i = 0; i < shown; i++) {
+                if (i % 5 == 0) {
+                    continue;
+                }
+                G.tick(dc, CX, CY, R - 8, R, i * 6);
+            }
+
+            // applied hour indices
+            var iOut = R - 12;
+            var iIn = R - 42;
+            var body = 0xD2D2D2;
+            var hi = 0xFFFFFF;
+            var sh = 0x7C7C7C;
+            for (var i = 0; i < 12; i++) {
+                var q = G.stag(p, i, 0.035, 0.35);
+                if (q <= 0 || i == 6) {
+                    continue; // the 6 o'clock sub-dial replaces it
+                }
+                var deg = i * 30;
+                var r1 = iOut - (iOut - iIn) * G.ease(q);
+                if (i == 0) {
+                    for (var k = -1; k <= 1; k += 2) {
+                        dc.setColor(G.dim(body, q), -1);
+                        bar(dc, deg, r1, iOut, 7, k * 6);
+                        dc.setColor(G.dim(hi, q), -1);
+                        bar(dc, deg, r1, iOut, 2, k * 6 - 2.5);
+                    }
+                } else {
+                    dc.setColor(G.dim(racing ? 0xF2F2F2 : body, q), -1);
+                    bar(dc, deg, r1, iOut, 10, 0);
+                    if (!racing) {
+                        dc.setColor(G.dim(hi, q), -1);
+                        bar(dc, deg, r1, iOut, 2, -4);
+                        dc.setColor(G.dim(sh, q), -1);
+                        bar(dc, deg, r1, iOut, 2, 4);
+                    }
+                    // lume plot at the inner end
+                    dc.setColor(G.dim(acc, q * 0.9), -1);
+                    dc.fillCircle(G.ptX(CX, r1 + 5, deg), G.ptY(CY, r1 + 5, deg), 2);
+                }
+            }
+
+            // signature under 12
+            var bp = G.ease(p * 1.5 - 0.3);
+            dc.setColor(panda ? 0xE8E8E8 : 0xDEDEDE, -1);
+            F.st(dc, "FACELAB", CX, 106, 15, 2, 1, bp, 0);
+            dc.setColor(G.dim(acc, bp), -1);
+            F.st(dc, racing ? "RACING" : "CHRONOGRAPH", CX, 126, 10, 1, 1, bp, 0);
+
+            // ------------------------------------------------------------ sub-dials
+            for (var k = 0; k < 3; k++) {
+                var x = CX + _subX[k];
+                var y = CY + _subY[k];
+                var q = G.stag(p, k, 0.1, 0.45);
                 if (q <= 0) {
                     continue;
                 }
-                dc.setColor(0xFFFFFF, -1);
-                dc.setPenWidth(2);
-                G.tick(dc, CX, CY, 199, 204, deg);
-                dc.setColor(G.dim(acc, q), -1);
-                if (i == n - 1) {
-                    continue; // 60 sits under the 12 mark
+                var sl = d.slots[k];
+                var t = d.cfg.slots[k];
+                var gauge = isGauge(t);
+                var rv = sl[:raw];
+                var raw = (rv instanceof Number || rv instanceof Float || rv instanceof Long || rv instanceof Double) ? rv.toFloat() : -1.0;
+                var val = sl[:val] as String;
+                var discCol = panda ? 0xE6E1D3 : (racing ? 0x000000 : 0x0E0E0E);
+                var ringCol = panda ? 0xB3AC98 : (racing ? 0xD8D8D8 : 0x4A4A4A);
+                var tickCol = panda ? 0x5B574D : 0x8A8A8A;
+                var txtCol = panda ? 0x161616 : d.dcol;
+                var rr = SUBR * (0.6 + 0.4 * G.ease(q));
+                dc.setColor(discCol, -1);
+                dc.fillCircle(x, y, rr);
+                if (!panda) {
+                    dc.setColor(0x1C1C1C, -1);
+                    dc.setPenWidth(1);
+                    dc.drawCircle(x, y, rr - 9);
+                    dc.drawCircle(x, y, rr - 15);
                 }
-                F.st(dc, "" + _tach[i], G.ptX(CX, 214, deg), G.ptY(CY, 214, deg), 12, 2, 1, 1.0, 0);
+                dc.setColor(G.mix(discCol, ringCol, q), -1);
+                dc.setPenWidth(racing ? 2 : 1);
+                dc.drawCircle(x, y, rr);
+                var vq = G.ease(G.stag(p, k, 0.1, 0.6) * 1.0);
+                dc.setColor(G.mix(discCol, tickCol, q), -1);
+                if (gauge) {
+                    // 240 deg scale, gap at the bottom
+                    dc.setPenWidth(1);
+                    for (var j = 0; j <= 12; j++) {
+                        var deg = -120 + j * 20;
+                        dc.setPenWidth(j % 3 == 0 ? 2 : 1);
+                        G.tick(dc, x, y, j % 3 == 0 ? SUBR - 9 : SUBR - 6, SUBR - 2, deg);
+                    }
+                    var f = raw >= 0 ? G.clamp(raw / 100.0, 0.0, 1.0) : 0.0;
+                    var ang = -120 + 240 * f * vq;
+                    if (raw >= 0 && f * vq > 0.005) {
+                        dc.setColor(panda ? G.mix(acc, 0x000000, 0.35) : acc, -1);
+                        dc.setPenWidth(3);
+                        G.arcC(dc, x, y, SUBR - 12, -120, ang);
+                    }
+                    // value in the bottom gap
+                    dc.setColor(G.mix(discCol, txtCol, q), -1);
+                    F.st(dc, val, x, y + 25, 13, 2, 1, 1.0, 0);
+                    // hand
+                    if (raw >= 0) {
+                        dc.setColor(panda ? 0x1A1A1A : (racing ? acc : 0xF0F0F0), -1);
+                        var s = Math.sin(ang * RAD);
+                        var c = Math.cos(ang * RAD);
+                        dc.fillPolygon([
+                            [x - c * 2.2 - s * 7, y - s * 2.2 + c * 7],
+                            [x + s * (SUBR - 7), y - c * (SUBR - 7)],
+                            [x + c * 2.2 - s * 7, y + s * 2.2 + c * 7]
+                        ]);
+                    }
+                    dc.setColor(panda ? 0x1A1A1A : 0xF0F0F0, -1);
+                    dc.fillCircle(x, y, 4);
+                    dc.setColor(acc, -1);
+                    dc.fillCircle(x, y, 1.6);
+                } else {
+                    dc.setPenWidth(1);
+                    for (var j = 0; j < 12; j++) {
+                        dc.setPenWidth(j % 3 == 0 ? 2 : 1);
+                        G.tick(dc, x, y, j % 3 == 0 ? SUBR - 8 : SUBR - 5, SUBR - 2, j * 30);
+                    }
+                    var h = 20.0;
+                    var w = F.stW(val, h);
+                    if (w > 54) {
+                        h = h * 54 / w;
+                    }
+                    dc.setColor(G.mix(discCol, txtCol, q), -1);
+                    F.st(dc, val, x, y, h, 3, 1, G.ease(q * 1.3), 0);
+                }
+                // label under the sub-dial
+                dc.setColor(G.mix(0x000000, panda ? 0xBDBDBD : 0x9A9A9A, q), -1);
+                F.px(dc, sl[:lbl] as String, x, y + SUBR + 7, 2, 1, 0);
             }
-            dc.setColor(acc, -1);
-            dc.fillPolygon([[CX, 203], [CX - 6, 214], [CX + 6, 214]]);
-        }
 
-        // railroad minute track
-        var shown = (G.ease(p * 1.4) * 60).toNumber();
-        dc.setPenWidth(1);
-        dc.setColor(panda ? 0x55575C : 0x3C3C3C, -1);
-        if (shown >= 60) {
-            dc.drawCircle(CX, CY, R);
-            dc.drawCircle(CX, CY, R - 8);
-        }
-        dc.setColor(panda ? 0xA6A8AD : 0x8A8A8A, -1);
-        dc.setPenWidth(2);
-        for (var i = 0; i < shown; i++) {
-            if (i % 5 == 0) {
-                continue;
+            // ------------------------------------------------------------ date window (4:30)
+            var dq = G.stag(p, 1, 0.45, 0.35);
+            if (dq > 0) {
+                var wx = G.ptX(CX, 156, 135);
+                var wy = G.ptY(CY, 156, 135);
+                dc.setColor(G.dim(panda ? 0xC8C8C8 : 0xA0A0A0, dq), -1);
+                dc.fillRoundedRectangle(wx - 19, wy - 15, 38, 30, 4);
+                dc.setColor(G.dim(panda ? 0x111111 : 0xF2EFE6, dq), -1);
+                dc.fillRoundedRectangle(wx - 16, wy - 12, 32, 24, 2);
+                dc.setColor(panda ? 0xF2EFE6 : 0x111111, -1);
+                F.st(dc, G.pad2(d.day), wx, wy, 14, 3, 1, dq, 0);
             }
-            G.tick(dc, CX, CY, R - 8, R, i * 6);
-        }
 
-        // applied hour indices
-        var iOut = R - 12;
-        var iIn = R - 42;
-        var body = 0xD2D2D2;
-        var hi = 0xFFFFFF;
-        var sh = 0x7C7C7C;
-        for (var i = 0; i < 12; i++) {
-            var q = G.stag(p, i, 0.035, 0.35);
-            if (q <= 0 || i == 6) {
-                continue; // the 6 o'clock sub-dial replaces it
-            }
-            var deg = i * 30;
-            var r1 = iOut - (iOut - iIn) * G.ease(q);
-            if (i == 0) {
-                for (var k = -1; k <= 1; k += 2) {
-                    dc.setColor(G.dim(body, q), -1);
-                    bar(dc, deg, r1, iOut, 7, k * 6);
-                    dc.setColor(G.dim(hi, q), -1);
-                    bar(dc, deg, r1, iOut, 2, k * 6 - 2.5);
-                }
-            } else {
-                dc.setColor(G.dim(racing ? 0xF2F2F2 : body, q), -1);
-                bar(dc, deg, r1, iOut, 10, 0);
-                if (!racing) {
-                    dc.setColor(G.dim(hi, q), -1);
-                    bar(dc, deg, r1, iOut, 2, -4);
-                    dc.setColor(G.dim(sh, q), -1);
-                    bar(dc, deg, r1, iOut, 2, 4);
-                }
-                // lume plot at the inner end
-                dc.setColor(G.dim(acc, q * 0.9), -1);
-                dc.fillCircle(G.ptX(CX, r1 + 5, deg), G.ptY(CY, r1 + 5, deg), 2);
-            }
         }
-
-        // signature under 12
-        var bp = G.ease(p * 1.5 - 0.3);
-        dc.setColor(panda ? 0xE8E8E8 : 0xDEDEDE, -1);
-        F.st(dc, "FACELAB", CX, 106, 15, 2, 1, bp, 0);
-        dc.setColor(G.dim(acc, bp), -1);
-        F.st(dc, racing ? "RACING" : "CHRONOGRAPH", CX, 126, 10, 1, 1, bp, 0);
-
-        // ------------------------------------------------------------ sub-dials
-        for (var k = 0; k < 3; k++) {
-            var x = CX + _subX[k];
-            var y = CY + _subY[k];
-            var q = G.stag(p, k, 0.1, 0.45);
-            if (q <= 0) {
-                continue;
-            }
-            var sl = d.slots[k];
-            var t = d.cfg.slots[k];
-            var gauge = isGauge(t);
-            var rv = sl[:raw];
-            var raw = (rv instanceof Number || rv instanceof Float || rv instanceof Long || rv instanceof Double) ? rv.toFloat() : -1.0;
-            var val = sl[:val] as String;
-            var discCol = panda ? 0xE6E1D3 : (racing ? 0x000000 : 0x0E0E0E);
-            var ringCol = panda ? 0xB3AC98 : (racing ? 0xD8D8D8 : 0x4A4A4A);
-            var tickCol = panda ? 0x5B574D : 0x8A8A8A;
-            var txtCol = panda ? 0x161616 : d.dcol;
-            var rr = SUBR * (0.6 + 0.4 * G.ease(q));
-            dc.setColor(discCol, -1);
-            dc.fillCircle(x, y, rr);
-            if (!panda) {
-                dc.setColor(0x1C1C1C, -1);
-                dc.setPenWidth(1);
-                dc.drawCircle(x, y, rr - 9);
-                dc.drawCircle(x, y, rr - 15);
-            }
-            dc.setColor(G.mix(discCol, ringCol, q), -1);
-            dc.setPenWidth(racing ? 2 : 1);
-            dc.drawCircle(x, y, rr);
-            var vq = G.ease(G.stag(p, k, 0.1, 0.6) * 1.0);
-            dc.setColor(G.mix(discCol, tickCol, q), -1);
-            if (gauge) {
-                // 240 deg scale, gap at the bottom
-                dc.setPenWidth(1);
-                for (var j = 0; j <= 12; j++) {
-                    var deg = -120 + j * 20;
-                    dc.setPenWidth(j % 3 == 0 ? 2 : 1);
-                    G.tick(dc, x, y, j % 3 == 0 ? SUBR - 9 : SUBR - 6, SUBR - 2, deg);
-                }
-                var f = raw >= 0 ? G.clamp(raw / 100.0, 0.0, 1.0) : 0.0;
-                var ang = -120 + 240 * f * vq;
-                if (raw >= 0 && f * vq > 0.005) {
-                    dc.setColor(panda ? G.mix(acc, 0x000000, 0.35) : acc, -1);
-                    dc.setPenWidth(3);
-                    G.arcC(dc, x, y, SUBR - 12, -120, ang);
-                }
-                // value in the bottom gap
-                dc.setColor(G.mix(discCol, txtCol, q), -1);
-                F.st(dc, val, x, y + 25, 13, 2, 1, 1.0, 0);
-                // hand
-                if (raw >= 0) {
-                    dc.setColor(panda ? 0x1A1A1A : (racing ? acc : 0xF0F0F0), -1);
-                    var s = Math.sin(ang * RAD);
-                    var c = Math.cos(ang * RAD);
-                    dc.fillPolygon([
-                        [x - c * 2.2 - s * 7, y - s * 2.2 + c * 7],
-                        [x + s * (SUBR - 7), y - c * (SUBR - 7)],
-                        [x + c * 2.2 - s * 7, y + s * 2.2 + c * 7]
-                    ]);
-                }
-                dc.setColor(panda ? 0x1A1A1A : 0xF0F0F0, -1);
-                dc.fillCircle(x, y, 4);
-                dc.setColor(acc, -1);
-                dc.fillCircle(x, y, 1.6);
-            } else {
-                dc.setPenWidth(1);
-                for (var j = 0; j < 12; j++) {
-                    dc.setPenWidth(j % 3 == 0 ? 2 : 1);
-                    G.tick(dc, x, y, j % 3 == 0 ? SUBR - 8 : SUBR - 5, SUBR - 2, j * 30);
-                }
-                var h = 20.0;
-                var w = F.stW(val, h);
-                if (w > 54) {
-                    h = h * 54 / w;
-                }
-                dc.setColor(G.mix(discCol, txtCol, q), -1);
-                F.st(dc, val, x, y, h, 3, 1, G.ease(q * 1.3), 0);
-            }
-            // label under the sub-dial
-            dc.setColor(G.mix(0x000000, panda ? 0xBDBDBD : 0x9A9A9A, q), -1);
-            F.px(dc, sl[:lbl] as String, x, y + SUBR + 7, 2, 1, 0);
+        if (a.so) {
+            return;
         }
-
-        // ------------------------------------------------------------ date window (4:30)
-        var dq = G.stag(p, 1, 0.45, 0.35);
-        if (dq > 0) {
-            var wx = G.ptX(CX, 156, 135);
-            var wy = G.ptY(CY, 156, 135);
-            dc.setColor(G.dim(panda ? 0xC8C8C8 : 0xA0A0A0, dq), -1);
-            dc.fillRoundedRectangle(wx - 19, wy - 15, 38, 30, 4);
-            dc.setColor(G.dim(panda ? 0x111111 : 0xF2EFE6, dq), -1);
-            dc.fillRoundedRectangle(wx - 16, wy - 12, 32, 24, 2);
-            dc.setColor(panda ? 0xF2EFE6 : 0x111111, -1);
-            F.st(dc, G.pad2(d.day), wx, wy, 14, 3, 1, dq, 0);
-        }
-
         // ------------------------------------------------------------ hands
         var hDeg = (d.h % 12) * 30 + d.m * 0.5 + d.s / 120.0;
         var mDeg = d.m * 6 + d.s * 0.1;

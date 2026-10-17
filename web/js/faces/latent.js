@@ -294,6 +294,13 @@ function drawAq(dc, d, a, s, t) {
 export default {
   get fps() { return busy ? 20 : aq ? 4 : 6; },
 
+  // static layer: the finished picture with its captions (a new one with every wrist raise);
+  // the watercolour style keeps moving everywhere: no cache
+  bgKey(d) { return d.cfg.style === 3 ? -1 : (d.doy * 1440 + d.mins) * 7 + d.wakeN; },
+
+  // the noise is the reveal
+  reveal() { return false; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     prep(d, st);
@@ -301,6 +308,13 @@ export default {
     const s = Math.min(NS, Math.floor(t / SMS));
     busy = a.live && t < NS * SMS + 150;
     aq = st === 3;
+    if (a.bg && s < NS) {
+      // the denoising episode repaints everything; the cache holds the finished picture
+      dc.setColor(0x000000, -1);
+      dc.fillRectangle(0, 0, 454, 454);
+      a = { ...a, bg: false };
+    }
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     let ai = Math.round(G.easeInOut(s / NS) * 256);
     // pure noise needs no target yet; while animating, the frame that builds it only draws
     // noise (watchdog budget: building + mixing in one frame is too much on the watch)
@@ -325,7 +339,7 @@ export default {
     }
     // x = alpha * image + (1 - alpha) * noise, quantised to 6 levels, drawn as merged runs
     const sx = (s * 151) & 255;
-    for (let r = 0; r < gr; r++) {
+    for (let r = 0; r < gr && S; r++) {
       const y = gy0 + r * cs;
       const kb = r * gc;
       let c0 = 0, lv = -1;
@@ -353,12 +367,21 @@ export default {
         if (tg[k] < 3) {
           const l = tg[k] + 1;
           dc.setColor(cur[l], -1);
-          dc.fillRectangle(gx0 + (k % gc) * cs, gy0 + Math.floor(k / gc) * cs, cs, cs);
+          const ins = !S && st === 2 ? 1 : 0; // keep the cached pixel grid lines
+          dc.fillRectangle(gx0 + (k % gc) * cs + ins, gy0 + Math.floor(k / gc) * cs + ins, cs - 2 * ins, cs - 2 * ins);
         }
       }
     }
     const wd = gc * cs;
     if (st === 2) {
+      if (!S) {
+        // over the cached picture only "FERTIG!" blinks
+        if (a.live && Math.floor(t / 500) % 2 === 0) {
+          dc.setColor(cur[5], -1);
+          F.px(dc, "FERTIG!", 227, 338, 2, 1, 0);
+        }
+        return;
+      }
       // chunky pixel grid
       dc.setColor(0x000000, -1);
       for (let c = 1; c < gc; c++) dc.fillRectangle(gx0 + c * cs - 1, gy0, 2, gr * cs);
@@ -376,11 +399,12 @@ export default {
       }
       dc.setColor(cur[5], -1);
       if (s < NS) F.px(dc, "RENDERE" + "...".substring(0, Math.floor(t / 200) % 4), 167, 338, 2, 0, 0);
-      else if (!a.live || Math.floor(t / 500) % 2 === 0) F.px(dc, "FERTIG!", 227, 338, 2, 1, 0);
+      else if (M && (!a.live || Math.floor(t / 500) % 2 === 0)) F.px(dc, "FERTIG!", 227, 338, 2, 1, 0);
       dc.setColor(cur[3], -1);
       F.px(dc, d.dowStr + " " + d.day + " " + d.monStr, 227, 362, 2, 1, 0);
       return;
     }
+    if (!S) return;
     // Diffusion: thin figure frame + paper captions
     dc.setColor(0x333333, -1);
     dc.setPenWidth(1);

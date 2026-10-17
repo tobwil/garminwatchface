@@ -266,8 +266,58 @@ class FaceSun extends Face {
         dc.setColor(G.mix(core, 0xFFFFFF, 0.6), -1); dc.fillCircle(x, y, 6);
     }
 
+    // static layer: everything but the sun (pulsing glow / turning rays); stars rest
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
+    // sun marker of the 24 h dial (style 3)
+    hidden function dialSun(dc as Dc, a as A, mx, my) as Void {
+        var pulse = a.live ? Math.sin(a.t * 0.004) : 0.0;
+        dc.setColor(0x3A2A10, -1);
+        dc.fillCircle(mx, my, 15 + pulse);
+        dc.setColor(0xFFD27A, -1);
+        dc.fillCircle(mx, my, 11);
+        dc.setColor(0xFFF4D6, -1);
+        dc.fillCircle(mx, my, 6);
+    }
+
+    // moving parts on top of the cached layer (intro is over: the sun sits at its real place)
+    hidden function overlay(dc as Dc, d as D, a as A) as Void {
+        var st = d.cfg.style;
+        if (!isDay(d, d.mins)) {
+            return;
+        }
+        if (st == 3) {
+            var m0 = _rise;
+            if (m0 < 0) {
+                m0 = d.mins;
+            }
+            var u = d.mins - m0;
+            if (u < 0) {
+                u += 1440;
+            }
+            var deg = ang(m0 + u);
+            dialSun(dc, a, G.ptX(CX, 204, deg), G.ptY(CX, 204, deg));
+            return;
+        }
+        var e = AST.elev(d.doy, d.mins, d.lat, d.lon, d.tz);
+        var sk = sky(e);
+        var u = d.mins - r0();
+        if (u < 0) {
+            u += 1440;
+        }
+        var pos = arcPos(d, r0() + u);
+        var bgc = st == 1 ? G.mix(sk[0], sk[1], (pos[1] / HY) * (pos[1] / HY)) : 0;
+        sunDisc(dc, a, pos[0], pos[1], e, st, bgc, d.accent);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         calc(d);
+        if (a.bg) {
+            overlay(dc, d, a);
+            return;
+        }
         var st = d.cfg.style;
         if (st == 3) {
             dial(dc, d, a);
@@ -369,7 +419,9 @@ class FaceSun extends Face {
         // ---- sun or moon
         if (day) {
             var bgc = st == 1 ? G.mix(sk[0], sk[1], (pos[1] / HY) * (pos[1] / HY)) : 0;
-            sunDisc(dc, a, pos[0], pos[1], e, st, G.dim(bgc, sp), acc);
+            if (!a.so) {
+                sunDisc(dc, a, pos[0], pos[1], e, st, G.dim(bgc, sp), acc);
+            }
         } else if (sp > 0.05) {
             var mr = 13;
             if (st == 1) {
@@ -475,13 +527,9 @@ class FaceSun extends Face {
         dc.setColor(0, -1);
         dc.fillCircle(mx, my, 17);
         if (day) {
-            var pulse = a.live ? Math.sin(a.t * 0.004) : 0.0;
-            dc.setColor(0x3A2A10, -1);
-            dc.fillCircle(mx, my, 15 + pulse);
-            dc.setColor(0xFFD27A, -1);
-            dc.fillCircle(mx, my, 11);
-            dc.setColor(0xFFF4D6, -1);
-            dc.fillCircle(mx, my, 6);
+            if (!a.so) {
+                dialSun(dc, a, mx, my);
+            }
         } else {
             moonDisc(dc, d, mx, my, 12, d.moon, 0xF2ECD8, 0x2A3350);
         }

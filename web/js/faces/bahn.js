@@ -54,82 +54,88 @@ function kelle(dc, x, y, deg, len, back, w, dr, dR, col) {
 export default {
   fps: 20,
 
+  // static layer: cached, redrawn when the minute changes
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const acc = d.accent;
     const p = a.intro;
     const white = st === 1, big = st === 3;
 
-    // ---------------------------------------------------------------- dial
     const dialCol = white ? 0xf3f3ef : 0x000000;
     const markCol = white ? 0x141414 : 0xefefef;
     const handCol = white ? 0x141414 : 0xf2f2f2;
-    const dq = G.ease(p * 4);
-    if (white) {
-      // brushed steel case ring, then the white dial
-      dc.setColor(G.dim(0x8d9095, dq), -1);
-      dc.fillCircle(CX, CY, 227);
-      dc.setColor(G.dim(0xc9cbce, dq), -1);
-      dc.fillCircle(CX, CY, 222);
-      dc.setColor(G.dim(0x5e6166, dq), -1);
-      dc.fillCircle(CX, CY, 220);
-      dc.setColor(G.dim(dialCol, dq), -1);
-      dc.fillCircle(CX, CY, 218);
-    } else if (!big) {
-      dc.setColor(0x1c1c1c, -1);
-      dc.setPenWidth(2);
-      dc.drawCircle(CX, CY, 223);
-    }
-
-    // ---------------------------------------------------------------- markers (fade in clockwise)
-    const rOut = white ? 208 : 216;
-    for (let i = 0; i < 60; i++) {
-      const q = G.stag(p, i, 0.0075, 0.12);
-      if (q <= 0) break;
-      const hour = i % 5 === 0;
-      if (big) {
-        if (hour) {
-          dc.setColor(G.mix(dialCol, acc, q), -1);
-          bar(dc, CX, CY, i * 6, rOut - 34 - 10 * G.ease(q), rOut, 15);
-        } else {
-          dc.setColor(G.mix(dialCol, 0x5a5a5a, q), -1);
-          dc.fillCircle(G.ptX(CX, rOut - 5, i * 6), G.ptY(CY, rOut - 5, i * 6), 2.6);
-        }
-      } else {
-        dc.setColor(G.mix(dialCol, markCol, q), -1);
-        if (hour) bar(dc, CX, CY, i * 6, rOut - 34 - 12 * G.ease(q), rOut, 12);
-        else bar(dc, CX, CY, i * 6, rOut - 14, rOut, 4.4);
+    if (!a.bg) {
+      // ---------------------------------------------------------------- dial
+      const dq = G.ease(p * 4);
+      if (white) {
+        // brushed steel case ring, then the white dial
+        dc.setColor(G.dim(0x8d9095, dq), -1);
+        dc.fillCircle(CX, CY, 227);
+        dc.setColor(G.dim(0xc9cbce, dq), -1);
+        dc.fillCircle(CX, CY, 222);
+        dc.setColor(G.dim(0x5e6166, dq), -1);
+        dc.fillCircle(CX, CY, 220);
+        dc.setColor(G.dim(dialCol, dq), -1);
+        dc.fillCircle(CX, CY, 218);
+      } else if (!big) {
+        dc.setColor(0x1c1c1c, -1);
+        dc.setPenWidth(2);
+        dc.drawCircle(CX, CY, 223);
       }
-    }
 
-    // ---------------------------------------------------------------- data
-    const lblCol = white ? 0x9a9a95 : 0x707070;
-    const valCol = white ? 0x2e2e2e : G.mix(0x000000, d.dcol, 0.85);
-    for (let k = 0; k < 3; k++) {
-      const qq = G.stag(p - 0.45, k, 0.06, 0.3);
-      if (qq <= 0) continue;
-      const sl = d.slots[k];
-      const x = k === 0 ? CX : CX + (k === 1 ? -96 : 96);
-      const y = k === 0 ? 128 : 214;
-      dc.setColor(G.mix(dialCol, lblCol, qq), -1);
-      F.px(dc, sl.lbl, x, y, 2, 1, 0);
-      dc.setColor(G.mix(dialCol, valCol, qq), -1);
-      F.st(dc, sl.val, x, y + 33, 20, 3, 1, 1.0, 0);
-    }
-    // date window at 6
-    const wq = G.clamp((p - 0.6) / 0.3, 0, 1);
-    if (wq > 0) {
-      const ds = d.dowStr + " " + d.day;
-      const ww = F.stW(ds, 15) + 22;
-      const wy = big ? 312 : 306;
-      dc.setColor(G.mix(dialCol, white ? 0xb4b4ae : 0x3a3a3a, wq), -1);
-      dc.fillRoundedRectangle(CX - ww / 2 - 2, wy - 16, ww + 4, 32, 5);
-      dc.setColor(G.mix(dialCol, white ? 0xffffff : 0x0d0d0d, wq), -1);
-      dc.fillRoundedRectangle(CX - ww / 2, wy - 14, ww, 28, 4);
-      dc.setColor(G.mix(dialCol, white ? 0x1a1a1a : valCol, wq), -1);
-      F.st(dc, ds, CX, wy, 15, 2.6, 1, 1.0, 0);
-    }
+      // ---------------------------------------------------------------- markers (fade in clockwise)
+      const rOut = white ? 208 : 216;
+      for (let i = 0; i < 60; i++) {
+        const q = G.stag(p, i, 0.0075, 0.12);
+        if (q <= 0) break;
+        const hour = i % 5 === 0;
+        if (big) {
+          if (hour) {
+            dc.setColor(G.mix(dialCol, acc, q), -1);
+            bar(dc, CX, CY, i * 6, rOut - 34 - 10 * G.ease(q), rOut, 15);
+          } else {
+            dc.setColor(G.mix(dialCol, 0x5a5a5a, q), -1);
+            dc.fillCircle(G.ptX(CX, rOut - 5, i * 6), G.ptY(CY, rOut - 5, i * 6), 2.6);
+          }
+        } else {
+          dc.setColor(G.mix(dialCol, markCol, q), -1);
+          if (hour) bar(dc, CX, CY, i * 6, rOut - 34 - 12 * G.ease(q), rOut, 12);
+          else bar(dc, CX, CY, i * 6, rOut - 14, rOut, 4.4);
+        }
+      }
 
+      // ---------------------------------------------------------------- data
+      const lblCol = white ? 0x9a9a95 : 0x707070;
+      const valCol = white ? 0x2e2e2e : G.mix(0x000000, d.dcol, 0.85);
+      for (let k = 0; k < 3; k++) {
+        const qq = G.stag(p - 0.45, k, 0.06, 0.3);
+        if (qq <= 0) continue;
+        const sl = d.slots[k];
+        const x = k === 0 ? CX : CX + (k === 1 ? -96 : 96);
+        const y = k === 0 ? 128 : 214;
+        dc.setColor(G.mix(dialCol, lblCol, qq), -1);
+        F.px(dc, sl.lbl, x, y, 2, 1, 0);
+        dc.setColor(G.mix(dialCol, valCol, qq), -1);
+        F.st(dc, sl.val, x, y + 33, 20, 3, 1, 1.0, 0);
+      }
+      // date window at 6
+      const wq = G.clamp((p - 0.6) / 0.3, 0, 1);
+      if (wq > 0) {
+        const ds = d.dowStr + " " + d.day;
+        const ww = F.stW(ds, 15) + 22;
+        const wy = big ? 312 : 306;
+        dc.setColor(G.mix(dialCol, white ? 0xb4b4ae : 0x3a3a3a, wq), -1);
+        dc.fillRoundedRectangle(CX - ww / 2 - 2, wy - 16, ww + 4, 32, 5);
+        dc.setColor(G.mix(dialCol, white ? 0xffffff : 0x0d0d0d, wq), -1);
+        dc.fillRoundedRectangle(CX - ww / 2, wy - 14, ww, 28, 4);
+        dc.setColor(G.mix(dialCol, white ? 0x1a1a1a : valCol, wq), -1);
+        F.st(dc, ds, CX, wy, 15, 2.6, 1, 1.0, 0);
+      }
+
+    }
+    if (a.so) return;
     // ---------------------------------------------------------------- time
     // seconds since the minute began, sub-second phase locked to the second tick
     if (a.t < lockT) { lockT = -1; lastS = -1; }

@@ -83,6 +83,11 @@ class FaceWoche extends Face {
         return [n > 0 ? Math.round(s.toFloat() / n).toNumber() : 0, f, a, n] as Array<Number>;
     }
 
+    // static layer: the whole week; only the frame of today pulses
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -94,6 +99,21 @@ class FaceWoche extends Face {
         var goal = d.dayGoal > 0 ? d.dayGoal : 4;
         var td = d.trainDays > 0 ? d.trainDays : 0;
         var pulse = live ? 0.5 + 0.5 * Math.sin(a.t / 1000.0 * 3.1416) : 1.0;
+        if (a.bg) {
+            // over the cached week only the frame of today pulses
+            var tx = colX(ti);
+            dc.setColor(G.mix(dark, acc, 0.3 + 0.35 * pulse), -1);
+            if (px) {
+                dc.fillRectangle(tx - 18, 172, 36, 2);
+                dc.fillRectangle(tx - 18, 310, 36, 2);
+                dc.fillRectangle(tx - 20, 174, 2, 136);
+                dc.fillRectangle(tx + 18, 174, 2, 136);
+            } else {
+                dc.setPenWidth(2);
+                dc.drawRoundedRectangle(tx - 19, 172, 38, 140, 10);
+            }
+            return;
+        }
 
         // ---------------- outer ring: training days vs goal
         if (px) {

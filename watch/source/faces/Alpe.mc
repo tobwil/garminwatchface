@@ -451,7 +451,41 @@ class FaceAlpe extends Face {
         return g < 5 ? 0x3DDC5A : (g < 8 ? 0xFFD22E : (g <= 10 ? 0xFF8A1E : 0xFF3B30));
     }
 
+    // static layer (serpentine styles): everything but the road dashes, summit flag and rider
+    function bgKey(d as D) as Number {
+        return d.cfg.style == 3 ? -1 : minuteKey(d);
+    }
+
+    // moving parts of the serpentine styles on top of the cached layer (intro is over)
+    hidden function serpMoving(dc as Dc, d as D, a as A) as Void {
+        var c = G.clamp(d.cfg.climb, 0, 3);
+        var acc = d.accent;
+        progress(d);
+        var night = d.cfg.style == 2;
+        geo(c);
+        var L = _gtot;
+        var sRid = _pf * L;
+        var off = a.live ? (a.t % 1400000) * 0.012 : 0.0;
+        dc.setColor(night ? 0x34548F : 0x9A9A9A, -1);
+        dashes(dc, sRid, L, off, 1.5);
+        if (sRid > 0.5 && !night) {
+            dc.setColor(G.dim(acc, 0.55), -1);
+            dashes(dc, 0, sRid, off, 1.5);
+        }
+        var sm = pathPt(L);
+        if (_pdone) {
+            burst(dc, sm[0], sm[1] - 12, acc, 1.0, a);
+        }
+        flag(dc, sm[0] - (c == 1 ? 6 : 0), sm[1], _pdone ? 30 : 22, _pdone ? acc : 0xFFFFFF, a.live ? Math.sin(a.t * 0.006) * 2 : 0);
+        var rp = pathPt(sRid);
+        rider(dc, rp[0], rp[1], acc, a);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        if (a.bg) {
+            serpMoving(dc, d, a);
+            return;
+        }
         var st = d.cfg.style;
         var c = G.clamp(d.cfg.climb, 0, 3);
         var acc = d.accent;
@@ -584,7 +618,9 @@ class FaceAlpe extends Face {
         }
         // centre dashes on the road ahead
         dc.setColor(night ? 0x34548F : 0x9A9A9A, -1);
-        dashes(dc, sRid, sRoad, off, 1.5);
+        if (!a.so) {
+            dashes(dc, sRid, sRoad, off, 1.5);
+        }
 
         // completed part
         if (sRid > 0.5) {
@@ -599,7 +635,9 @@ class FaceAlpe extends Face {
                 dc.setColor(acc, -1);
                 path(dc, 0, sRid, 1, -2);
                 dc.setColor(G.dim(acc, 0.55), -1);
-                dashes(dc, 0, sRid, off, 1.5);
+                if (!a.so) {
+                    dashes(dc, 0, sRid, off, 1.5);
+                }
             }
         }
 
@@ -661,7 +699,7 @@ class FaceAlpe extends Face {
         // summit
         var sm = pathPt(L);
         var sp = G.spring(G.clamp((p - 0.45) / 0.35, 0.0, 1.0));
-        if (_pdone && sp > 0) {
+        if (_pdone && sp > 0 && !a.so) {
             burst(dc, sm[0], sm[1] - 12, acc, sp, a);
         }
         if (sp > 0) {
@@ -669,7 +707,9 @@ class FaceAlpe extends Face {
             if (c == 1) {
                 tower(dc, sm[0] + 10, sm[1] + 2);
             }
-            flag(dc, sm[0] - (c == 1 ? 6 : 0), sm[1], (_pdone ? 30 : 22) * sp, _pdone ? acc : 0xFFFFFF, wave);
+            if (!a.so) {
+                flag(dc, sm[0] - (c == 1 ? 6 : 0), sm[1], (_pdone ? 30 : 22) * sp, _pdone ? acc : 0xFFFFFF, wave);
+            }
         }
         if (_pdone) {
             confetti(dc, sm[0], sm[1] - 20, p);
@@ -677,7 +717,9 @@ class FaceAlpe extends Face {
 
         // rider
         var rp = pathPt(sRid);
-        rider(dc, rp[0], rp[1], acc, a);
+        if (!a.so) {
+            rider(dc, rp[0], rp[1], acc, a);
+        }
     }
 
     hidden function rider(dc as Dc, x, y, acc, a as A) as Void {

@@ -375,6 +375,17 @@ class FaceLatent extends Face {
         }
     }
 
+    // static layer: the finished picture with its captions (a new one with every wrist raise);
+    // the watercolour style keeps moving everywhere: no cache
+    function bgKey(d as D) as Number {
+        return d.cfg.style == 3 ? -1 : minuteKey(d) * 7 + d.wakeN;
+    }
+
+    // the noise is the reveal
+    function reveal() as Boolean {
+        return false;
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         prep(d, st);
@@ -383,6 +394,14 @@ class FaceLatent extends Face {
         if (s > NS) { s = NS; }
         _busy = a.live && t < NS * SMS + 150;
         _aq = st == 3;
+        if (a.bg && s < NS) {
+            // the denoising episode repaints everything; the cache holds the finished picture
+            dc.setColor(0x000000, -1);
+            dc.fillRectangle(0, 0, 454, 454);
+            a.bg = false;
+        }
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var ai = Math.round(G.easeInOut(s.toFloat() / NS) * 256).toNumber();
         // pure noise needs no target yet; while animating, the frame that builds it only draws
         // noise (watchdog budget: building + mixing in one frame is too much on the watch)
@@ -427,7 +446,7 @@ class FaceLatent extends Face {
         var gx0 = _gx0;
         var nm = _nm;
         var sx = (s * 151) & 255;
-        for (var r = 0; r < gr; r++) {
+        for (var r = 0; r < gr && S; r++) {
             var y = _gy0 + r * cs;
             var kb = r * gc;
             var c0 = 0;
@@ -456,12 +475,21 @@ class FaceLatent extends Face {
                 if (tg[k] < 3) {
                     var l = tg[k] + 1;
                     dc.setColor(cur[l], -1);
-                    dc.fillRectangle(gx0 + (k % gc) * cs, _gy0 + (k / gc) * cs, cs, cs);
+                    var ins = !S && st == 2 ? 1 : 0; // keep the cached pixel grid lines
+                    dc.fillRectangle(gx0 + (k % gc) * cs + ins, _gy0 + (k / gc) * cs + ins, cs - 2 * ins, cs - 2 * ins);
                 }
             }
         }
         var wd = gc * cs;
         if (st == 2) {
+            if (!S) {
+                // over the cached picture only "FERTIG!" blinks
+                if (a.live && (t / 500) % 2 == 0) {
+                    dc.setColor(cur[5], -1);
+                    F.px(dc, "FERTIG!", 227, 338, 2, 1, 0);
+                }
+                return;
+            }
             // chunky pixel grid
             dc.setColor(0x000000, -1);
             for (var c = 1; c < gc; c++) {
@@ -484,11 +512,14 @@ class FaceLatent extends Face {
             dc.setColor(cur[5], -1);
             if (s < NS) {
                 F.px(dc, "RENDERE" + "...".substring(0, (t / 200) % 4), 167, 338, 2, 0, 0);
-            } else if (!a.live || (t / 500) % 2 == 0) {
+            } else if (M && (!a.live || (t / 500) % 2 == 0)) {
                 F.px(dc, "FERTIG!", 227, 338, 2, 1, 0);
             }
             dc.setColor(cur[3], -1);
             F.px(dc, d.dowStr + " " + d.day + " " + d.monStr, 227, 362, 2, 1, 0);
+            return;
+        }
+        if (!S) {
             return;
         }
         // Diffusion: thin figure frame + paper captions

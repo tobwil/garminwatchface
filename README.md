@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 40 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 60 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 40 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 60 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -43,6 +43,24 @@ Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten
 <td align="center" valign="top" width="25%"><img src="docs/media/NIXIE.webp" width="180" alt="Nixie"><br><b>Nixie</b><br><sub>Glühende Nixie-Röhren, die beim Heben alle Ziffern durchlaufen; Dekatron-Variante mit Sekunden-Glimmpunkt</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/SKELETT.webp" width="180" alt="Skelett"><br><b>Skelett</b><br><sub>Offenes Uhrwerk mit schwingender Unruh, Räderwerk und Tourbillon; Gangreserve = Akku</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/BAUHAUS.webp" width="180" alt="Bauhaus"><br><b>Bauhaus</b><br><sub>Kreis, Quadrat, Dreieck: Stunde und Minute als Formen, jede Minute neu komponiert (auch Mondrian, Memphis)</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/PXCHRONO.webp" width="180" alt="Pixel-Chronograph"><br><b>Pixel-Chronograph</b><br><sub>Klassischer Chronograph ganz aus Pixeln: Tachymeter, Hilfszifferblätter, Treppchen-Zeiger; beim Heben läuft die Stoppuhr eine Runde</sub></td>
+</tr>
+</table>
+
+### Im Pebble-Stil
+
+Eine Verbeugung vor der Pebble: schwarz-weiß wie E-Paper oder in der 64-Farben-Palette der Pebble Time,
+Bitmap-Schrift, durchgestrichenes Bluetooth-Symbol ohne Handy – und so still wie das Original, nur beim
+Heben gibt es die typische Animation.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/KIESEL.webp" width="180" alt="Kiesel"><br><b>Kiesel</b><br><sub>TicToc-Layout: Datum, Haarlinien, große runde Ziffern, Schritte mit Raster-Balken, Akku und Bluetooth</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, die Zeilen gleiten von rechts herein</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/KANALOG.webp" width="180" alt="Kiesel Analog"><br><b>Kiesel Analog</b><br><sub>Simple Analog: kräftige Striche, roter Sekundenzeiger, Datum im Kästchen, Zeiger drehen ein</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/KROLL.webp" width="180" alt="Kiesel Rolle"><br><b>Kiesel Rolle</b><br><sub>Ziffernwalzen, die beim Heben wie ein Spielautomat rotieren und nacheinander einrasten</sub></td>
 </tr>
 </table>
 
@@ -99,6 +117,46 @@ Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten
 </tr>
 </table>
 
+### Pixel-Geschichten
+
+Jedes dieser Designs erzählt eine kleine Geschichte, die deine Daten und die echte Uhrzeit weiterschreiben.
+Bei jedem Handgelenk-Heben spielt eine kurze Episode.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/MOON.webp" width="180" alt="Mondflug"><br><b>Mondflug</b><br><sub>Jede Woche eine Mondmission: Countdown, Zündung, das Wochenziel trägt die Rakete bis zur Landung</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/OFFICE.webp" width="180" alt="Büro"><br><b>Büro</b><br><sub>Ein Arbeitstag nach echter Uhr: Kaffee, Videocall, Feierabend, nachts die Putzkolonne</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/CLIMB.webp" width="180" alt="Bergsteiger"><br><b>Bergsteiger</b><br><sub>Expedition zum Gipfel: Etagen tragen dich von Lager zu Lager, nachts im Zelt, am Ziel die Fahne</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/RACE.webp" width="180" alt="Rennfahrer"><br><b>Rennfahrer</b><br><sub>Ein Rennen über die Woche: Aktivminuten sind Runden, Boxenstopp bei leerer Body Battery, Zielflagge</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/CAMP.webp" width="180" alt="Lagerfeuer"><br><b>Lagerfeuer</b><br><sub>Ein Tag im Zeltlager: Schlafen, Morgenkaffee, Wanderung, abends Marshmallows – das Feuer brennt so hoch wie die Body Battery</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/FARM.webp" width="180" alt="Pixel-Hof"><br><b>Pixel-Hof</b><br><sub>Hahn kräht, das Feld wächst mit den Schritten bis zur Ernte, abends die Bank vor der Scheune</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/POST.webp" width="180" alt="Postbote"><br><b>Postbote</b><br><sub>Der Postbote läuft Haus für Haus seine Runde, Nachrichten sind Briefe in der Tasche</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/BAKERY.webp" width="180" alt="Bäckerei"><br><b>Bäckerei</b><br><sub>Nachts geht der Teig, um drei der Ofen, tagsüber kommen Kunden – abends ist alles verkauft</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/TRAIN.webp" width="180" alt="Pixel-Zug"><br><b>Pixel-Zug</b><br><sub>Jeder Trainingstag hängt einen beladenen Waggon an, das Wochenziel ist der Bahnhof</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/LIGHT.webp" width="180" alt="Leuchtturm"><br><b>Leuchtturm</b><br><sub>Der Wärter angelt, zündet in der Dämmerung das Licht, nachts kreist der Kegel über die See</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/MAP.webp" width="180" alt="Schatzkarte"><br><b>Schatzkarte</b><br><sub>Das Schiff segelt mit dem Wochenziel Insel um Insel zum roten X, am Ziel öffnet sich die Truhe</sub></td>
+</tr>
+</table>
+
+### Alle Sensoren
+
+Diese Designs verwenden so viele Daten der Uhr wie möglich: Puls und Ruhepuls, Body Battery, Stress,
+Schlaf, SpO2, Atemfrequenz, VO2max, Schritte, Etagen, Aktivminuten, Kalorien, Distanz, Nachrichten,
+Handy-Verbindung, Akku, Höhe, Luftdruck, Wetter, Wind, Sonne und Mond.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/UBAHN.webp" width="180" alt="U-Bahn-Netz"><br><b>U-Bahn-Netz</b><br><sub>Sechs Linien = sechs Ziele, die Züge stehen so weit wie du; Durchsagen mit deinen Werten, Glocke bei neuen Nachrichten</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/BRIDGE.webp" width="180" alt="Kommandobrücke"><br><b>Kommandobrücke</b><br><sub>Raumschiff-Brücke: Schilde = Body Battery, Reaktor im Pulstakt, Lebenserhaltung atmet mit dir, Stress = Alarm</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/BODY.webp" width="180" alt="Körperscan"><br><b>Körperscan</b><br><sub>Pixel-Anatomie live: Herz schlägt mit deinem Puls, Lungen atmen, Gehirn glüht mit dem Stress</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/STATION.webp" width="180" alt="Wetterstation"><br><b>Wetterstation</b><br><sub>Messgarten: Windrad, Fahne, Thermometer, Regenmesser und Barometer zeigen die echten Werte</sub></td>
+</tr>
+</table>
+
 ### Daten-Kunst & wild
 
 <table>
@@ -136,6 +194,21 @@ Viele Designs leben mit dem echten Tag: Sonnenstand, Dämmerung, Nacht und Mond 
 <tr>
 <td align="center" valign="top" width="25%"><img src="docs/media/day/CITY.webp" width="180" alt="Pixel City im Tagesverlauf"><br><b>Pixel City</b><br><sub>Variante Winter: Morgens gehen die Lichter aus, abends wieder an</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/day/SYNTH.webp" width="180" alt="Synthwave im Tagesverlauf"><br><b>Synthwave</b><br><sub>Die Retro-Sonne steigt und sinkt mit der echten, nachts ein Ringplanet</sub></td>
+</tr>
+</table>
+
+Und die Pixel-Geschichten durch ihren Tag:
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/CAMP.webp" width="180" alt="Lagerfeuer im Tagesverlauf"><br><b>Lagerfeuer</b><br><sub>Schlafen, Morgenkaffee, Wanderung, Lagerfeuer</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/FARM.webp" width="180" alt="Pixel-Hof im Tagesverlauf"><br><b>Pixel-Hof</b><br><sub>Hahn, Feldarbeit, Feierabend, Nachtruhe</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/LIGHT.webp" width="180" alt="Leuchtturm im Tagesverlauf"><br><b>Leuchtturm</b><br><sub>Das Licht geht in der Dämmerung an und morgens aus</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/BAKERY.webp" width="180" alt="Bäckerei im Tagesverlauf"><br><b>Bäckerei</b><br><sub>Teig, Backstube, Laden, Feierabend</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/POST.webp" width="180" alt="Postbote im Tagesverlauf"><br><b>Postbote</b><br><sub>Die Runde am Tag, abends die Katze unter der Laterne</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/OFFICE.webp" width="180" alt="Büro im Tagesverlauf"><br><b>Büro</b><br><sub>Vom ersten Kaffee bis zur Putzkolonne</sub></td>
 </tr>
 </table>
 
@@ -302,6 +375,86 @@ Viele Designs leben mit dem echten Tag: Sonnenstand, Dämmerung, Nacht und Mond 
 
 <img src="docs/media/styles/STERNE.webp" width="560" alt="Sternenhimmel: Varianten">
 
+**Pixel-Chronograph**: Panda · Racing · Gameboy
+
+<img src="docs/media/styles/PXCHRONO.webp" width="560" alt="Pixel-Chronograph: Varianten">
+
+**Mondflug**: Retro · Blaupause · Gameboy
+
+<img src="docs/media/styles/MOON.webp" width="560" alt="Mondflug: Varianten">
+
+**Büro**: Großraum · Homeoffice · Gameboy
+
+<img src="docs/media/styles/OFFICE.webp" width="560" alt="Büro: Varianten">
+
+**Bergsteiger**: Fels · Eis · Gameboy
+
+<img src="docs/media/styles/CLIMB.webp" width="560" alt="Bergsteiger: Varianten">
+
+**Rennfahrer**: Grand Prix · Rallye · Gameboy
+
+<img src="docs/media/styles/RACE.webp" width="560" alt="Rennfahrer: Varianten">
+
+**Lagerfeuer**: Wald · Strand · Winter
+
+<img src="docs/media/styles/CAMP.webp" width="560" alt="Lagerfeuer: Varianten">
+
+**Pixel-Hof**: Sommer · Herbst · Gameboy
+
+<img src="docs/media/styles/FARM.webp" width="560" alt="Pixel-Hof: Varianten">
+
+**Postbote**: Stadt · Dorf · Gameboy
+
+<img src="docs/media/styles/POST.webp" width="560" alt="Postbote: Varianten">
+
+**Bäckerei**: Backstube · Café · Gameboy
+
+<img src="docs/media/styles/BAKERY.webp" width="560" alt="Bäckerei: Varianten">
+
+**Pixel-Zug**: Dampf · Nacht · Gameboy
+
+<img src="docs/media/styles/TRAIN.webp" width="560" alt="Pixel-Zug: Varianten">
+
+**Leuchtturm**: Küste · Sturm · Gameboy
+
+<img src="docs/media/styles/LIGHT.webp" width="560" alt="Leuchtturm: Varianten">
+
+**Schatzkarte**: Pergament · Nacht · Gameboy
+
+<img src="docs/media/styles/MAP.webp" width="560" alt="Schatzkarte: Varianten">
+
+**U-Bahn-Netz**: Netzplan · Nacht · Gameboy
+
+<img src="docs/media/styles/UBAHN.webp" width="560" alt="U-Bahn-Netz: Varianten">
+
+**Kommandobrücke**: Raumschiff · Bernstein · Gameboy
+
+<img src="docs/media/styles/BRIDGE.webp" width="560" alt="Kommandobrücke: Varianten">
+
+**Körperscan**: Röntgen · Lehrtafel · Gameboy
+
+<img src="docs/media/styles/BODY.webp" width="560" alt="Körperscan: Varianten">
+
+**Wetterstation**: Messgarten · Polar · Gameboy
+
+<img src="docs/media/styles/STATION.webp" width="560" alt="Wetterstation: Varianten">
+
+**Kiesel**: Weiß · Schwarz · Farbe
+
+<img src="docs/media/styles/KIESEL.webp" width="560" alt="Kiesel: Varianten">
+
+**Kiesel Text**: Weiß · Schwarz · Farbe
+
+<img src="docs/media/styles/KTEXT.webp" width="560" alt="Kiesel Text: Varianten">
+
+**Kiesel Analog**: Weiß · Schwarz · Farbe
+
+<img src="docs/media/styles/KANALOG.webp" width="560" alt="Kiesel Analog: Varianten">
+
+**Kiesel Rolle**: Weiß · Schwarz · Farbe
+
+<img src="docs/media/styles/KROLL.webp" width="560" alt="Kiesel Rolle: Varianten">
+
 </details>
 
 **Trainingstage** erkennt FaceLab selbst: Ein Tag zählt, wenn er mindestens 30 Aktivminuten hat oder
@@ -346,6 +499,10 @@ site/           gebündeltes Studio (eine HTML-Datei)
   identischer Logik. Die Vorschau zeichnet über eine Nachbildung der Garmin-`Dc`-API, und alle Texte
   laufen über eigene, prozedurale Schriften (Vektor, 5×7-Pixel, 7-Segment) – dadurch sieht die
   Vorschau aus wie die Uhr.
+* **Flüssig auf der Uhr:** Die Uhr rechnet 10–15× langsamer als der Simulator. Jedes Design trennt deshalb
+  eine statische Ebene (einmal pro Minute in eine Bitmap gerendert, in einem eigenen Timer-Callback) von den
+  bewegten Teilen, die pro Frame darübergezeichnet werden. Beim Heben wird die Ebene wie ein alter
+  Röhrenmonitor eingeblendet; die Bildrate passt sich an die gemessene Zeichenzeit an.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
   deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–84 KB im Simulator gemessen).
 * **USB-Übertragung im Browser:** Das Studio spricht per WebUSB direkt das MTP-Protokoll der Uhr

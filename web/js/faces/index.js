@@ -39,6 +39,26 @@ import f36 from "./lava.js";
 import f37 from "./bauhaus.js";
 import f38 from "./sterne.js";
 import f39 from "./wetter.js";
+import f40 from "./farm.js";
+import f41 from "./camp.js";
+import f42 from "./moon.js";
+import f43 from "./map.js";
+import f44 from "./light.js";
+import f45 from "./train.js";
+import f46 from "./office.js";
+import f47 from "./climb.js";
+import f48 from "./race.js";
+import f49 from "./post.js";
+import f50 from "./bakery.js";
+import f51 from "./pxchrono.js";
+import f52 from "./ubahn.js";
+import f53 from "./bridge.js";
+import f54 from "./body.js";
+import f55 from "./station.js";
+import f56 from "./kiesel.js";
+import f57 from "./ktext.js";
+import f58 from "./kanalog.js";
+import f59 from "./kroll.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -80,4 +100,24 @@ export const FACES = {
   BAUHAUS: f37,
   STERNE: f38,
   WETTER: f39,
+  FARM: f40,
+  CAMP: f41,
+  MOON: f42,
+  MAP: f43,
+  LIGHT: f44,
+  TRAIN: f45,
+  OFFICE: f46,
+  CLIMB: f47,
+  RACE: f48,
+  POST: f49,
+  BAKERY: f50,
+  PXCHRONO: f51,
+  UBAHN: f52,
+  BRIDGE: f53,
+  BODY: f54,
+  STATION: f55,
+  KIESEL: f56,
+  KTEXT: f57,
+  KANALOG: f58,
+  KROLL: f59,
 };

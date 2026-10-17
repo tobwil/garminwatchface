@@ -128,7 +128,11 @@ function outline(dc, txt, x, y, h, pen, col, glow) {
 export default {
   get fps() { return 15; },
 
+  // static layer: camera background, reticle, status frame; the detection episode moves
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const acc = d.accent;
     const live = a.live;
@@ -136,40 +140,45 @@ export default {
     const tt = live ? a.t : 0;
     const wk = d.wakeN;
 
-    // ---- camera background
-    if (st === 3) {
-      // low-res heat sensor image (24 px cells), driven by heart rate and stress
-      heat(d);
-      for (let k = 0; k < RN; k++) {
-        dc.setColor(RC[k], -1);
-        dc.fillRectangle(RX[k], RY[k], RW[k], 24);
+    if (S) {
+      // ---- camera background
+      if (st === 3) {
+        // low-res heat sensor image (24 px cells), driven by heart rate and stress
+        heat(d);
+        for (let k = 0; k < RN; k++) {
+          dc.setColor(RC[k], -1);
+          dc.fillRectangle(RX[k], RY[k], RW[k], 24);
+        }
+      } else if (st === 2) {
+        dc.setColor(0x0e1014, -1);
+        dc.fillCircle(227, 227, 227);
+        dc.setColor(0x171b22, -1);
+        for (let g = 37; g < 454; g += 38) {
+          dc.drawLine(g, 0, g, 454);
+          dc.drawLine(0, g, 454, g);
+        }
+      } else {
+        dc.setColor(0x140101, -1);
+        dc.fillCircle(227, 227, 227);
+        dc.setColor(0x220404, -1);
+        dc.fillCircle(227, 227, 150);
+        dc.setColor(0x0a0000, -1);
+        for (let y = 2; y < 454; y += 4) dc.fillRectangle(0, y, 454, 1);
       }
-    } else if (st === 2) {
-      dc.setColor(0x0e1014, -1);
-      dc.fillCircle(227, 227, 227);
-      dc.setColor(0x171b22, -1);
-      for (let g = 37; g < 454; g += 38) {
-        dc.drawLine(g, 0, g, 454);
-        dc.drawLine(0, g, 454, g);
-      }
-    } else {
-      dc.setColor(0x140101, -1);
-      dc.fillCircle(227, 227, 227);
-      dc.setColor(0x220404, -1);
-      dc.fillCircle(227, 227, 150);
-      dc.setColor(0x0a0000, -1);
-      for (let y = 2; y < 454; y += 4) dc.fillRectangle(0, y, 454, 1);
     }
-    // sensor noise
-    if (st !== 3) {
-      let sd = 77 + Math.floor(tt / 66);
-      dc.setColor(st === 1 ? 0x3a0c0c : 0x262b33, -1);
-      for (let k = 0; k < 36; k++) {
-        sd = G.rnd(sd);
-        const x = 20 + (sd % 414);
-        sd = G.rnd(sd);
-        const y = 20 + (sd % 414);
-        dc.fillRectangle(x, y, 2, 2);
+
+    if (M) {
+      // sensor noise
+      if (st !== 3) {
+        let sd = 77 + Math.floor(tt / 66);
+        dc.setColor(st === 1 ? 0x3a0c0c : 0x262b33, -1);
+        for (let k = 0; k < 36; k++) {
+          sd = G.rnd(sd);
+          const x = 20 + (sd % 414);
+          sd = G.rnd(sd);
+          const y = 20 + (sd % 414);
+          dc.fillRectangle(x, y, 2, 2);
+        }
       }
     }
 
@@ -178,18 +187,20 @@ export default {
     const txt = st === 1 ? 0xffe2dc : 0xffffff;
     const dark = st === 1 ? 0x140101 : st === 2 ? 0x0b0d10 : 0x000000;
 
-    // ---- viewfinder reticle: lens ring with ticks + four chevrons
-    dc.setColor(G.dim(hud, st === 3 ? 0.7 : 0.35), -1);
-    dc.setPenWidth(1);
-    dc.drawCircle(227, 227, 214);
-    for (let k = 0; k < 36; k++) G.tick(dc, 227, 227, k % 9 === 0 ? 200 : 208, 214, k * 10);
-    dc.setColor(G.dim(hud, 0.8), -1);
-    dc.setPenWidth(2);
-    for (let k = 0; k < 4; k++) {
-      const deg = k * 90;
-      G.tick(dc, 227, 227, 186, 200, deg);
-      G.tick(dc, 227, 227, 186, 186 + 8, deg - 4);
-      G.tick(dc, 227, 227, 186, 186 + 8, deg + 4);
+    if (S) {
+      // ---- viewfinder reticle: lens ring with ticks + four chevrons
+      dc.setColor(G.dim(hud, st === 3 ? 0.7 : 0.35), -1);
+      dc.setPenWidth(1);
+      dc.drawCircle(227, 227, 214);
+      for (let k = 0; k < 36; k++) G.tick(dc, 227, 227, k % 9 === 0 ? 200 : 208, 214, k * 10);
+      dc.setColor(G.dim(hud, 0.8), -1);
+      dc.setPenWidth(2);
+      for (let k = 0; k < 4; k++) {
+        const deg = k * 90;
+        G.tick(dc, 227, 227, 186, 200, deg);
+        G.tick(dc, 227, 227, 186, 186 + 8, deg - 4);
+        G.tick(dc, 227, 227, 186, 186 + 8, deg + 4);
+      }
     }
 
     // ---- box layout (widths follow the content)
@@ -207,123 +218,127 @@ export default {
     // ---- objects: slots 0..2 and the time (3)
     let found = 0, nObj = 1; // the time plus every non-empty slot
     for (let k = 0; k < 3; k++) if (d.slots[k].lbl) nObj++;
-    const order = [3, 0, 1, 2]; // draw time last (on top)
-    for (let oi = 0; oi < 4; oi++) {
-      const i = order[oi];
-      const sl = i < 3 ? d.slots[i] : null;
-      if (sl && !sl.lbl) continue; // empty slot: nothing to detect
-      const known = i === 3 || sl.raw !== -1;
-      const t0 = passT(BY[i] + BH[i] / 2);
-      const lt = t - t0; // ms since lock started
-      if (lt < 0) continue;
-      found++;
-      const lp = G.clamp(lt / LOCK, 0, 1);
-      const e = G.ease(lp);
-      // tracking jitter while live
-      let jx = 0, jy = 0, gr = 0;
-      if (live && lp >= 1) {
-        jx = Math.round(1.5 * Math.sin(tt / 530 + i * 2.1));
-        jy = Math.round(1.5 * Math.cos(tt / 610 + i * 1.3));
-        gr = 1.5 + 1.5 * Math.sin(tt / 400 + i);
-      }
-      // lock-on: brackets fly in from 1.8x and shrink to fit
-      const sc = 1 + 0.8 * (1 - e);
-      const w = BW[i] * sc + 2 * gr, h = BH[i] * sc + 2 * gr;
-      const cx = BX[i] + BW[i] / 2 + jx, cy = BY[i] + BH[i] / 2 + jy;
-      const x = cx - w / 2, y = cy - h / 2;
-      const col = st === 1 ? acc : st === 2 ? (i === 3 ? acc : CC[i]) : 0xffffff;
-      const bc = G.mix(0xffffff, col, lp);
-      if (st === 2 && lp >= 1) {
-        // labelling tool: thin full rectangle under the corner brackets
-        dc.setColor(G.dim(col, 0.55), -1);
-        dc.setPenWidth(1);
-        dc.drawRectangle(x, y, w, h);
-      }
-      dc.setColor(bc, -1);
-      dc.setPenWidth(i === 3 ? 3 : 2);
-      brackets(dc, x, y, w, h, Math.round(Math.min(w, h) * 0.26));
-      if (lp < 1) {
-        // crosshair converging on the object centre
-        dc.setPenWidth(1);
-        dc.drawLine(cx - 16 * (1 - e) - 4, cy, cx - 4, cy);
-        dc.drawLine(cx + 4, cy, cx + 16 * (1 - e) + 4, cy);
-      }
-
-      // label chip (types out after the lock)
-      let conf = i === 3 ? "99,9%" : (known ? 80 + (G.rnd(wk * 97 + i * 13 + 5) % 20) : 12 + ((wk + i * 7) % 25)) + "%";
-      if (i === 3) conf = "99,9%";
-      const lbl = i === 3 ? "UHRZEIT" : sl.lbl;
-      const n = Math.floor((lt - LOCK * 0.6) / 28);
-      const cbg = st === 3 ? 0xffffff : col;
-      chip(dc, BX[i] + jx, BY[i] + jy - 18, lbl, conf, n, cbg, dark);
-
-      // object content
-      const vx = cx, vy = BY[i] + BH[i] / 2 + jy;
-      if (i === 3) {
-        const ts = G.timeStr(d);
-        if (lp > 0.25) {
-          if (st === 1) {
-            dc.setColor(txt, -1);
-            F.px(dc, ts, vx, vy - 28, 8, 1, 0);
-          } else if (st === 3) {
-            outline(dc, ts, vx, vy, 74, 6, 0xffffff, 0x14051f);
-          } else {
-            dc.setColor(0xffffff, -1);
-            F.st(dc, ts, vx, vy, 74, 6, 1, 1.0, 0);
-          }
+    if (M) {
+      const order = [3, 0, 1, 2]; // draw time last (on top)
+      for (let oi = 0; oi < 4; oi++) {
+        const i = order[oi];
+        const sl = i < 3 ? d.slots[i] : null;
+        if (sl && !sl.lbl) continue; // empty slot: nothing to detect
+        const known = i === 3 || sl.raw !== -1;
+        const t0 = passT(BY[i] + BH[i] / 2);
+        const lt = t - t0; // ms since lock started
+        if (lt < 0) continue;
+        found++;
+        const lp = G.clamp(lt / LOCK, 0, 1);
+        const e = G.ease(lp);
+        // tracking jitter while live
+        let jx = 0, jy = 0, gr = 0;
+        if (live && lp >= 1) {
+          jx = Math.round(1.5 * Math.sin(tt / 530 + i * 2.1));
+          jy = Math.round(1.5 * Math.cos(tt / 610 + i * 1.3));
+          gr = 1.5 + 1.5 * Math.sin(tt / 400 + i);
         }
-      } else if (lp > 0.25) {
-        // value: scrambled until locked
-        let v = sl.val;
+        // lock-on: brackets fly in from 1.8x and shrink to fit
+        const sc = 1 + 0.8 * (1 - e);
+        const w = BW[i] * sc + 2 * gr, h = BH[i] * sc + 2 * gr;
+        const cx = BX[i] + BW[i] / 2 + jx, cy = BY[i] + BH[i] / 2 + jy;
+        const x = cx - w / 2, y = cy - h / 2;
+        const col = st === 1 ? acc : st === 2 ? (i === 3 ? acc : CC[i]) : 0xffffff;
+        const bc = G.mix(0xffffff, col, lp);
+        if (st === 2 && lp >= 1) {
+          // labelling tool: thin full rectangle under the corner brackets
+          dc.setColor(G.dim(col, 0.55), -1);
+          dc.setPenWidth(1);
+          dc.drawRectangle(x, y, w, h);
+        }
+        dc.setColor(bc, -1);
+        dc.setPenWidth(i === 3 ? 3 : 2);
+        brackets(dc, x, y, w, h, Math.round(Math.min(w, h) * 0.26));
         if (lp < 1) {
-          let sd = G.rnd(i * 31 + Math.floor(lt / 60) + 3);
-          let s = "";
-          for (let k = 0; k < v.length; k++) { sd = G.rnd(sd); s += "" + (sd % 10); }
-          v = s;
+          // crosshair converging on the object centre
+          dc.setPenWidth(1);
+          dc.drawLine(cx - 16 * (1 - e) - 4, cy, cx - 4, cy);
+          dc.drawLine(cx + 4, cy, cx + 16 * (1 - e) + 4, cy);
         }
-        const vc = known ? txt : G.dim(txt, 0.5);
-        if (st !== 2) {
-          const vs = v.length > 5 ? 3 : 4;
-          if (st === 3) {
-            // drop shadow keeps the value legible on hot spots
-            dc.setColor(0x14051f, -1);
-            F.px(dc, v, vx + 3, vy - (7 * vs) / 2 + 3, vs, 1, 0);
-          }
-          dc.setColor(vc, -1);
-          F.px(dc, v, vx, vy - (7 * vs) / 2, vs, 1, 0);
-        } else {
-          dc.setColor(vc, -1);
-          F.st(dc, v, vx, vy, 28, 4, 1, 1.0, 0);
-        }
-      }
-    }
 
-    // ---- scan line + trail
-    if (live) {
-      const sy = scanY(a.t);
-      const sc = st === 1 ? acc : 0xffffff;
-      for (let k = 3; k >= 1; k--) {
-        dc.setColor(st === 3 ? G.mix(0xffffff, 0x000000, 0.25 * k) : G.dim(sc, 0.45 / k), -1);
-        dc.fillRectangle(0, sy - k * 6, 454, 2);
+        // label chip (types out after the lock)
+        let conf = i === 3 ? "99,9%" : (known ? 80 + (G.rnd(wk * 97 + i * 13 + 5) % 20) : 12 + ((wk + i * 7) % 25)) + "%";
+        if (i === 3) conf = "99,9%";
+        const lbl = i === 3 ? "UHRZEIT" : sl.lbl;
+        const n = Math.floor((lt - LOCK * 0.6) / 28);
+        const cbg = st === 3 ? 0xffffff : col;
+        chip(dc, BX[i] + jx, BY[i] + jy - 18, lbl, conf, n, cbg, dark);
+
+        // object content
+        const vx = cx, vy = BY[i] + BH[i] / 2 + jy;
+        if (i === 3) {
+          const ts = G.timeStr(d);
+          if (lp > 0.25) {
+            if (st === 1) {
+              dc.setColor(txt, -1);
+              F.px(dc, ts, vx, vy - 28, 8, 1, 0);
+            } else if (st === 3) {
+              outline(dc, ts, vx, vy, 74, 6, 0xffffff, 0x14051f);
+            } else {
+              dc.setColor(0xffffff, -1);
+              F.st(dc, ts, vx, vy, 74, 6, 1, 1.0, 0);
+            }
+          }
+        } else if (lp > 0.25) {
+          // value: scrambled until locked
+          let v = sl.val;
+          if (lp < 1) {
+            let sd = G.rnd(i * 31 + Math.floor(lt / 60) + 3);
+            let s = "";
+            for (let k = 0; k < v.length; k++) { sd = G.rnd(sd); s += "" + (sd % 10); }
+            v = s;
+          }
+          const vc = known ? txt : G.dim(txt, 0.5);
+          if (st !== 2) {
+            const vs = v.length > 5 ? 3 : 4;
+            if (st === 3) {
+              // drop shadow keeps the value legible on hot spots
+              dc.setColor(0x14051f, -1);
+              F.px(dc, v, vx + 3, vy - (7 * vs) / 2 + 3, vs, 1, 0);
+            }
+            dc.setColor(vc, -1);
+            F.px(dc, v, vx, vy - (7 * vs) / 2, vs, 1, 0);
+          } else {
+            dc.setColor(vc, -1);
+            F.st(dc, v, vx, vy, 28, 4, 1, 1.0, 0);
+          }
+        }
       }
-      dc.setColor(sc, -1);
-      dc.fillRectangle(0, sy, 454, 2);
+
+      // ---- scan line + trail
+      if (live) {
+        const sy = scanY(a.t);
+        const sc = st === 1 ? acc : 0xffffff;
+        for (let k = 3; k >= 1; k--) {
+          dc.setColor(st === 3 ? G.mix(0xffffff, 0x000000, 0.25 * k) : G.dim(sc, 0.45 / k), -1);
+          dc.fillRectangle(0, sy - k * 6, 454, 2);
+        }
+        dc.setColor(sc, -1);
+        dc.fillRectangle(0, sy, 454, 2);
+      }
     }
 
     // ---- status: REC, date stamp, detections
     const sCol = st === 3 ? 0xffffff : G.dim(hud, st === 1 ? 0.9 : 1.0);
-    if (!live || Math.floor(a.t / 500) % 2 === 0) {
+    if (M && (!live || Math.floor(a.t / 500) % 2 === 0)) {
       dc.setColor(st === 2 ? 0xff3b30 : st === 1 ? acc : 0xff3b30, -1);
       dc.fillCircle(87, 99, 5);
     }
     dc.setColor(sCol, -1);
-    F.px(dc, "REC", 98, 92, 2, 0, 0);
-    // camera battery = watch battery
-    dc.setPenWidth(2);
-    dc.drawRectangle(318, 92, 22, 13);
-    dc.fillRectangle(340, 96, 3, 5);
-    dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100, 0, 1)), 7);
-    F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
+    if (S) {
+      F.px(dc, "REC", 98, 92, 2, 0, 0);
+      // camera battery = watch battery
+      dc.setPenWidth(2);
+      dc.drawRectangle(318, 92, 22, 13);
+      dc.fillRectangle(340, 96, 3, 5);
+      dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100, 0, 1)), 7);
+      F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
+    }
     const all = found >= nObj;
     let msg = all ? "ERKANNT: " + nObj + (nObj === 1 ? " OBJEKT" : " OBJEKTE") : "SUCHE ... " + found + "/" + nObj;
     if (all && t > 4200) {
@@ -331,7 +346,8 @@ export default {
       msg = verdict(d);
       msg = msg.substring(0, G.clamp(Math.floor((t - 4200) / 40), 0, msg.length));
     }
-    F.px(dc, msg, 227 - F.pxW(all && t > 4200 ? verdict(d) : msg, 2) / 2, 370, 2, 0, 0);
+    if (M) F.px(dc, msg, 227 - F.pxW(all && t > 4200 ? verdict(d) : msg, 2) / 2, 370, 2, 0, 0);
+    if (!S) return;
     dc.setColor(G.dim(sCol, 0.7), -1);
     F.px(dc, d.dowStr + " " + G.pad2(d.day) + "." + G.pad2(d.mon) + ".  FPS 15", 227, 392, 2, 1, 0);
   },

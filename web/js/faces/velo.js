@@ -165,7 +165,11 @@ let FPS = 15;
 export default {
   get fps() { return FPS; },
 
+  // static layer: track, stands, rail, infield, time, lap board; the riders and the bell move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const acc = d.accent;
     const p = a.intro;
@@ -180,114 +184,116 @@ export default {
     const za = A * z;
     const fade = G.clamp(p / 0.35, 0, 1);
 
-    // ---- stands (outside the rail): two tiers with spectators
-    if (st !== 3) {
-      dc.setColor(G.mix(bg, C[12], fade), -1);
-      dc.setPenWidth(9);
-      for (let row = 0; row < 2; row++) {
-        const r = (195 + row * 11) * z;
-        // only the parts inside the round screen
-        const v = row === 0 ? 52 : 30;
-        dc.drawLine(CX - za, CY - r, CX + za, CY - r);
-        dc.drawLine(CX - za, CY + r, CX + za, CY + r);
-        G.arcC(dc, CX + za, CY, r, 0, v);
-        G.arcC(dc, CX + za, CY, r, 180 - v, 180);
-        G.arcC(dc, CX - za, CY, r, 180, 180 + v);
-        G.arcC(dc, CX - za, CY, r, 360 - v, 360);
-      }
-      crowd();
-      const HC = [acc, 0xf0f0f0, 0x4a78c8, 0xf2c14e, 0x8a8a8a];
-      for (let h = 0; h < 5; h++) {
-        dc.setColor(G.mix(bg, HC[h], (st === 2 ? 0.4 : 0.7) * fade), -1);
-        for (let i = 0; i < CRX.length; i++) {
-          if (CRH[i] === h) dc.fillRectangle(CX + CRX[i] * z - 1.5, CY + CRY[i] * z - 1.5, 3, 3);
+    if (S) {
+      // ---- stands (outside the rail): two tiers with spectators
+      if (st !== 3) {
+        dc.setColor(G.mix(bg, C[12], fade), -1);
+        dc.setPenWidth(9);
+        for (let row = 0; row < 2; row++) {
+          const r = (195 + row * 11) * z;
+          // only the parts inside the round screen
+          const v = row === 0 ? 52 : 30;
+          dc.drawLine(CX - za, CY - r, CX + za, CY - r);
+          dc.drawLine(CX - za, CY + r, CX + za, CY + r);
+          G.arcC(dc, CX + za, CY, r, 0, v);
+          G.arcC(dc, CX + za, CY, r, 180 - v, 180);
+          G.arcC(dc, CX - za, CY, r, 180, 180 + v);
+          G.arcC(dc, CX - za, CY, r, 360 - v, 360);
         }
-      }
-    }
-
-    // ---- track surface
-    if (st !== 3) {
-      dc.setColor(G.mix(bg, 0x2a2a2a, fade), -1);
-      dc.setPenWidth(Math.ceil(8 * z));
-      stadLine(dc, za, (R_RAIL - 0.5) * z, 1.0);
-      // banked boards: concentric bands, darker towards the outside (colours cached per style)
-      if (BCS !== st) {
-        BC = [];
-        for (let j = 0; j < NB; j++) {
-          let c = G.mix(C[1], C[2], j / (NB - 1.0));
-          if (j % 2 === 1) c = G.mix(c, C[3], 0.5);
-          BC.push(c);
-        }
-        BCS = st;
-      }
-      const bw = 42.0 / NB;
-      dc.setPenWidth(Math.ceil(bw * z) + 1);
-      for (let j = 0; j < NB; j++) {
-        dc.setColor(fade >= 1 ? BC[j] : G.mix(bg, BC[j], fade), -1);
-        const r = (R_IN + bw / 2 + j * bw) * z;
-        G.arcC(dc, CX + za, CY, r, 0, 180);
-        G.arcC(dc, CX - za, CY, r, 180, 360);
-        const r0 = (R_IN + j * bw) * z;
-        dc.fillRectangle(CX - za, CY - r0 - bw * z, 2 * za, bw * z + 1);
-        dc.fillRectangle(CX - za, CY + r0, 2 * za, bw * z + 1);
-      }
-      // spotlights (Nacht): warm pools on the boards, flickering
-      if (st === 2) {
-        const LU = [0.08, 0.3, 0.55, 0.8];
-        for (let k = 0; k < 4; k++) {
-          const q = stadPt(za, (R_IN + 21) * z, LU[k]);
-          let fl = 1.0;
-          if (live) fl = 0.85 + 0.15 * G.noise(t / 160.0 + k * 3.7);
-          for (let j = 0; j < 2; j++) {
-            dc.setColor(G.mix(C[1], 0xffd59a, (0.12 + j * 0.2) * fl * fade), -1);
-            dc.fillCircle(q[0], q[1], (19 - j * 8) * z);
+        crowd();
+        const HC = [acc, 0xf0f0f0, 0x4a78c8, 0xf2c14e, 0x8a8a8a];
+        for (let h = 0; h < 5; h++) {
+          dc.setColor(G.mix(bg, HC[h], (st === 2 ? 0.4 : 0.7) * fade), -1);
+          for (let i = 0; i < CRX.length; i++) {
+            if (CRH[i] === h) dc.fillRectangle(CX + CRX[i] * z - 1.5, CY + CRY[i] * z - 1.5, 3, 3);
           }
         }
       }
-      // côte d'azur + infield
-      dc.setColor(G.mix(bg, C[4], fade), -1);
-      dc.setPenWidth(Math.ceil(13 * z));
-      stadLine(dc, za, (R_COTE + 6) * z, 1.0);
-      dc.setColor(G.mix(bg, C[5], fade), -1);
-      stadFill(dc, za, R_COTE * z);
-    } else {
-      // Neon: côte d'azur as a dim double line
-      dc.setColor(C[4], -1);
-      dc.setPenWidth(2);
-      stadLine(dc, za, R_COTE * z, G.ease(G.stag(p, 0, 0, 0.6)));
-    }
 
-    // ---- lines draw themselves (measurement, sprinter, stayer, outer edge)
-    const LR = [R_IN, R_MEAS, R_SPR, R_STAY, R_OUT];
-    const LC = [st === 3 ? C[6] : C[6], C[6], C[7], C[8], st === 3 ? C[7] : C[3]];
-    const LW = [st === 3 ? 2 : 0, st === 3 ? 0 : 2, 3, 3, st === 3 ? 3 : 0];
-    for (let k = 0; k < 5; k++) {
-      if (LW[k] === 0) continue;
-      const f = G.easeInOut(G.stag(p, k, 0.07, 0.5));
-      if (st === 2 && k >= 2) {
-        dc.setColor(G.dim(LC[k], 0.3), -1);
-        dc.setPenWidth(6);
+      // ---- track surface
+      if (st !== 3) {
+        dc.setColor(G.mix(bg, 0x2a2a2a, fade), -1);
+        dc.setPenWidth(Math.ceil(8 * z));
+        stadLine(dc, za, (R_RAIL - 0.5) * z, 1.0);
+        // banked boards: concentric bands, darker towards the outside (colours cached per style)
+        if (BCS !== st) {
+          BC = [];
+          for (let j = 0; j < NB; j++) {
+            let c = G.mix(C[1], C[2], j / (NB - 1.0));
+            if (j % 2 === 1) c = G.mix(c, C[3], 0.5);
+            BC.push(c);
+          }
+          BCS = st;
+        }
+        const bw = 42.0 / NB;
+        dc.setPenWidth(Math.ceil(bw * z) + 1);
+        for (let j = 0; j < NB; j++) {
+          dc.setColor(fade >= 1 ? BC[j] : G.mix(bg, BC[j], fade), -1);
+          const r = (R_IN + bw / 2 + j * bw) * z;
+          G.arcC(dc, CX + za, CY, r, 0, 180);
+          G.arcC(dc, CX - za, CY, r, 180, 360);
+          const r0 = (R_IN + j * bw) * z;
+          dc.fillRectangle(CX - za, CY - r0 - bw * z, 2 * za, bw * z + 1);
+          dc.fillRectangle(CX - za, CY + r0, 2 * za, bw * z + 1);
+        }
+        // spotlights (Nacht): warm pools on the boards, flickering
+        if (st === 2) {
+          const LU = [0.08, 0.3, 0.55, 0.8];
+          for (let k = 0; k < 4; k++) {
+            const q = stadPt(za, (R_IN + 21) * z, LU[k]);
+            let fl = 1.0;
+            if (live) fl = 0.85 + 0.15 * G.noise(t / 160.0 + k * 3.7);
+            for (let j = 0; j < 2; j++) {
+              dc.setColor(G.mix(C[1], 0xffd59a, (0.12 + j * 0.2) * fl * fade), -1);
+              dc.fillCircle(q[0], q[1], (19 - j * 8) * z);
+            }
+          }
+        }
+        // côte d'azur + infield
+        dc.setColor(G.mix(bg, C[4], fade), -1);
+        dc.setPenWidth(Math.ceil(13 * z));
+        stadLine(dc, za, (R_COTE + 6) * z, 1.0);
+        dc.setColor(G.mix(bg, C[5], fade), -1);
+        stadFill(dc, za, R_COTE * z);
+      } else {
+        // Neon: côte d'azur as a dim double line
+        dc.setColor(C[4], -1);
+        dc.setPenWidth(2);
+        stadLine(dc, za, R_COTE * z, G.ease(G.stag(p, 0, 0, 0.6)));
+      }
+
+      // ---- lines draw themselves (measurement, sprinter, stayer, outer edge)
+      const LR = [R_IN, R_MEAS, R_SPR, R_STAY, R_OUT];
+      const LC = [st === 3 ? C[6] : C[6], C[6], C[7], C[8], st === 3 ? C[7] : C[3]];
+      const LW = [st === 3 ? 2 : 0, st === 3 ? 0 : 2, 3, 3, st === 3 ? 3 : 0];
+      for (let k = 0; k < 5; k++) {
+        if (LW[k] === 0) continue;
+        const f = G.easeInOut(G.stag(p, k, 0.07, 0.5));
+        if (st === 2 && k >= 2) {
+          dc.setColor(G.dim(LC[k], 0.3), -1);
+          dc.setPenWidth(6);
+          stadLine(dc, za, LR[k] * z, f);
+        }
+        dc.setColor(LC[k], -1);
+        dc.setPenWidth(LW[k]);
         stadLine(dc, za, LR[k] * z, f);
       }
-      dc.setColor(LC[k], -1);
-      dc.setPenWidth(LW[k]);
-      stadLine(dc, za, LR[k] * z, f);
-    }
 
-    // ---- finish line (bottom centre) + 200 m line + pursuit line (top centre)
-    const lp = G.ease(G.stag(p, 2, 0.1, 0.4));
-    if (lp > 0) {
-      const y0 = CY + R_IN * z, y1 = CY + R_OUT * z;
-      dc.setColor(st === 3 ? 0xffffff : 0xf4f4f4, -1);
-      dc.fillRectangle(CX - 4, y0, 8, (y1 - y0) * lp);
-      dc.setColor(st === 3 ? acc : 0x111111, -1);
-      dc.fillRectangle(CX - 1, y0, 2, (y1 - y0) * lp);
-      dc.setColor(C[7], -1);
-      dc.fillRectangle(CX - 1, CY - R_OUT * z, 3, (R_OUT - R_IN) * z * lp);
-      dc.setColor(st === 3 ? G.dim(0xffffff, 0.6) : 0xf4f4f4, -1);
-      dc.setPenWidth(2);
-      const q0 = stadPt(za, R_IN * z, 0.8), q1 = stadPt(za, R_OUT * z, 0.8);
-      dc.drawLine(q0[0], q0[1], G.lerp(q0[0], q1[0], lp), G.lerp(q0[1], q1[1], lp));
+      // ---- finish line (bottom centre) + 200 m line + pursuit line (top centre)
+      const lp = G.ease(G.stag(p, 2, 0.1, 0.4));
+      if (lp > 0) {
+        const y0 = CY + R_IN * z, y1 = CY + R_OUT * z;
+        dc.setColor(st === 3 ? 0xffffff : 0xf4f4f4, -1);
+        dc.fillRectangle(CX - 4, y0, 8, (y1 - y0) * lp);
+        dc.setColor(st === 3 ? acc : 0x111111, -1);
+        dc.fillRectangle(CX - 1, y0, 2, (y1 - y0) * lp);
+        dc.setColor(C[7], -1);
+        dc.fillRectangle(CX - 1, CY - R_OUT * z, 3, (R_OUT - R_IN) * z * lp);
+        dc.setColor(st === 3 ? G.dim(0xffffff, 0.6) : 0xf4f4f4, -1);
+        dc.setPenWidth(2);
+        const q0 = stadPt(za, R_IN * z, 0.8), q1 = stadPt(za, R_OUT * z, 0.8);
+        dc.drawLine(q0[0], q0[1], G.lerp(q0[0], q1[0], lp), G.lerp(q0[1], q1[1], lp));
+      }
     }
 
     // ---- rail + goal progress
@@ -299,93 +305,99 @@ export default {
     const rem = gl - laps;
     const gf = G.clamp(km / goal, 0, 1);
     const rf = G.easeInOut(G.stag(p, 4, 0.07, 0.5));
-    dc.setColor(st === 3 ? G.dim(acc, 0.25) : C[9], -1);
-    dc.setPenWidth(st === 3 ? 2 : 3);
-    stadLine(dc, za, R_RAIL * z, rf);
-    if (gf > 0) {
-      const ef = gf * G.ease(G.stag(p, 0, 0.4, 0.6));
-      if (st === 2) {
-        dc.setColor(G.dim(acc, 0.35), -1);
-        dc.setPenWidth(11);
+    if (S) {
+      dc.setColor(st === 3 ? G.dim(acc, 0.25) : C[9], -1);
+      dc.setPenWidth(st === 3 ? 2 : 3);
+      stadLine(dc, za, R_RAIL * z, rf);
+      if (gf > 0) {
+        const ef = gf * G.ease(G.stag(p, 0, 0.4, 0.6));
+        if (st === 2) {
+          dc.setColor(G.dim(acc, 0.35), -1);
+          dc.setPenWidth(11);
+          stadLine(dc, za, R_RAIL * z, ef);
+        }
+        dc.setColor(acc, -1);
+        dc.setPenWidth(5);
         stadLine(dc, za, R_RAIL * z, ef);
+        const q = stadPt(za, R_RAIL * z, ef);
+        dc.fillCircle(q[0], q[1], 5);
       }
-      dc.setColor(acc, -1);
-      dc.setPenWidth(5);
-      stadLine(dc, za, R_RAIL * z, ef);
-      const q = stadPt(za, R_RAIL * z, ef);
-      dc.fillCircle(q[0], q[1], 5);
     }
 
-    // ---- riders: two training partners lapping, the ghost (minute) and you
-    const bike = st === 1 ? 0x2a2a2a : 0x9a9a9a;
-    const e = G.easeInOut(G.clamp((p - 0.3) / 0.7, 0, 1));
-    {
-      for (let k = 0; k < 2; k++) {
-        const u = live ? ((t + 13400 + k * 260) % 6500) / 6500.0 : 0.66 + k * 0.04;
-        const q = stadPt(za, (R_MEAS + 6) * z, u * e);
-        const pc = st === 3 ? G.dim(acc, 0.45) : (k === 0 ? 0x3c6e9e : 0x5f8fbf);
-        if (e > 0.02) rider(dc, q[0], q[1], q[2], q[3], pc, st === 3 ? G.dim(acc, 0.6) : 0xe8e8e8, bike, 0.8 * z);
-      }
-    }
-    // ghost rider at the minute angle
-    const mdeg = d.m * 6 + d.s * 0.1;
-    let delta = 180 - mdeg;
-    if (delta < 0) delta += 360;
-    const gdeg = 180 - delta * e;
-    const gq = rayPt(za, (R_STAY + 9) * z, gdeg);
     const gcol = st === 3 ? 0xbfc7d4 : (st === 2 ? 0x8fa3c4 : 0xe9eef5);
-    if (e > 0.02) {
-      // pursuit trail
-      for (let k = 1; k <= 3; k++) {
-        const tq = rayPt(za, (R_STAY + 9) * z, gdeg + k * 2.2);
-        dc.setColor(G.mix(st === 1 ? C[2] : bg, gcol, 0.5 - k * 0.13), -1);
-        dc.fillCircle(tq[0], tq[1], 4 - k * 0.8);
+    if (M) {
+      // ---- riders: two training partners lapping, the ghost (minute) and you
+      const bike = st === 1 ? 0x2a2a2a : 0x9a9a9a;
+      const e = G.easeInOut(G.clamp((p - 0.3) / 0.7, 0, 1));
+      {
+        for (let k = 0; k < 2; k++) {
+          const u = live ? ((t + 13400 + k * 260) % 6500) / 6500.0 : 0.66 + k * 0.04;
+          const q = stadPt(za, (R_MEAS + 6) * z, u * e);
+          const pc = st === 3 ? G.dim(acc, 0.45) : (k === 0 ? 0x3c6e9e : 0x5f8fbf);
+          if (e > 0.02) rider(dc, q[0], q[1], q[2], q[3], pc, st === 3 ? G.dim(acc, 0.6) : 0xe8e8e8, bike, 0.8 * z);
+        }
       }
-      rider(dc, gq[0], gq[1], gq[2], gq[3], G.mix(st === 1 ? C[2] : bg, gcol, 0.75), gcol, G.mix(st === 1 ? C[2] : bg, bike, 0.6), z);
-    }
-    // you: fractional position of the current lap, oscillating a little while live
-    let fu = laps4 - Math.floor(laps4);
-    if (live) fu += 0.012 * Math.sin(t / 700.0);
-    const yq = stadPt(za, (R_SPR + 7) * z, fu * e);
-    if (e > 0.02) {
-      if (st !== 1) {
-        dc.setColor(G.dim(acc, 0.3), -1);
-        dc.fillCircle(yq[0], yq[1], 13 * z);
+      // ghost rider at the minute angle
+      const mdeg = d.m * 6 + d.s * 0.1;
+      let delta = 180 - mdeg;
+      if (delta < 0) delta += 360;
+      const gdeg = 180 - delta * e;
+      const gq = rayPt(za, (R_STAY + 9) * z, gdeg);
+      if (e > 0.02) {
+        // pursuit trail
+        for (let k = 1; k <= 3; k++) {
+          const tq = rayPt(za, (R_STAY + 9) * z, gdeg + k * 2.2);
+          dc.setColor(G.mix(st === 1 ? C[2] : bg, gcol, 0.5 - k * 0.13), -1);
+          dc.fillCircle(tq[0], tq[1], 4 - k * 0.8);
+        }
+        rider(dc, gq[0], gq[1], gq[2], gq[3], G.mix(st === 1 ? C[2] : bg, gcol, 0.75), gcol, G.mix(st === 1 ? C[2] : bg, bike, 0.6), z);
       }
-      rider(dc, yq[0], yq[1], yq[2], yq[3], acc, 0xffffff, bike, 1.1 * z);
+      // you: fractional position of the current lap, oscillating a little while live
+      let fu = laps4 - Math.floor(laps4);
+      if (live) fu += 0.012 * Math.sin(t / 700.0);
+      const yq = stadPt(za, (R_SPR + 7) * z, fu * e);
+      if (e > 0.02) {
+        if (st !== 1) {
+          dc.setColor(G.dim(acc, 0.3), -1);
+          dc.fillCircle(yq[0], yq[1], 13 * z);
+        }
+        rider(dc, yq[0], yq[1], yq[2], yq[3], acc, 0xffffff, bike, 1.1 * z);
+      }
     }
 
     // ---- infield content (fades in with the zoom)
     const ip = G.ease(G.clamp((p - 0.25) / 0.6, 0, 1));
     const ink = C[10], sub = C[11];
     const ib = C[5];
-    // slots
-    for (let k = 0; k < 2; k++) {
-      const sp = G.ease(G.stag(p - 0.3, k, 0.08, 0.5));
-      const sl = d.slots[k];
-      const x = k === 0 ? 162 : 292;
-      dc.setColor(G.mix(ib, sub, ip), -1);
-      F.px(dc, sl.lbl, x, 124, 2, 1, 0);
-      dc.setColor(G.mix(ib, d.dcol, ip * sp), -1);
-      F.px(dc, sl.val, x, 142, 3, 1, 0);
+    if (S) {
+      // slots
+      for (let k = 0; k < 2; k++) {
+        const sp = G.ease(G.stag(p - 0.3, k, 0.08, 0.5));
+        const sl = d.slots[k];
+        const x = k === 0 ? 162 : 292;
+        dc.setColor(G.mix(ib, sub, ip), -1);
+        F.px(dc, sl.lbl, x, 124, 2, 1, 0);
+        dc.setColor(G.mix(ib, d.dcol, ip * sp), -1);
+        F.px(dc, sl.val, x, 142, 3, 1, 0);
+      }
+      // time
+      const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
+      const ts = hh + ":" + G.pad2(d.m);
+      const tp = G.ease(G.clamp((p - 0.2) * 1.6, 0, 1));
+      if (st === 3) {
+        dc.setColor(G.dim(acc, 0.35), -1);
+        F.st(dc, ts, CX, 212, 70, 12, 1, tp, 0);
+      }
+      dc.setColor(ink, -1);
+      F.st(dc, ts, CX, 212, 70, st === 3 ? 4 : 8, 1, tp, 0);
     }
-    // time
-    const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
-    const ts = hh + ":" + G.pad2(d.m);
-    const tp = G.ease(G.clamp((p - 0.2) * 1.6, 0, 1));
-    if (st === 3) {
-      dc.setColor(G.dim(acc, 0.35), -1);
-      F.st(dc, ts, CX, 212, 70, 12, 1, tp, 0);
-    }
-    dc.setColor(ink, -1);
-    F.st(dc, ts, CX, 212, 70, st === 3 ? 4 : 8, 1, tp, 0);
 
     // lap board
     const bp = G.ease(G.clamp((p - 0.45) / 0.55, 0, 1));
     if (bp > 0) {
       const done = rem <= 0;
       const by = 264;
-      if (!done) {
+      if (!done && S) {
         const shownRem = Math.round(G.lerp(gl, rem, bp));
         const txt = "" + shownRem;
         const n = txt.length;
@@ -409,11 +421,13 @@ export default {
           dc.fillRectangle(cx0, by + 4 + ch / 2, cw, 1);
         }
         bell(dc, CX + bw / 2 + 12, by + 2, 0, st === 3 ? G.dim(acc, 0.5) : 0x6e6e6e, 0x3a3a3a);
-      } else {
+      } else if (done) {
         const sw = live ? 28 * Math.sin(t / 110.0) : 18;
         dc.setColor(acc, -1);
-        F.st(dc, "GLOCKE!", CX - 20, by + 21, 22, 4, 1, bp, 0);
+        if (S) F.st(dc, "GLOCKE!", CX - 20, by + 21, 22, 4, 1, bp, 0);
         const bx = CX + 78;
+        // the bell rings over the cached board
+        if (!M) return;
         bell(dc, bx, by, sw, 0xf2c14e, 0x8a6a1a);
         // ringing waves
         dc.setColor(G.dim(0xf2c14e, 0.8), -1);
@@ -424,6 +438,7 @@ export default {
       }
     }
 
+    if (!S) return;
     // laps + legend
     dc.setColor(G.mix(ib, ink, ip), -1);
     F.px(dc, laps + " RUNDEN", CX, 314, 2, 1, 0);

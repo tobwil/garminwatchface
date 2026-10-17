@@ -315,7 +315,37 @@ function stageStr(c, f, pr, prof) {
 export default {
   fps: 12,
 
+  // static layer (serpentine styles): everything but the road dashes, summit flag and rider
+  bgKey(d) { return d.cfg.style === 3 ? -1 : d.doy * 1440 + d.mins; },
+
+  // moving parts of the serpentine styles on top of the cached layer (intro is over)
+  serpMoving(dc, d, a) {
+    const c = G.clamp(d.cfg.climb, 0, 3);
+    const acc = d.accent;
+    const pr = progress(d);
+    const night = d.cfg.style === 2;
+    const gm = geo(c);
+    const L = gm.tot;
+    const sRid = pr.f * L;
+    const off = a.live ? a.t * 0.012 : 0;
+    dc.setColor(night ? 0x34548f : 0x9a9a9a, -1);
+    dashes(dc, gm, sRid, L, off, 1.5);
+    if (sRid > 0.5 && !night) {
+      dc.setColor(G.dim(acc, 0.55), -1);
+      dashes(dc, gm, 0, sRid, off, 1.5);
+    }
+    const sm = pathPt(gm, L);
+    if (pr.done) burst(dc, sm[0], sm[1] - 12, acc, 1, a);
+    flag(dc, sm[0] - (c === 1 ? 6 : 0), sm[1], pr.done ? 30 : 22, pr.done ? acc : 0xffffff, a.live ? Math.sin(a.t * 0.006) * 2 : 0);
+    const rp = pathPt(gm, sRid);
+    this.rider(dc, rp[0], rp[1], acc, a, night);
+  },
+
   draw(dc, d, a) {
+    if (a.bg) {
+      this.serpMoving(dc, d, a);
+      return;
+    }
     const st = d.cfg.style;
     const c = G.clamp(d.cfg.climb, 0, 3);
     const acc = d.accent;
@@ -433,7 +463,7 @@ export default {
     }
     // centre dashes on the road ahead
     dc.setColor(night ? 0x34548f : 0x9a9a9a, -1);
-    dashes(dc, gm, sRid, sRoad, off, 1.5);
+    if (!a.so) dashes(dc, gm, sRid, sRoad, off, 1.5);
 
     // completed part
     if (sRid > 0.5) {
@@ -448,7 +478,7 @@ export default {
         dc.setColor(acc, -1);
         path(dc, gm, 0, sRid, 1, -2);
         dc.setColor(G.dim(acc, 0.55), -1);
-        dashes(dc, gm, 0, sRid, off, 1.5);
+        if (!a.so) dashes(dc, gm, 0, sRid, off, 1.5);
       }
     }
 
@@ -504,17 +534,17 @@ export default {
     // summit
     const sm = pathPt(gm, L);
     const sp = G.spring(G.clamp((p - 0.45) / 0.35, 0, 1));
-    if (pr.done && sp > 0) burst(dc, sm[0], sm[1] - 12, acc, sp, a);
+    if (pr.done && sp > 0 && !a.so) burst(dc, sm[0], sm[1] - 12, acc, sp, a);
     if (sp > 0) {
       const wave = a.live ? Math.sin(a.t * 0.006) * 2 : 0;
       if (c === 1) tower(dc, sm[0] + 10, sm[1] + 2);
-      flag(dc, sm[0] - (c === 1 ? 6 : 0), sm[1], (pr.done ? 30 : 22) * sp, pr.done ? acc : 0xffffff, wave);
+      if (!a.so) flag(dc, sm[0] - (c === 1 ? 6 : 0), sm[1], (pr.done ? 30 : 22) * sp, pr.done ? acc : 0xffffff, wave);
     }
     if (pr.done) confetti(dc, sm[0], sm[1] - 20, p);
 
     // rider
     const rp = pathPt(gm, sRid);
-    this.rider(dc, rp[0], rp[1], acc, a, night);
+    if (!a.so) this.rider(dc, rp[0], rp[1], acc, a, night);
   },
 
   rider(dc, x, y, acc, a, night) {

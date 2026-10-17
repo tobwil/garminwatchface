@@ -71,11 +71,12 @@ class D {
         mins = h * 60 + m;
     }
 
-    function refresh(force as Boolean) as Void {
+    // Returns true if the slow reads ran (once a minute or when forced).
+    function refresh(force as Boolean) as Boolean {
         clock();
         var minuteKey = mins;
         if (!force && minuteKey == _lastSlow) {
-            return;
+            return false;
         }
         _lastSlow = minuteKey;
         accent = cfg.accent;
@@ -93,6 +94,7 @@ class D {
         try { readWeek(); } catch (e) { }
         try { readAstro(); } catch (e) { }
         try { buildSlots(); } catch (e) { }
+        return true;
     }
 
     hidden function readDate() as Void {

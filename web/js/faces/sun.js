@@ -211,8 +211,48 @@ const face = {
     dc.setColor(G.mix(core, 0xffffff, 0.6), -1); dc.fillCircle(x, y, 6);
   },
 
+  // static layer: everything but the sun (pulsing glow / turning rays); stars rest
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
+  // sun marker of the 24 h dial (style 3)
+  dialSun(dc, a, mx, my) {
+    const pulse = a.live ? Math.sin(a.t * 0.004) : 0;
+    dc.setColor(0x3a2a10, -1);
+    dc.fillCircle(mx, my, 15 + pulse);
+    dc.setColor(0xffd27a, -1);
+    dc.fillCircle(mx, my, 11);
+    dc.setColor(0xfff4d6, -1);
+    dc.fillCircle(mx, my, 6);
+  },
+
+  // moving parts on top of the cached layer (intro is over: the sun sits at its real place)
+  overlay(dc, d, a) {
+    const st = d.cfg.style;
+    if (!face.isDay(d, d.mins)) return;
+    if (st === 3) {
+      let m0 = face._rise;
+      if (m0 < 0) m0 = d.mins;
+      let u = d.mins - m0;
+      if (u < 0) u += 1440;
+      const deg = face.ang(m0 + u);
+      face.dialSun(dc, a, G.ptX(CX, 204, deg), G.ptY(CX, 204, deg));
+      return;
+    }
+    const e = AST.elev(d.doy, d.mins, d.lat, d.lon, d.tz);
+    const sk = face.sky(e);
+    let u = d.mins - face.r0();
+    if (u < 0) u += 1440;
+    const pos = face.arcPos(d, face.r0() + u);
+    const bgc = st === 1 ? G.mix(sk[0], sk[1], (pos[1] / HY) * (pos[1] / HY)) : 0;
+    face.sunDisc(dc, a, pos[0], pos[1], e, st, bgc, d.accent);
+  },
+
   draw(dc, d, a) {
     face.calc(d);
+    if (a.bg) {
+      face.overlay(dc, d, a);
+      return;
+    }
     const st = d.cfg.style;
     if (st === 3) { face.dial(dc, d, a); return; }
     const acc = d.accent;
@@ -305,7 +345,7 @@ const face = {
     // ---- sun or moon
     if (day) {
       const bgc = st === 1 ? G.mix(sk[0], sk[1], (pos[1] / HY) * (pos[1] / HY)) : 0;
-      face.sunDisc(dc, a, pos[0], pos[1], e, st, G.dim(bgc, sp), acc);
+      if (!a.so) face.sunDisc(dc, a, pos[0], pos[1], e, st, G.dim(bgc, sp), acc);
     } else if (sp > 0.05) {
       const mr = 13;
       if (st === 1) {
@@ -408,13 +448,7 @@ const face = {
     dc.setColor(0, -1);
     dc.fillCircle(mx, my, 17);
     if (day) {
-      const pulse = a.live ? Math.sin(a.t * 0.004) : 0;
-      dc.setColor(0x3a2a10, -1);
-      dc.fillCircle(mx, my, 15 + pulse);
-      dc.setColor(0xffd27a, -1);
-      dc.fillCircle(mx, my, 11);
-      dc.setColor(0xfff4d6, -1);
-      dc.fillCircle(mx, my, 6);
+      if (!a.so) face.dialSun(dc, a, mx, my);
     } else {
       face.moonDisc(dc, d, mx, my, 12, d.moon, 0xf2ecd8, 0x2a3350);
     }

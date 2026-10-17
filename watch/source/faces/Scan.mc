@@ -197,7 +197,14 @@ class FaceScan extends Face {
         F.st(dc, txt, x, y, h, pen, 1, 1.0, 0);
     }
 
+    // static layer: camera background, reticle, status frame; the detection episode moves
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var acc = d.accent;
         var live = a.live;
@@ -205,47 +212,52 @@ class FaceScan extends Face {
         var tt = live ? a.t : 0;
         var wk = d.wakeN;
 
-        // ---- camera background
-        if (st == 3) {
-            // low-res heat sensor image (24 px cells), driven by heart rate and stress
-            // (runs cached per heat level; the JS version rebuilds them every frame)
-            var hk = heatH(d);
-            if (hk != _hk) {
-                _hk = hk;
-                heat(hk);
-            }
-            for (var k = 0; k < _rn; k++) {
-                dc.setColor(_rc[k], -1);
-                dc.fillRectangle(_rx[k], _ry[k], _rw[k], 24);
-            }
-        } else if (st == 2) {
-            dc.setColor(0x0E1014, -1);
-            dc.fillCircle(227, 227, 227);
-            dc.setColor(0x171B22, -1);
-            for (var g = 37; g < 454; g += 38) {
-                dc.drawLine(g, 0, g, 454);
-                dc.drawLine(0, g, 454, g);
-            }
-        } else {
-            dc.setColor(0x140101, -1);
-            dc.fillCircle(227, 227, 227);
-            dc.setColor(0x220404, -1);
-            dc.fillCircle(227, 227, 150);
-            dc.setColor(0x0A0000, -1);
-            for (var y = 2; y < 454; y += 4) {
-                dc.fillRectangle(0, y, 454, 1);
+        if (S) {
+            // ---- camera background
+            if (st == 3) {
+                // low-res heat sensor image (24 px cells), driven by heart rate and stress
+                // (runs cached per heat level; the JS version rebuilds them every frame)
+                var hk = heatH(d);
+                if (hk != _hk) {
+                    _hk = hk;
+                    heat(hk);
+                }
+                for (var k = 0; k < _rn; k++) {
+                    dc.setColor(_rc[k], -1);
+                    dc.fillRectangle(_rx[k], _ry[k], _rw[k], 24);
+                }
+            } else if (st == 2) {
+                dc.setColor(0x0E1014, -1);
+                dc.fillCircle(227, 227, 227);
+                dc.setColor(0x171B22, -1);
+                for (var g = 37; g < 454; g += 38) {
+                    dc.drawLine(g, 0, g, 454);
+                    dc.drawLine(0, g, 454, g);
+                }
+            } else {
+                dc.setColor(0x140101, -1);
+                dc.fillCircle(227, 227, 227);
+                dc.setColor(0x220404, -1);
+                dc.fillCircle(227, 227, 150);
+                dc.setColor(0x0A0000, -1);
+                for (var y = 2; y < 454; y += 4) {
+                    dc.fillRectangle(0, y, 454, 1);
+                }
             }
         }
-        // sensor noise
-        if (st != 3) {
-            var sd = 77 + tt / 66;
-            dc.setColor(st == 1 ? 0x3A0C0C : 0x262B33, -1);
-            for (var k = 0; k < 36; k++) {
-                sd = G.rnd(sd);
-                var x = 20 + (sd % 414);
-                sd = G.rnd(sd);
-                var y = 20 + (sd % 414);
-                dc.fillRectangle(x, y, 2, 2);
+
+        if (M) {
+            // sensor noise
+            if (st != 3) {
+                var sd = 77 + tt / 66;
+                dc.setColor(st == 1 ? 0x3A0C0C : 0x262B33, -1);
+                for (var k = 0; k < 36; k++) {
+                    sd = G.rnd(sd);
+                    var x = 20 + (sd % 414);
+                    sd = G.rnd(sd);
+                    var y = 20 + (sd % 414);
+                    dc.fillRectangle(x, y, 2, 2);
+                }
             }
         }
 
@@ -254,18 +266,20 @@ class FaceScan extends Face {
         var txc = st == 1 ? 0xFFE2DC : 0xFFFFFF;
         var dark = st == 1 ? 0x140101 : (st == 2 ? 0x0B0D10 : 0x000000);
 
-        // ---- viewfinder reticle: lens ring with ticks + four chevrons
-        dc.setColor(G.dim(hud, st == 3 ? 0.7 : 0.35), -1);
-        dc.setPenWidth(1);
-        dc.drawCircle(227, 227, 214);
-        var rt = _rt;
-        for (var k = 0; k < 144; k += 4) {
-            dc.drawLine(rt[k], rt[k + 1], rt[k + 2], rt[k + 3]);
-        }
-        dc.setColor(G.dim(hud, 0.8), -1);
-        dc.setPenWidth(2);
-        for (var k = 144; k < 192; k += 4) {
-            dc.drawLine(rt[k], rt[k + 1], rt[k + 2], rt[k + 3]);
+        if (S) {
+            // ---- viewfinder reticle: lens ring with ticks + four chevrons
+            dc.setColor(G.dim(hud, st == 3 ? 0.7 : 0.35), -1);
+            dc.setPenWidth(1);
+            dc.drawCircle(227, 227, 214);
+            var rt = _rt;
+            for (var k = 0; k < 144; k += 4) {
+                dc.drawLine(rt[k], rt[k + 1], rt[k + 2], rt[k + 3]);
+            }
+            dc.setColor(G.dim(hud, 0.8), -1);
+            dc.setPenWidth(2);
+            for (var k = 144; k < 192; k += 4) {
+                dc.drawLine(rt[k], rt[k + 1], rt[k + 2], rt[k + 3]);
+            }
         }
 
         // ---- box layout (widths follow the content)
@@ -293,137 +307,141 @@ class FaceScan extends Face {
                 nObj++;
             }
         }
-        for (var oi = 0; oi < 4; oi++) {
-            var i = ORDER[oi];
-            var sl = i < 3 ? d.slots[i] : null;
-            if (sl != null && (sl[:lbl] as String).length() == 0) {
-                continue; // empty slot: nothing to detect
-            }
-            var known = i == 3 || (sl[:raw] != -1);
-            var t0 = passT(BY[i] + BH[i] / 2.0);
-            var lt = t - t0; // ms since lock started
-            if (lt < 0) {
-                continue;
-            }
-            found++;
-            var lp = G.clamp(lt / LOCK, 0.0, 1.0);
-            var e = G.ease(lp);
-            // tracking jitter while live
-            var jx = 0;
-            var jy = 0;
-            var gr = 0.0;
-            if (live && lp >= 1) {
-                jx = Math.round(1.5 * Math.sin(tt / 530.0 + i * 2.1)).toNumber();
-                jy = Math.round(1.5 * Math.cos(tt / 610.0 + i * 1.3)).toNumber();
-                gr = 1.5 + 1.5 * Math.sin(tt / 400.0 + i);
-            }
-            // lock-on: brackets fly in from 1.8x and shrink to fit
-            var sc = 1 + 0.8 * (1 - e);
-            var w = _bw[i] * sc + 2 * gr;
-            var h = BH[i] * sc + 2 * gr;
-            var cx = _bx[i] + _bw[i] / 2.0 + jx;
-            var cy = BY[i] + BH[i] / 2.0 + jy;
-            var x = cx - w / 2;
-            var y = cy - h / 2;
-            var col = st == 1 ? acc : (st == 2 ? (i == 3 ? acc : CC[i]) : 0xFFFFFF);
-            var bc = G.mix(0xFFFFFF, col, lp);
-            if (st == 2 && lp >= 1) {
-                // labelling tool: thin full rectangle under the corner brackets
-                dc.setColor(G.dim(col, 0.55), -1);
-                dc.setPenWidth(1);
-                dc.drawRectangle(x, y, w, h);
-            }
-            dc.setColor(bc, -1);
-            dc.setPenWidth(i == 3 ? 3 : 2);
-            brackets(dc, x, y, w, h, Math.round((w < h ? w : h) * 0.26));
-            if (lp < 1) {
-                // crosshair converging on the object centre
-                dc.setPenWidth(1);
-                dc.drawLine(cx - 16 * (1 - e) - 4, cy, cx - 4, cy);
-                dc.drawLine(cx + 4, cy, cx + 16 * (1 - e) + 4, cy);
-            }
-
-            // label chip (types out after the lock)
-            var conf = "99,9%";
-            if (i < 3) {
-                conf = (known ? 80 + (G.rnd(wk * 97 + i * 13 + 5) % 20) : 12 + ((wk + i * 7) % 25)) + "%";
-            }
-            var lbl = i == 3 ? "UHRZEIT" : sl[:lbl] as String;
-            var n = Math.floor((lt - LOCK * 0.6) / 28).toNumber();
-            var cbg = st == 3 ? 0xFFFFFF : col;
-            chip(dc, _bx[i] + jx, BY[i] + jy - 18, lbl, conf, n, cbg, dark);
-
-            // object content
-            var vx = cx;
-            var vy = BY[i] + BH[i] / 2.0 + jy;
-            if (i == 3) {
-                var ts = G.timeStr(d);
-                if (lp > 0.25) {
-                    if (st == 1) {
-                        dc.setColor(txc, -1);
-                        F.px(dc, ts, vx, vy - 28, 8, 1, 0);
-                    } else if (st == 3) {
-                        outline(dc, ts, vx, vy, 74, 6, 0xFFFFFF, 0x14051F);
-                    } else {
-                        dc.setColor(0xFFFFFF, -1);
-                        F.st(dc, ts, vx, vy, 74, 6, 1, 1.0, 0);
-                    }
+        if (M) {
+            for (var oi = 0; oi < 4; oi++) {
+                var i = ORDER[oi];
+                var sl = i < 3 ? d.slots[i] : null;
+                if (sl != null && (sl[:lbl] as String).length() == 0) {
+                    continue; // empty slot: nothing to detect
                 }
-            } else if (lp > 0.25) {
-                // value: scrambled until locked
-                var v = sl[:val] as String;
+                var known = i == 3 || (sl[:raw] != -1);
+                var t0 = passT(BY[i] + BH[i] / 2.0);
+                var lt = t - t0; // ms since lock started
+                if (lt < 0) {
+                    continue;
+                }
+                found++;
+                var lp = G.clamp(lt / LOCK, 0.0, 1.0);
+                var e = G.ease(lp);
+                // tracking jitter while live
+                var jx = 0;
+                var jy = 0;
+                var gr = 0.0;
+                if (live && lp >= 1) {
+                    jx = Math.round(1.5 * Math.sin(tt / 530.0 + i * 2.1)).toNumber();
+                    jy = Math.round(1.5 * Math.cos(tt / 610.0 + i * 1.3)).toNumber();
+                    gr = 1.5 + 1.5 * Math.sin(tt / 400.0 + i);
+                }
+                // lock-on: brackets fly in from 1.8x and shrink to fit
+                var sc = 1 + 0.8 * (1 - e);
+                var w = _bw[i] * sc + 2 * gr;
+                var h = BH[i] * sc + 2 * gr;
+                var cx = _bx[i] + _bw[i] / 2.0 + jx;
+                var cy = BY[i] + BH[i] / 2.0 + jy;
+                var x = cx - w / 2;
+                var y = cy - h / 2;
+                var col = st == 1 ? acc : (st == 2 ? (i == 3 ? acc : CC[i]) : 0xFFFFFF);
+                var bc = G.mix(0xFFFFFF, col, lp);
+                if (st == 2 && lp >= 1) {
+                    // labelling tool: thin full rectangle under the corner brackets
+                    dc.setColor(G.dim(col, 0.55), -1);
+                    dc.setPenWidth(1);
+                    dc.drawRectangle(x, y, w, h);
+                }
+                dc.setColor(bc, -1);
+                dc.setPenWidth(i == 3 ? 3 : 2);
+                brackets(dc, x, y, w, h, Math.round((w < h ? w : h) * 0.26));
                 if (lp < 1) {
-                    var sd = G.rnd(i * 31 + Math.floor(lt / 60).toNumber() + 3);
-                    var s = "";
-                    for (var k = 0; k < v.length(); k++) {
-                        sd = G.rnd(sd);
-                        s += "" + (sd % 10);
-                    }
-                    v = s;
+                    // crosshair converging on the object centre
+                    dc.setPenWidth(1);
+                    dc.drawLine(cx - 16 * (1 - e) - 4, cy, cx - 4, cy);
+                    dc.drawLine(cx + 4, cy, cx + 16 * (1 - e) + 4, cy);
                 }
-                var vc = known ? txc : G.dim(txc, 0.5);
-                if (st != 2) {
-                    var vs = v.length() > 5 ? 3 : 4;
-                    if (st == 3) {
-                        // drop shadow keeps the value legible on hot spots
-                        dc.setColor(0x14051F, -1);
-                        F.px(dc, v, vx + 3, vy - (7 * vs) / 2.0 + 3, vs, 1, 0);
-                    }
-                    dc.setColor(vc, -1);
-                    F.px(dc, v, vx, vy - (7 * vs) / 2.0, vs, 1, 0);
-                } else {
-                    dc.setColor(vc, -1);
-                    F.st(dc, v, vx, vy, 28, 4, 1, 1.0, 0);
-                }
-            }
-        }
 
-        // ---- scan line + trail
-        if (live) {
-            var sy = scanY(a.t);
-            var sc = st == 1 ? acc : 0xFFFFFF;
-            for (var k = 3; k >= 1; k--) {
-                dc.setColor(st == 3 ? G.mix(0xFFFFFF, 0x000000, 0.25 * k) : G.dim(sc, 0.45 / k), -1);
-                dc.fillRectangle(0, sy - k * 6, 454, 2);
+                // label chip (types out after the lock)
+                var conf = "99,9%";
+                if (i < 3) {
+                    conf = (known ? 80 + (G.rnd(wk * 97 + i * 13 + 5) % 20) : 12 + ((wk + i * 7) % 25)) + "%";
+                }
+                var lbl = i == 3 ? "UHRZEIT" : sl[:lbl] as String;
+                var n = Math.floor((lt - LOCK * 0.6) / 28).toNumber();
+                var cbg = st == 3 ? 0xFFFFFF : col;
+                chip(dc, _bx[i] + jx, BY[i] + jy - 18, lbl, conf, n, cbg, dark);
+
+                // object content
+                var vx = cx;
+                var vy = BY[i] + BH[i] / 2.0 + jy;
+                if (i == 3) {
+                    var ts = G.timeStr(d);
+                    if (lp > 0.25) {
+                        if (st == 1) {
+                            dc.setColor(txc, -1);
+                            F.px(dc, ts, vx, vy - 28, 8, 1, 0);
+                        } else if (st == 3) {
+                            outline(dc, ts, vx, vy, 74, 6, 0xFFFFFF, 0x14051F);
+                        } else {
+                            dc.setColor(0xFFFFFF, -1);
+                            F.st(dc, ts, vx, vy, 74, 6, 1, 1.0, 0);
+                        }
+                    }
+                } else if (lp > 0.25) {
+                    // value: scrambled until locked
+                    var v = sl[:val] as String;
+                    if (lp < 1) {
+                        var sd = G.rnd(i * 31 + Math.floor(lt / 60).toNumber() + 3);
+                        var s = "";
+                        for (var k = 0; k < v.length(); k++) {
+                            sd = G.rnd(sd);
+                            s += "" + (sd % 10);
+                        }
+                        v = s;
+                    }
+                    var vc = known ? txc : G.dim(txc, 0.5);
+                    if (st != 2) {
+                        var vs = v.length() > 5 ? 3 : 4;
+                        if (st == 3) {
+                            // drop shadow keeps the value legible on hot spots
+                            dc.setColor(0x14051F, -1);
+                            F.px(dc, v, vx + 3, vy - (7 * vs) / 2.0 + 3, vs, 1, 0);
+                        }
+                        dc.setColor(vc, -1);
+                        F.px(dc, v, vx, vy - (7 * vs) / 2.0, vs, 1, 0);
+                    } else {
+                        dc.setColor(vc, -1);
+                        F.st(dc, v, vx, vy, 28, 4, 1, 1.0, 0);
+                    }
+                }
             }
-            dc.setColor(sc, -1);
-            dc.fillRectangle(0, sy, 454, 2);
+
+            // ---- scan line + trail
+            if (live) {
+                var sy = scanY(a.t);
+                var sc = st == 1 ? acc : 0xFFFFFF;
+                for (var k = 3; k >= 1; k--) {
+                    dc.setColor(st == 3 ? G.mix(0xFFFFFF, 0x000000, 0.25 * k) : G.dim(sc, 0.45 / k), -1);
+                    dc.fillRectangle(0, sy - k * 6, 454, 2);
+                }
+                dc.setColor(sc, -1);
+                dc.fillRectangle(0, sy, 454, 2);
+            }
         }
 
         // ---- status: REC, battery, detections, date stamp
         var sCol = st == 3 ? 0xFFFFFF : G.dim(hud, st == 1 ? 0.9 : 1.0);
-        if (!live || (a.t / 500) % 2 == 0) {
+        if (M && (!live || (a.t / 500) % 2 == 0)) {
             dc.setColor(st == 1 ? acc : 0xFF3B30, -1);
             dc.fillCircle(87, 99, 5);
         }
         dc.setColor(sCol, -1);
-        F.px(dc, "REC", 98, 92, 2, 0, 0);
-        // camera battery = watch battery
-        dc.setPenWidth(2);
-        dc.drawRectangle(318, 92, 22, 13);
-        dc.fillRectangle(340, 96, 3, 5);
-        dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100.0, 0.0, 1.0)), 7);
-        F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
+        if (S) {
+            F.px(dc, "REC", 98, 92, 2, 0, 0);
+            // camera battery = watch battery
+            dc.setPenWidth(2);
+            dc.drawRectangle(318, 92, 22, 13);
+            dc.fillRectangle(340, 96, 3, 5);
+            dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100.0, 0.0, 1.0)), 7);
+            F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
+        }
         var all = found >= nObj;
         var msg = all ? "ERKANNT: " + nObj + (nObj == 1 ? " OBJEKT" : " OBJEKTE") : "SUCHE ... " + found + "/" + nObj;
         var full = msg;
@@ -432,7 +450,12 @@ class FaceScan extends Face {
             full = verdict(d);
             msg = full.substring(0, G.clamp((t - 4200) / 40, 0, full.length()));
         }
-        F.px(dc, msg, 227 - F.pxW(full, 2) / 2, 370, 2, 0, 0);
+        if (M) {
+            F.px(dc, msg, 227 - F.pxW(full, 2) / 2, 370, 2, 0, 0);
+        }
+        if (!S) {
+            return;
+        }
         dc.setColor(G.dim(sCol, 0.7), -1);
         F.px(dc, d.dowStr + " " + G.pad2(d.day) + "." + G.pad2(d.mon) + ".  FPS 15", 227, 392, 2, 1, 0);
     }

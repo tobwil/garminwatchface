@@ -320,8 +320,27 @@ function mlayout(arr, d, mins) {
   arr[11] = 0;
 }
 
+// Boogie-Woogie (Mondrian): small coloured squares travel along the horizontal bars
+function boogie(dc, d, a, c) {
+  const tt = a.t / 1000.0;
+  const B = 10;
+  for (let j = 0; j < 4; j++) {
+    const yb = j < 2 ? 166 : 288;
+    const sp = 18 + j * 7;
+    const v = tt * sp + j * 131 + (d.wakeN % 50) * 9;
+    const x = v - Math.floor(v / 474) * 474 - 10;
+    dc.setColor(c[2 + (j % 3)], -1);
+    dc.fillRectangle(x, yb - B / 2, B, B);
+    dc.setColor(c[0], -1);
+    dc.fillRectangle(x + B + 3, yb - B / 2 + 3, 4, 4);
+  }
+}
+
 const face = {
   get fps() { return 10; },
+
+  // static layer: the whole composition; only the seconds dot / the travelling squares move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -331,6 +350,17 @@ const face = {
     // minute turn while awake: slide from the previous arrangement
     let k = 1.0;
     if (a.live && d.s === 0 && a.ms < 900 && p >= 1) k = G.spring(a.ms / 900.0);
+    if (a.bg && k < 1) a = { ...a, bg: false }; // the minute turn repaints everything
+    if (a.bg) {
+      // over the cached composition: the travelling squares (Mondrian) / the seconds dot
+      if (st === 2) boogie(dc, d, a, c);
+      else if (a.live) {
+        const sd = (d.s + a.ms / 1000.0) * 6;
+        dc.setColor(st === 1 ? c[2] : c[1], -1);
+        dc.fillCircle(G.ptX(CX, 214, sd), G.ptY(CY, 214, sd), 6);
+      }
+      return;
+    }
     const paper = c[0], ink = c[1];
     dc.setColor(paper, -1);
     dc.fillRectangle(0, 0, 454, 454);
@@ -484,18 +514,7 @@ const face = {
     dc.fillRectangle(410 - B / 2, y2 - (y2 - y1) * g1, B, (y2 - y1) * g1);
 
     // Boogie-Woogie: small coloured squares travel along the horizontal bars
-    if (p >= 1) {
-      for (let j = 0; j < 4; j++) {
-        const yb = j < 2 ? y1 : y2;
-        const sp = 18 + j * 7;
-        const v = tt * sp + j * 131 + (d.wakeN % 50) * 9;
-        const x = v - Math.floor(v / 474) * 474 - 10;
-        dc.setColor(c[2 + (j % 3)], -1);
-        dc.fillRectangle(x, yb - B / 2, B, B);
-        dc.setColor(c[0], -1);
-        dc.fillRectangle(x + B + 3, yb - B / 2 + 3, 4, 4);
-      }
-    }
+    if (p >= 1 && !a.so) boogie(dc, d, a, c);
 
     // slots centred in their cells (visible part), date in the larger top cell
     const q = G.ease(G.stag(p, 5, 0.08, 0.4));

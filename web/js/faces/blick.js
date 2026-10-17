@@ -357,7 +357,11 @@ function headCount(n, ms) { return ms < 950 && n > 0 ? n - 1 : n; }
 export default {
   fps: 10,
 
+  // static layer: ring, time, stats, badges; the counter, the eye and its moods move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const SL = !a.bg, ML = !a.so; // draw the static / the moving parts (S is the stats here)
     const st = d.cfg.style;
     const acc = d.accent;
     const live = a.live;
@@ -385,27 +389,29 @@ export default {
 
     if (st === 3) {
       // ---- Minimal: ring of glance dots (60 per ring, 3 rings)
-      const shown = Math.floor(G.clamp(ms / 900.0, 0, 1) * cnt);
-      dc.setColor(0x262626, -1);
-      for (let i = 0; i < 60; i++) {
-        if (i < shown) continue;
-        dc.fillRectangle(G.ptX(227, 213, i * 6) - 1, G.ptY(227, 213, i * 6) - 1, 2, 2);
-      }
-      dc.setColor(G.dim(acc, 0.6), -1);
-      for (let i = 0; i < shown && i < 180; i++) {
-        const r = 213 - Math.floor(i / 60) * 10;
-        dc.fillCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 3);
-      }
-      // next badge target on the ring
-      if (t < 4 && TH[t + 1] <= 180) {
-        const i = TH[t + 1] - 1;
-        const r = 213 - Math.floor(i / 60) * 10;
-        dc.setColor(TC[t + 1], -1);
-        dc.setPenWidth(2);
-        dc.drawCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 6);
+      if (SL) {
+        const shown = Math.floor(G.clamp(ms / 900.0, 0, 1) * cnt);
+        dc.setColor(0x262626, -1);
+        for (let i = 0; i < 60; i++) {
+          if (i < shown) continue;
+          dc.fillRectangle(G.ptX(227, 213, i * 6) - 1, G.ptY(227, 213, i * 6) - 1, 2, 2);
+        }
+        dc.setColor(G.dim(acc, 0.6), -1);
+        for (let i = 0; i < shown && i < 180; i++) {
+          const r = 213 - Math.floor(i / 60) * 10;
+          dc.fillCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 3);
+        }
+        // next badge target on the ring
+        if (t < 4 && TH[t + 1] <= 180) {
+          const i = TH[t + 1] - 1;
+          const r = 213 - Math.floor(i / 60) * 10;
+          dc.setColor(TC[t + 1], -1);
+          dc.setPenWidth(2);
+          dc.drawCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 6);
+        }
       }
       // the current look glows
-      if (n > 0 && ms >= 950) {
+      if (ML && n > 0 && ms >= 950) {
         const i = Math.min(n - 1, 179);
         const r = 213 - Math.floor(i / 60) * 10;
         const x = G.ptX(227, r, (i % 60) * 6), y = G.ptY(227, r, (i % 60) * 6);
@@ -418,16 +424,17 @@ export default {
         dc.setColor(G.mix(acc, 0xffffff, 0.7), -1);
         dc.fillCircle(x, y, 2.5 * g);
       }
-      eye3(dc, 227, 112, op, lk[0], nt ? G.dim(acc, 0.7) : 0x9a9a9a);
+      if (ML) eye3(dc, 227, 112, op, lk[0], nt ? G.dim(acc, 0.7) : 0x9a9a9a);
       dc.setColor(d.dcol, -1);
-      F.st(dc, ts, 227, 188, 78, 8, 1, G.easeInOut(ms / 900.0), 0);
+      if (SL) F.st(dc, ts, 227, 188, 78, 8, 1, G.easeInOut(ms / 900.0), 0);
       const ch = pop >= 0 ? 48 * (1 + 0.3 * (1 - G.ease(pop * 2.5))) : 48;
       dc.setColor(acc, -1);
-      F.st(dc, "" + cnt, 227, 270, ch, 6, 1, 1.0, 0);
-      if (pop >= 0) {
+      if (ML) F.st(dc, "" + cnt, 227, 270, ch, 6, 1, 1.0, 0);
+      if (pop >= 0 && ML) {
         dc.setColor(G.dim(acc, 1 - pop), -1);
         F.st(dc, "+1", 227 + F.stW("" + n, 48) / 2 + 28, 260 - pop * 30, 20, 3, 1, 1.0, 0);
       }
+      if (!SL) return;
       dc.setColor(0x777777, -1);
       F.px(dc, "BLICKE HEUTE", 227, 302, 2, 1, 0);
       if (sp > 0.5) {
@@ -439,67 +446,72 @@ export default {
       return;
     }
 
-    // ---- progress ring to the next badge
-    if (st === 1) {
-      G.ring(dc, 227, 227, 221, 3, fr * sp, G.dim(t < 4 ? TC[t + 1] : TC[4], 0.75), 0x161616);
-    } else {
-      const lit = Math.floor(fr * sp * 60);
-      for (let i = 0; i < 60; i++) {
-        dc.setColor(i < lit ? G.dim(t < 4 ? TC[t + 1] : TC[4], 0.8) : 0x1c1c1c, -1);
-        dc.fillRectangle(Math.round(G.ptX(227, 217, i * 6)) - 2, Math.round(G.ptY(227, 217, i * 6)) - 2, 5, 5);
+    if (SL) {
+      // ---- progress ring to the next badge
+      if (st === 1) {
+        G.ring(dc, 227, 227, 221, 3, fr * sp, G.dim(t < 4 ? TC[t + 1] : TC[4], 0.75), 0x161616);
+      } else {
+        const lit = Math.floor(fr * sp * 60);
+        for (let i = 0; i < 60; i++) {
+          dc.setColor(i < lit ? G.dim(t < 4 ? TC[t + 1] : TC[4], 0.8) : 0x1c1c1c, -1);
+          dc.fillRectangle(Math.round(G.ptX(227, 217, i * 6)) - 2, Math.round(G.ptY(227, 217, i * 6)) - 2, 5, 5);
+        }
       }
     }
-
-    // ---- headline: BLICK #24 (+1 pop)
-    const num = "#" + cnt;
-    const ns = pop >= 0 ? 1 + 0.35 * (1 - G.ease(pop * 2.5)) : 1;
-    if (st === 1) {
-      const h = 26;
-      const w1 = F.stW("BLICK ", h);
-      const w2 = F.stW(num, h);
-      const x0 = 227 - (w1 + w2 + (22 * h) / 80) / 2;
-      dc.setColor(0xd0d0d0, -1);
-      F.st(dc, "BLICK", x0, 58, h, 4, 0, 1.0, 0);
-      dc.setColor(acc, -1);
-      F.st(dc, num, x0 + w1 + (22 * h) / 80 + w2 / 2, 58, h * ns, 4, 1, 1.0, 0);
-      if (pop >= 0) {
-        dc.setColor(G.dim(acc, 1 - pop), -1);
-        F.st(dc, "+1", x0 + w1 + w2 + 34, 54 - pop * 22, 16, 3, 1, 1.0, 0);
+    if (ML) {
+      // ---- headline: BLICK #24 (+1 pop)
+      const num = "#" + cnt;
+      const ns = pop >= 0 ? 1 + 0.35 * (1 - G.ease(pop * 2.5)) : 1;
+      if (st === 1) {
+        const h = 26;
+        const w1 = F.stW("BLICK ", h);
+        const w2 = F.stW(num, h);
+        const x0 = 227 - (w1 + w2 + (22 * h) / 80) / 2;
+        dc.setColor(0xd0d0d0, -1);
+        F.st(dc, "BLICK", x0, 58, h, 4, 0, 1.0, 0);
+        dc.setColor(acc, -1);
+        F.st(dc, num, x0 + w1 + (22 * h) / 80 + w2 / 2, 58, h * ns, 4, 1, 1.0, 0);
+        if (pop >= 0) {
+          dc.setColor(G.dim(acc, 1 - pop), -1);
+          F.st(dc, "+1", x0 + w1 + w2 + 34, 54 - pop * 22, 16, 3, 1, 1.0, 0);
+        }
+      } else {
+        const sc = 4;
+        const w = F.pxW("BLICK " + num, sc);
+        const x0 = 227 - w / 2;
+        dc.setColor(0xe8e8e8, -1);
+        F.px(dc, "BLICK", x0, 34, sc, 0, 0);
+        dc.setColor(acc, -1);
+        F.px(dc, num, x0 + 6 * 6 * sc, 34 - (ns > 1 ? Math.round((ns - 1) * 20) : 0), sc, 0, 0);
+        if (pop >= 0) {
+          dc.setColor(G.dim(acc, 1 - pop), -1);
+          F.px(dc, "+1", 227 - 17, 72 - Math.round(pop * 10), 3, 0, 0);
+        }
       }
-    } else {
-      const sc = 4;
-      const w = F.pxW("BLICK " + num, sc);
-      const x0 = 227 - w / 2;
-      dc.setColor(0xe8e8e8, -1);
-      F.px(dc, "BLICK", x0, 34, sc, 0, 0);
-      dc.setColor(acc, -1);
-      F.px(dc, num, x0 + 6 * 6 * sc, 34 - (ns > 1 ? Math.round((ns - 1) * 20) : 0), sc, 0, 0);
-      if (pop >= 0) {
-        dc.setColor(G.dim(acc, 1 - pop), -1);
-        F.px(dc, "+1", 227 - 17, 72 - Math.round(pop * 10), 3, 0, 0);
+      // remark
+      dc.setColor(nt || wink ? acc : 0x8a8a8a, -1);
+      if (!(st === 2 && pop >= 0)) F.px(dc, rem, 227, st === 1 ? 76 : 72, 2, 1, 0);
+
+      // ---- the eye (over the cached time it must stay above the digits)
+      if (!SL) dc.setClip(0, 0, 454, st === 1 ? 234 : 212);
+      if (st === 1) eye1(dc, 227, 170, op, lk[0], lk[1], nt ? 22 : ms < 1400 ? 21 : 21 - 4 * G.ease((ms - 1400) / 300.0), acc);
+      else eye2(dc, 227, 150, op, lk[0], lk[1], acc);
+      if (!SL) dc.clearClip();
+      // sleepy Zzz / wink sparkle
+      if (nt) {
+        const z = live ? (a.t % 2400) / 2400.0 : 0.5;
+        dc.setColor(G.dim(acc, 1 - z * 0.7), -1);
+        F.px(dc, "z", 330 + Math.round(z * 18), 118 - Math.round(z * 30), 2, 0, 0);
+        F.px(dc, "Z", 346 + Math.round(z * 14), 100 - Math.round(z * 24), 3, 0, 0);
+      }
+      if (wink && ms >= 2000 && ms < 3200) {
+        const k = (ms - 2000) / 1200.0;
+        const r = 14 * Math.sin(k * 3.1416);
+        dc.setColor(acc, -1);
+        dc.fillPolygon([[350, 104 - r], [353, 101], [350 + r, 104], [353, 107], [350, 104 + r], [347, 107], [350 - r, 104], [347, 101]]);
       }
     }
-    // remark
-    dc.setColor(nt || wink ? acc : 0x8a8a8a, -1);
-    if (!(st === 2 && pop >= 0)) F.px(dc, rem, 227, st === 1 ? 76 : 72, 2, 1, 0);
-
-    // ---- the eye
-    if (st === 1) eye1(dc, 227, 170, op, lk[0], lk[1], nt ? 22 : ms < 1400 ? 21 : 21 - 4 * G.ease((ms - 1400) / 300.0), acc);
-    else eye2(dc, 227, 150, op, lk[0], lk[1], acc);
-    // sleepy Zzz / wink sparkle
-    if (nt) {
-      const z = live ? (a.t % 2400) / 2400.0 : 0.5;
-      dc.setColor(G.dim(acc, 1 - z * 0.7), -1);
-      F.px(dc, "z", 330 + Math.round(z * 18), 118 - Math.round(z * 30), 2, 0, 0);
-      F.px(dc, "Z", 346 + Math.round(z * 14), 100 - Math.round(z * 24), 3, 0, 0);
-    }
-    if (wink && ms >= 2000 && ms < 3200) {
-      const k = (ms - 2000) / 1200.0;
-      const r = 14 * Math.sin(k * 3.1416);
-      dc.setColor(acc, -1);
-      dc.fillPolygon([[350, 104 - r], [353, 101], [350 + r, 104], [353, 107], [350, 104 + r], [347, 107], [350 - r, 104], [347, 101]]);
-    }
-
+    if (!SL) return;
     // ---- time
     if (st === 1) {
       dc.setColor(d.dcol, -1);

@@ -114,6 +114,11 @@ class FaceGear extends Face {
         return d.h % 12 == 0 ? 12 : d.h % 12;
     }
 
+    // static layer: cached, redrawn when the minute changes
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -133,35 +138,40 @@ class FaceGear extends Face {
         var cCog = neon ? G.dim(acc, 0.45) : (chrom ? 0x80858C : 0x3A3C40);
         var cHi = chrom ? 0xF2F4F7 : 0x55585E;
 
-        // ---- time + date
-        dc.setColor(0x8A8A8A, -1);
-        F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 20, 2, 1, 0);
-        dc.setColor(0xFFFFFF, -1);
-        F.st(dc, G.timeStr(d), 227, 76, 62, 7, 1, G.easeInOut(p * 1.3), 0);
+        if (!a.bg) {
+            // ---- time + date
+            dc.setColor(0x8A8A8A, -1);
+            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 20, 2, 1, 0);
+            dc.setColor(0xFFFFFF, -1);
+            F.st(dc, G.timeStr(d), 227, 76, 62, 7, 1, G.easeInOut(p * 1.3), 0);
 
-        // ---- minute index ring around the chainring
-        var ip = G.ease(p * 1.6);
-        dc.setPenWidth(2);
-        for (var i = 0; i < 12; i++) {
-            if (i / 12.0 > ip) {
-                break;
+            // ---- minute index ring around the chainring
+            var ip = G.ease(p * 1.6);
+            dc.setPenWidth(2);
+            for (var i = 0; i < 12; i++) {
+                if (i / 12.0 > ip) {
+                    break;
+                }
+                dc.setColor(i == 0 ? 0x9A9A9A : 0x4A4A4A, -1);
+                G.tick(dc, RX, RY, RR + 13, RR + (i % 3 == 0 ? 21 : 17), i * 30);
             }
-            dc.setColor(i == 0 ? 0x9A9A9A : 0x4A4A4A, -1);
-            G.tick(dc, RX, RY, RR + 13, RR + (i % 3 == 0 ? 21 : 17), i * 30);
-        }
 
-        // ---- cassette
-        if (!neon) {
-            dc.setColor(chrom ? 0x1A1B1D : 0x0F1012, -1);
-            dc.fillCircle(KX, KY, cogR(11) + 3);
-        }
-        for (var i = 0; i < 12; i++) {
-            if (i == cog) {
-                continue;
+            // ---- cassette
+            if (!neon) {
+                dc.setColor(chrom ? 0x1A1B1D : 0x0F1012, -1);
+                dc.fillCircle(KX, KY, cogR(11) + 3);
             }
-            dc.setPenWidth(neon ? 1 : 2);
-            dc.setColor(G.dim(cCog, (i % 2 == 0 ? 0.6 : 0.85) + 0.15 * i / 11.0), -1);
-            dc.drawCircle(KX, KY, cogR(i));
+            for (var i = 0; i < 12; i++) {
+                if (i == cog) {
+                    continue;
+                }
+                dc.setPenWidth(neon ? 1 : 2);
+                dc.setColor(G.dim(cCog, (i % 2 == 0 ? 0.6 : 0.85) + 0.15 * i / 11.0), -1);
+                dc.drawCircle(KX, KY, cogR(i));
+            }
+        }
+        if (a.so) {
+            return;
         }
         // highlighted cog with its real teeth
         var cr = cogR(cog);

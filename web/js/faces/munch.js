@@ -132,7 +132,11 @@ function chomp(dc, P, x, y, dir, fr) {
 export default {
   fps: 12,
 
+  // static layer: maze, dots, time, score; chomper, ghosts, pellets and 1UP move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const P = pal(st, d.accent);
     const p = a.intro;
@@ -144,13 +148,13 @@ export default {
     const nEat = power ? ND : Math.floor((ND * steps) / goal);
     const wE = nEat > 0 ? FIRST[nEat - 1] : 0;
 
-    if (st === 2) {
+    if (st === 2 && S) {
       dc.setColor(P[0], -1);
       dc.fillRectangle(0, 0, 454, 454);
     }
 
     // ---------------- maze walls (draw themselves during the intro)
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 11 && S; i++) {
       const f = p >= 1 ? 1 : G.ease(G.stag(p, i < 3 ? i : 3 + (i - 3) * 0.4, 0.05, 0.25));
       if (f <= 0) continue;
       const x = BOX[i * 4], y = BOX[i * 4 + 1], w = BOX[i * 4 + 2], h = BOX[i * 4 + 3];
@@ -161,7 +165,7 @@ export default {
       dc.setColor(P[1], -1);
       boxP(dc, x, y, w, h, 3, f);
     }
-    if (p >= 0.3) {
+    if (p >= 0.3 && S) {
       dc.setColor(P[3], -1);
       dc.fillRectangle(212, 183, 30, 3);
     }
@@ -191,19 +195,20 @@ export default {
       const tc = DOTS[j];
       const x = X0 + (tc % 15) * C, y = Y0 + Math.floor(tc / 15) * C;
       if (tc === 16 || tc === 28 || tc === 166 || tc === 178) {
-        if (blink) continue;
+        // the power pellets blink over the cached maze
+        if (blink || !M) continue;
         dc.setColor(P[5], -1);
         dc.fillRectangle(x + 6, y + 9, 9, 3);
         dc.fillRectangle(x + 9, y + 6, 3, 9);
         dc.fillRectangle(x + 7, y + 7, 7, 7);
-      } else {
+      } else if (S) {
         dc.setColor(P[4], -1);
         dc.fillRectangle(x + 9, y + 9, 3, 3);
       }
     }
 
     // ---------------- time in the ghost house
-    if (p >= 0.2) {
+    if (p >= 0.2 && S) {
       const ts = G.timeStr(d);
       if (st === 3) {
         dc.setColor(P[24], -1);
@@ -244,7 +249,7 @@ export default {
       const q = at(WALK, cpos, false, back);
       cx = q[0]; cy = q[1]; cd = q[2];
     }
-    if (p >= 0.6 && (p >= 0.8 || Math.floor(a.t / 90) % 2 === 0)) {
+    if (M && p >= 0.6 && (p >= 0.8 || Math.floor(a.t / 90) % 2 === 0)) {
       for (let i = 0; i < ng; i++) {
         let g;
         if (power && i === 0) {
@@ -268,7 +273,7 @@ export default {
     }
 
     // ---------------- chomper
-    if (p >= 0.55) {
+    if (M && p >= 0.55) {
       const fr = live ? MF[Math.floor(t / 83) % 4] : 1;
       chomp(dc, P, cx, cy, cd, fr);
       if (pop >= 0) {
@@ -282,7 +287,8 @@ export default {
     let hi = steps;
     for (let i = 0; i < 7; i++) if (d.wkSteps[i] > hi) hi = d.wkSteps[i];
     dc.setColor(P[st === 1 ? 20 : 7], -1);
-    if (!blinkUp) F.px(dc, "1UP", 160, 40, 2, 1, 0);
+    if (!blinkUp && M) F.px(dc, "1UP", 160, 40, 2, 1, 0);
+    if (!S) return;
     F.px(dc, "HI", 294, 40, 2, 1, 0);
     dc.setColor(P[6], -1);
     F.px(dc, pad5(steps * G.ease(p)), 160, 58, 3, 1, 0);

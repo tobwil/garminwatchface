@@ -126,10 +126,25 @@ function timeStr(d) {
   return (d.is24 ? G.pad2(d.h) : "" + G.hour(d)) + ":" + G.pad2(d.m);
 }
 
+// aircraft warning lights of the tower and the rooftops (drawn over the cached skyline)
+function lights(dc, blinkA, live) {
+  dc.setColor(0xff3030, -1);
+  if (blinkA || !live) dc.fillRectangle(TX - 2, 124, P, P);
+  for (let b = 0; b < NB; b++) {
+    const x = BLD[b * 5], w = BLD[b * 5 + 1], top = BLD[b * 5 + 2], ex = BLD[b * 5 + 4];
+    if (ex === 1 && (blinkA || !live)) dc.fillRectangle(x + 36, top - 44, P, P);
+    else if (ex === 2 && (!blinkA || !live)) dc.fillRectangle(x + w / 2 - 2, top - 48, P, P);
+  }
+}
+
 export default {
   fps: 10,
 
+  // static layer: sky, skyline, windows, signs, viaduct, time; plane, lights, S-Bahn and weather move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const acc = d.accent;
     const p = a.intro;
@@ -142,292 +157,308 @@ export default {
     const goal = d.floorsGoal > 0 && d.floors >= d.floorsGoal;
     const blinkA = Math.floor(tt / 500) % 2 === 0;
 
-    // ---------------- sky
-    for (let i = 0; i < 5; i++) {
-      dc.setColor(pal[i], -1);
-      dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
-    }
-    if (night && !rain) {
-      let s = 3;
-      for (let i = 0; i < 22; i++) {
-        s = G.rnd(s);
-        const x = 20 + (s % 104) * P;
-        s = G.rnd(s);
-        const y = 8 + (s % 50) * P;
-        const tw = a.live && (Math.floor(tt / 350) + i * 3) % 11 === 0 ? 0.3 : 1;
-        dc.setColor(G.mix(pal[1], 0xffffff, (0.3 + (i % 3) * 0.3) * tw), -1);
-        dc.fillRectangle(x, y, P, P);
+    if (S) {
+      // ---------------- sky
+      for (let i = 0; i < 5; i++) {
+        dc.setColor(pal[i], -1);
+        dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
       }
-    }
-    // sun / moon
-    const rise = d.sunrise, set = d.sunset;
-    if (st !== 1 && el > -1 && !rain) {
-      let f = 0.5;
-      if (rise >= 0 && set > rise) f = G.clamp((d.mins - rise) / (set - rise), 0, 1);
-      const sx = q4(40 + f * 300) - 16;
-      const sy = q4(G.clamp(300 - el * 5, 156, 330)) - 16;
-      const gf = G.clamp((10 - el) / 12.0, 0, 1);
-      const sp = st === 2 ? [PK[9], PK[10], PK[7]] : [G.mix(0xffe07a, 0xff6a3a, gf), G.mix(0xfff6c8, 0xffa060, gf), 0xffffff];
-      SPR.draw(dc, SP.SUN, sx, sy, P, sp, false);
-    } else if (night && d.moon > 0.05 && d.moon < 0.95) {
-      let f = 0.12;
-      if (st !== 1 && rise >= 0 && set >= 0) {
-        let m = d.mins - set;
-        if (m < 0) m += 1440;
-        f = G.clamp(m / (rise + 1440 - set), 0, 1);
-      }
-      const mx = q4(40 + f * 300) - 14;
-      const my = q4(170 + (1 - Math.sin(f * Math.PI)) * 60) - 14;
-      SPR.draw(dc, SP.MOON, mx, my, P, [st === 2 ? PK[7] : 0xf4f1d0, st === 2 ? PK[6] : 0xc8c3a0], false);
-      if (d.moon < 0.35 || d.moon > 0.65) SPR.draw(dc, SP.MOON_C, mx, my, P, [pal[2]], d.moon > 0.5);
-    }
-    // plane (night)
-    if (night) {
-      const ph = (tt % 11000) / 11000.0;
-      const px = q4(480 - ph * 560);
-      const py = 148 + q4(ph * 24);
-      SPR.draw(dc, SP.PLANE, px, py, P, [st === 2 ? PK[5] : 0x3a3a50, st === 2 ? PK[10] : 0xffe08a], true);
-      dc.setColor(blinkA ? 0xff3030 : 0x501010, -1);
-      dc.fillRectangle(px + 32, py, P, P);
-      if (Math.floor(tt / 250) % 4 === 1) {
-        dc.setColor(0xffffff, -1);
-        dc.fillRectangle(px + 16, py + 8, P, P);
-      }
-    }
-
-    // ---------------- skyline (rising during the intro, clipped at street level)
-    dc.setClip(0, 0, 454, GY);
-    // TV tower (behind)
-    const to = q4((1 - G.ease(G.stag(p, 0, 0, 0.5))) * 280);
-    dc.setColor(pal[13], -1);
-    dc.fillRectangle(TX - 8, 300 + to, 16, 88);
-    dc.fillRectangle(TX - 4, 200 + to, 8, 100);
-    dc.fillRectangle(TX - 4, 156 + to, 8, 12);
-    dc.setColor(st === 2 ? PK[7] : G.mix(pal[13], 0xffffff, 0.45), -1);
-    dc.fillRectangle(TX - 2, 128 + to, P, 28);
-    dc.setColor(st === 2 ? PK[8] : 0xd04040, -1);
-    dc.fillRectangle(TX - 2, 136 + to, P, 4);
-    dc.fillRectangle(TX - 2, 148 + to, P, 4);
-    if (blinkA || !a.live) {
-      dc.setColor(0xff3030, -1);
-      dc.fillRectangle(TX - 2, 124 + to, P, P);
-    }
-    const sc0 = goal ? acc : pal[14];
-    if (goal) {
-      dc.setColor(G.dim(acc, 0.35), -1);
-      dc.fillRectangle(TX - 20, 168 + to, 40, 32);
-      dc.fillRectangle(TX - 12, 164 + to, 24, 40);
-    }
-    for (let r = 0; r < 8; r++) {
-      const hw = SPH[r] * P;
-      dc.setColor(r < 3 && !goal ? G.mix(sc0, 0xffffff, 0.25) : r < 2 ? G.mix(acc, 0xffffff, 0.45) : sc0, -1);
-      dc.fillRectangle(TX - hw, 168 + r * P + to, hw * 2, P);
-    }
-    // sphere windows (restaurant)
-    dc.setColor(goal ? 0xffffff : night ? pal[10] : G.mix(pal[14], 0x000000, 0.35), -1);
-    for (let k = -2; k < 2; k++) dc.fillRectangle(TX + k * 8 + 2, 184 + to, P, P);
-
-    // church
-    const co = q4((1 - G.ease(G.stag(p, 3, 0.07, 0.45))) * 200);
-    const stone = G.mix(pal[7], 0x000000, 0.18);
-    dc.setColor(stone, -1);
-    dc.fillRectangle(144, 320 + co, 32, 68);
-    dc.fillRectangle(152, 256 + co, 20, 64);
-    dc.setColor(pal[20], -1);
-    dc.fillRectangle(144, 316 + co, 32, P);
-    dc.fillRectangle(152, 248 + co, 20, 8);
-    dc.fillRectangle(156, 232 + co, 12, 16);
-    dc.fillRectangle(160, 208 + co, P, 24);
-    dc.setColor(0xe0b040, -1);
-    dc.fillRectangle(160, 192 + co, P, 16);
-    dc.fillRectangle(156, 196 + co, 12, P);
-    dc.setColor(st === 2 ? PK[7] : G.mix(stone, 0xffffff, 0.6), -1);
-    dc.fillRectangle(156, 264 + co, 12, 12);
-    dc.setColor(G.mix(stone, 0x000000, 0.6), -1);
-    dc.fillRectangle(160, 264 + co, P, 8);
-    dc.fillRectangle(160, 268 + co, 8, P);
-    dc.setColor(night ? pal[11] : pal[9], -1);
-    dc.fillRectangle(160, 288 + co, P, 16);
-    dc.fillRectangle(148, 336 + co, P, 20);
-    dc.fillRectangle(168, 336 + co, P, 20);
-
-    // buildings
-    const cols = signCols(st, acc);
-    const up = [0, 0, 0, 0, 0, 0];
-    for (let k = 0; k < NB; k++) {
-      const b = ORD[k];
-      const top = BLD[b * 5 + 2];
-      up[b] = q4((1 - G.ease(G.stag(p, k, 0.07, 0.45))) * (GY - top + 60));
-    }
-    for (let b = 0; b < NB; b++) {
-      const x = BLD[b * 5], w = BLD[b * 5 + 1], top = BLD[b * 5 + 2] + up[b], ex = BLD[b * 5 + 4];
-      const fac = pal[5 + BLD[b * 5 + 3]];
-      // roof extras
-      if (ex === 1) {
-        const tc = G.mix(fac, 0x000000, 0.35);
-        SPR.draw(dc, SP.TANK, x + 4, top - 36, P, [tc, G.mix(fac, 0x8a5a3a, 0.5), tc], false);
-        dc.setColor(tc, -1);
-        dc.fillRectangle(x + 36, top - 40, P, 40);
-        if (blinkA || !a.live) {
-          dc.setColor(0xff3030, -1);
-          dc.fillRectangle(x + 36, top - 44, P, P);
+      if (night && !rain) {
+        let s = 3;
+        for (let i = 0; i < 22; i++) {
+          s = G.rnd(s);
+          const x = 20 + (s % 104) * P;
+          s = G.rnd(s);
+          const y = 8 + (s % 50) * P;
+          const tw = a.live && (Math.floor(tt / 350) + i * 3) % 11 === 0 ? 0.3 : 1;
+          dc.setColor(G.mix(pal[1], 0xffffff, (0.3 + (i % 3) * 0.3) * tw), -1);
+          dc.fillRectangle(x, y, P, P);
         }
-      } else if (ex === 2) {
-        dc.setColor(G.mix(fac, 0xffffff, 0.12), -1);
-        dc.fillRectangle(x + 8, top - 12, w - 16, 12);
-        dc.fillRectangle(x + 16, top - 24, w - 32, 12);
-        dc.fillRectangle(x + w / 2 - 2, top - 44, P, 20);
-        if (!blinkA || !a.live) {
-          dc.setColor(0xff3030, -1);
-          dc.fillRectangle(x + w / 2 - 2, top - 48, P, P);
+      }
+      // sun / moon
+      const rise = d.sunrise, set = d.sunset;
+      if (st !== 1 && el > -1 && !rain) {
+        let f = 0.5;
+        if (rise >= 0 && set > rise) f = G.clamp((d.mins - rise) / (set - rise), 0, 1);
+        const sx = q4(40 + f * 300) - 16;
+        const sy = q4(G.clamp(300 - el * 5, 156, 330)) - 16;
+        const gf = G.clamp((10 - el) / 12.0, 0, 1);
+        const sp = st === 2 ? [PK[9], PK[10], PK[7]] : [G.mix(0xffe07a, 0xff6a3a, gf), G.mix(0xfff6c8, 0xffa060, gf), 0xffffff];
+        SPR.draw(dc, SP.SUN, sx, sy, P, sp, false);
+      } else if (night && d.moon > 0.05 && d.moon < 0.95) {
+        let f = 0.12;
+        if (st !== 1 && rise >= 0 && set >= 0) {
+          let m = d.mins - set;
+          if (m < 0) m += 1440;
+          f = G.clamp(m / (rise + 1440 - set), 0, 1);
         }
-      } else if (ex === 3) {
-        dc.setColor(G.mix(fac, 0x000000, 0.3), -1);
-        dc.fillRectangle(x + 4, top - 8, 12, 8);
-      }
-      dc.setColor(fac, -1);
-      dc.fillRectangle(x, top, w, GY - top);
-      dc.setColor(st === 1 ? G.dim(cols[b % 3], 0.75) : G.mix(fac, 0xffffff, 0.18), -1);
-      dc.fillRectangle(x, top, w, P);
-      dc.setColor(G.mix(fac, 0x000000, 0.25), -1);
-      dc.fillRectangle(x + w - P, top + P, P, GY - top - P);
-      // window grid: one block in the "off" colour, then facade bars between
-      const x0 = WG[b * 3], nr = WG[b * 3 + 1], n = WG[b * 3 + 2];
-      const y0 = top + 12;
-      dc.setColor(pal[9], -1);
-      dc.fillRectangle(x0, y0, n * 12 - 4, nr * 12 - 4);
-      dc.setColor(fac, -1);
-      for (let r = 1; r < nr; r++) dc.fillRectangle(x0, y0 + r * 12 - 4, n * 12 - 4, P);
-      for (let c = 1; c < n; c++) dc.fillRectangle(x0 + c * 12 - 4, y0, P, nr * 12 - 4);
-      // door
-      dc.setColor(G.mix(fac, 0x000000, 0.55), -1);
-      dc.fillRectangle(x + q4(w / 2) - 4, GY - 20, 12, 20);
-      // snow on the roof
-      if (st === 3) {
-        dc.setColor(pal[18], -1);
-        dc.fillRectangle(x, top - P, w, P);
-        dc.fillRectangle(x + 4, top - 8, 12, P);
-        dc.fillRectangle(x + w - 20, top - 8, 8, P);
+        const mx = q4(40 + f * 300) - 14;
+        const my = q4(170 + (1 - Math.sin(f * Math.PI)) * 60) - 14;
+        SPR.draw(dc, SP.MOON, mx, my, P, [st === 2 ? PK[7] : 0xf4f1d0, st === 2 ? PK[6] : 0xc8c3a0], false);
+        if (d.moon < 0.35 || d.moon > 0.65) SPR.draw(dc, SP.MOON_C, mx, my, P, [pal[2]], d.moon > 0.5);
       }
     }
-    // lit windows (count up during the intro)
-    const fl = d.floors > 0 ? d.floors : 0;
-    const nl = Math.min(WIN.length, Math.floor(fl * G.clamp((p - 0.45) / 0.4, 0, 1) + 0.0001));
-    for (let i = 0; i < nl; i++) {
-      const id = WIN[i];
-      const b = Math.floor(id / 10000), r = Math.floor(id / 100) % 100, c = id % 100;
-      const k = (id * 7 + i) % 10;
-      dc.setColor(k < 6 ? pal[10] : k < 8 ? pal[11] : pal[12], -1);
-      dc.fillRectangle(WG[b * 3] + c * 12, BLD[b * 5 + 2] + up[b] + 12 + r * 12, 8, 8);
-    }
-    dc.clearClip();
 
-    // ---------------- signs
-    let tempSlot = false;
-    for (let k = 0; k < 3; k++) if (d.slots[k].lbl === "TEMP") tempSlot = true;
-    for (let k = 0; k < 4; k++) {
-      const p0 = 0.70 + k * 0.05;
-      if (p < p0) continue;
-      // switch-on flicker, always over before the intro ends (p reaches exactly 1)
-      if (p < p0 + 0.12 && p < 1 && Math.floor(a.t / 60) % 2 === 1) continue;
-      if (k < 3) {
-        if (!d.slots[k].lbl) continue; // empty slot: no billboard
-        const b = BOARD_B[k];
-        board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k].lbl, d.slots[k].val, cols[k], st, pal, day);
-      } else if (!tempSlot) {
-        // temperature billboard on the brick building next to the tower
-        let ts = "--°";
-        if (d.temp !== -99) ts = Math.round(d.metric ? d.temp : d.temp * 1.8 + 32) + "°";
-        const bw = q4(F.pxW(ts, 2) + 15);
-        const bx = q4(324 - bw / 2);
-        const lite = st === 3 || (st === 2 && day);
-        dc.setColor(st === 1 ? 0x2a2438 : G.mix(pal[13], 0x000000, 0.3), -1);
-        dc.fillRectangle(bx + 4, 248, P, 8);
-        dc.fillRectangle(bx + bw - 8, 248, P, 8);
-        dc.setColor(cols[2], -1);
-        dc.fillRectangle(bx, 226, bw, 22);
-        dc.setColor(st === 1 || lite ? pal[19] : PK[0], -1);
-        dc.fillRectangle(bx + 2, 228, bw - 4, 18);
-        dc.setColor(st === 1 ? G.mix(cols[2], 0xffffff, 0.45) : lite ? (st === 2 ? PK[0] : 0x1a2030) : cols[2], -1);
-        F.px(dc, ts, bx + bw / 2, 230, 2, 1, 0);
+    if (M) {
+      // plane (night)
+      if (night) {
+        const ph = (tt % 11000) / 11000.0;
+        const px = q4(480 - ph * 560);
+        const py = 148 + q4(ph * 24);
+        SPR.draw(dc, SP.PLANE, px, py, P, [st === 2 ? PK[5] : 0x3a3a50, st === 2 ? PK[10] : 0xffe08a], true);
+        dc.setColor(blinkA ? 0xff3030 : 0x501010, -1);
+        dc.fillRectangle(px + 32, py, P, P);
+        if (Math.floor(tt / 250) % 4 === 1) {
+          dc.setColor(0xffffff, -1);
+          dc.fillRectangle(px + 16, py + 8, P, P);
+        }
+      }
+    }
+
+    if (S) {
+      // ---------------- skyline (rising during the intro, clipped at street level)
+      dc.setClip(0, 0, 454, GY);
+      // TV tower (behind)
+      const to = q4((1 - G.ease(G.stag(p, 0, 0, 0.5))) * 280);
+      dc.setColor(pal[13], -1);
+      dc.fillRectangle(TX - 8, 300 + to, 16, 88);
+      dc.fillRectangle(TX - 4, 200 + to, 8, 100);
+      dc.fillRectangle(TX - 4, 156 + to, 8, 12);
+      dc.setColor(st === 2 ? PK[7] : G.mix(pal[13], 0xffffff, 0.45), -1);
+      dc.fillRectangle(TX - 2, 128 + to, P, 28);
+      dc.setColor(st === 2 ? PK[8] : 0xd04040, -1);
+      dc.fillRectangle(TX - 2, 136 + to, P, 4);
+      dc.fillRectangle(TX - 2, 148 + to, P, 4);
+      if ((blinkA || !a.live) && !a.so) {
+        dc.setColor(0xff3030, -1);
+        dc.fillRectangle(TX - 2, 124 + to, P, P);
+      }
+      const sc0 = goal ? acc : pal[14];
+      if (goal) {
+        dc.setColor(G.dim(acc, 0.35), -1);
+        dc.fillRectangle(TX - 20, 168 + to, 40, 32);
+        dc.fillRectangle(TX - 12, 164 + to, 24, 40);
+      }
+      for (let r = 0; r < 8; r++) {
+        const hw = SPH[r] * P;
+        dc.setColor(r < 3 && !goal ? G.mix(sc0, 0xffffff, 0.25) : r < 2 ? G.mix(acc, 0xffffff, 0.45) : sc0, -1);
+        dc.fillRectangle(TX - hw, 168 + r * P + to, hw * 2, P);
+      }
+      // sphere windows (restaurant)
+      dc.setColor(goal ? 0xffffff : night ? pal[10] : G.mix(pal[14], 0x000000, 0.35), -1);
+      for (let k = -2; k < 2; k++) dc.fillRectangle(TX + k * 8 + 2, 184 + to, P, P);
+
+      // church
+      const co = q4((1 - G.ease(G.stag(p, 3, 0.07, 0.45))) * 200);
+      const stone = G.mix(pal[7], 0x000000, 0.18);
+      dc.setColor(stone, -1);
+      dc.fillRectangle(144, 320 + co, 32, 68);
+      dc.fillRectangle(152, 256 + co, 20, 64);
+      dc.setColor(pal[20], -1);
+      dc.fillRectangle(144, 316 + co, 32, P);
+      dc.fillRectangle(152, 248 + co, 20, 8);
+      dc.fillRectangle(156, 232 + co, 12, 16);
+      dc.fillRectangle(160, 208 + co, P, 24);
+      dc.setColor(0xe0b040, -1);
+      dc.fillRectangle(160, 192 + co, P, 16);
+      dc.fillRectangle(156, 196 + co, 12, P);
+      dc.setColor(st === 2 ? PK[7] : G.mix(stone, 0xffffff, 0.6), -1);
+      dc.fillRectangle(156, 264 + co, 12, 12);
+      dc.setColor(G.mix(stone, 0x000000, 0.6), -1);
+      dc.fillRectangle(160, 264 + co, P, 8);
+      dc.fillRectangle(160, 268 + co, 8, P);
+      dc.setColor(night ? pal[11] : pal[9], -1);
+      dc.fillRectangle(160, 288 + co, P, 16);
+      dc.fillRectangle(148, 336 + co, P, 20);
+      dc.fillRectangle(168, 336 + co, P, 20);
+
+      // buildings
+      const cols = signCols(st, acc);
+      const up = [0, 0, 0, 0, 0, 0];
+      for (let k = 0; k < NB; k++) {
+        const b = ORD[k];
+        const top = BLD[b * 5 + 2];
+        up[b] = q4((1 - G.ease(G.stag(p, k, 0.07, 0.45))) * (GY - top + 60));
+      }
+      for (let b = 0; b < NB; b++) {
+        const x = BLD[b * 5], w = BLD[b * 5 + 1], top = BLD[b * 5 + 2] + up[b], ex = BLD[b * 5 + 4];
+        const fac = pal[5 + BLD[b * 5 + 3]];
+        // roof extras
+        if (ex === 1) {
+          const tc = G.mix(fac, 0x000000, 0.35);
+          SPR.draw(dc, SP.TANK, x + 4, top - 36, P, [tc, G.mix(fac, 0x8a5a3a, 0.5), tc], false);
+          dc.setColor(tc, -1);
+          dc.fillRectangle(x + 36, top - 40, P, 40);
+          if ((blinkA || !a.live) && !a.so) {
+            dc.setColor(0xff3030, -1);
+            dc.fillRectangle(x + 36, top - 44, P, P);
+          }
+        } else if (ex === 2) {
+          dc.setColor(G.mix(fac, 0xffffff, 0.12), -1);
+          dc.fillRectangle(x + 8, top - 12, w - 16, 12);
+          dc.fillRectangle(x + 16, top - 24, w - 32, 12);
+          dc.fillRectangle(x + w / 2 - 2, top - 44, P, 20);
+          if ((!blinkA || !a.live) && !a.so) {
+            dc.setColor(0xff3030, -1);
+            dc.fillRectangle(x + w / 2 - 2, top - 48, P, P);
+          }
+        } else if (ex === 3) {
+          dc.setColor(G.mix(fac, 0x000000, 0.3), -1);
+          dc.fillRectangle(x + 4, top - 8, 12, 8);
+        }
+        dc.setColor(fac, -1);
+        dc.fillRectangle(x, top, w, GY - top);
+        dc.setColor(st === 1 ? G.dim(cols[b % 3], 0.75) : G.mix(fac, 0xffffff, 0.18), -1);
+        dc.fillRectangle(x, top, w, P);
+        dc.setColor(G.mix(fac, 0x000000, 0.25), -1);
+        dc.fillRectangle(x + w - P, top + P, P, GY - top - P);
+        // window grid: one block in the "off" colour, then facade bars between
+        const x0 = WG[b * 3], nr = WG[b * 3 + 1], n = WG[b * 3 + 2];
+        const y0 = top + 12;
+        dc.setColor(pal[9], -1);
+        dc.fillRectangle(x0, y0, n * 12 - 4, nr * 12 - 4);
+        dc.setColor(fac, -1);
+        for (let r = 1; r < nr; r++) dc.fillRectangle(x0, y0 + r * 12 - 4, n * 12 - 4, P);
+        for (let c = 1; c < n; c++) dc.fillRectangle(x0 + c * 12 - 4, y0, P, nr * 12 - 4);
+        // door
+        dc.setColor(G.mix(fac, 0x000000, 0.55), -1);
+        dc.fillRectangle(x + q4(w / 2) - 4, GY - 20, 12, 20);
+        // snow on the roof
         if (st === 3) {
           dc.setColor(pal[18], -1);
-          dc.fillRectangle(bx - 2, 222, bw + 4, P);
+          dc.fillRectangle(x, top - P, w, P);
+          dc.fillRectangle(x + 4, top - 8, 12, P);
+          dc.fillRectangle(x + w - 20, top - 8, 8, P);
+        }
+      }
+      // lit windows (count up during the intro)
+      const fl = d.floors > 0 ? d.floors : 0;
+      const nl = Math.min(WIN.length, Math.floor(fl * G.clamp((p - 0.45) / 0.4, 0, 1) + 0.0001));
+      for (let i = 0; i < nl; i++) {
+        const id = WIN[i];
+        const b = Math.floor(id / 10000), r = Math.floor(id / 100) % 100, c = id % 100;
+        const k = (id * 7 + i) % 10;
+        dc.setColor(k < 6 ? pal[10] : k < 8 ? pal[11] : pal[12], -1);
+        dc.fillRectangle(WG[b * 3] + c * 12, BLD[b * 5 + 2] + up[b] + 12 + r * 12, 8, 8);
+      }
+      dc.clearClip();
+
+      // ---------------- signs
+      let tempSlot = false;
+      for (let k = 0; k < 3; k++) if (d.slots[k].lbl === "TEMP") tempSlot = true;
+      for (let k = 0; k < 4; k++) {
+        const p0 = 0.70 + k * 0.05;
+        if (p < p0) continue;
+        // switch-on flicker, always over before the intro ends (p reaches exactly 1)
+        if (p < p0 + 0.12 && p < 1 && Math.floor(a.t / 60) % 2 === 1) continue;
+        if (k < 3) {
+          if (!d.slots[k].lbl) continue; // empty slot: no billboard
+          const b = BOARD_B[k];
+          board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k].lbl, d.slots[k].val, cols[k], st, pal, day);
+        } else if (!tempSlot) {
+          // temperature billboard on the brick building next to the tower
+          let ts = "--°";
+          if (d.temp !== -99) ts = Math.round(d.metric ? d.temp : d.temp * 1.8 + 32) + "°";
+          const bw = q4(F.pxW(ts, 2) + 15);
+          const bx = q4(324 - bw / 2);
+          const lite = st === 3 || (st === 2 && day);
+          dc.setColor(st === 1 ? 0x2a2438 : G.mix(pal[13], 0x000000, 0.3), -1);
+          dc.fillRectangle(bx + 4, 248, P, 8);
+          dc.fillRectangle(bx + bw - 8, 248, P, 8);
+          dc.setColor(cols[2], -1);
+          dc.fillRectangle(bx, 226, bw, 22);
+          dc.setColor(st === 1 || lite ? pal[19] : PK[0], -1);
+          dc.fillRectangle(bx + 2, 228, bw - 4, 18);
+          dc.setColor(st === 1 ? G.mix(cols[2], 0xffffff, 0.45) : lite ? (st === 2 ? PK[0] : 0x1a2030) : cols[2], -1);
+          F.px(dc, ts, bx + bw / 2, 230, 2, 1, 0);
+          if (st === 3) {
+            dc.setColor(pal[18], -1);
+            dc.fillRectangle(bx - 2, 222, bw + 4, P);
+          }
+        }
+      }
+      // goal banner on the tower
+      if (goal && p >= 0.8) {
+        const gp = G.spring(G.stag(p, 0, 0.8, 0.2));
+        const gw = q4(68 * gp);
+        if (gw > 8) {
+          dc.setColor(0xffffff, -1);
+          dc.fillRectangle(TX + 4, 204, gw, 24);
+          dc.setColor(acc, -1);
+          dc.fillRectangle(TX + 6, 206, gw - 4, 20);
+          if (gw >= 64) {
+            dc.setColor(0x000000, -1);
+            F.px(dc, "ZIEL!", TX + 6 + 32, 209, 2, 1, 0);
+          }
         }
       }
     }
-    // goal banner on the tower
-    if (goal && p >= 0.8) {
-      const gp = G.spring(G.stag(p, 0, 0.8, 0.2));
-      const gw = q4(68 * gp);
-      if (gw > 8) {
-        dc.setColor(0xffffff, -1);
-        dc.fillRectangle(TX + 4, 204, gw, 24);
-        dc.setColor(acc, -1);
-        dc.fillRectangle(TX + 6, 206, gw - 4, 20);
-        if (gw >= 64) {
-          dc.setColor(0x000000, -1);
-          F.px(dc, "ZIEL!", TX + 6 + 32, 209, 2, 1, 0);
+
+    // the red warning lights blink on top of the cached skyline
+    if (!S) lights(dc, blinkA, a.live);
+
+    if (S) {
+      // ---------------- viaduct, street, S-Bahn
+      dc.setColor(pal[15], -1);
+      dc.fillRectangle(0, GY, 454, 36);
+      dc.setColor(st === 2 ? PK[6] : G.mix(pal[13], 0xffffff, 0.3), -1);
+      dc.fillRectangle(0, GY, 454, P);
+      dc.setColor(G.mix(pal[15], 0x000000, 0.3), -1);
+      dc.fillRectangle(0, GY + 8, 454, P);
+      for (let k = 0; k < 8; k++) {
+        const ax = 12 + k * 56;
+        dc.setColor(night && k % 3 === 1 ? pal[11] : pal[16], -1);
+        dc.fillRectangle(ax + 8, GY + 16, 16, P);
+        dc.fillRectangle(ax + 4, GY + 20, 24, P);
+        dc.fillRectangle(ax, GY + 24, 32, 12);
+      }
+      dc.setColor(pal[17], -1);
+      dc.fillRectangle(0, GY + 36, 454, 30);
+      if (st === 3) {
+        dc.setColor(pal[18], -1);
+        dc.fillRectangle(0, GY - P, 454, P);
+      }
+    }
+
+    if (M) {
+      // train every 7 s
+      const ph = (tt % 7000) / 7000.0;
+      const tx = q4(-200 + ph * 860);
+      const tp = st === 2
+        ? [PK[5], PK[9], PK[8], night ? PK[10] : PK[1], PK[2], PK[7]]
+        : st === 1
+          ? [0x18181e, 0x8a6420, 0x6a1a20, 0xffe08a, 0x3a0e12, 0xfff6c0]
+          : [st === 3 ? pal[18] : 0x3a3a44, 0xe0a030, 0xa8282a, night ? 0xffe08a : 0x2a3040, 0x6a1a1a, 0xfff6c0];
+      SPR.draw(dc, SP.TRAIN_CAR, tx, GY - 28, P, tp, false);
+      SPR.draw(dc, SP.TRAIN_HEAD, tx + 100, GY - 28, P, tp, false);
+
+      // ---------------- weather
+      if (st === 3) {
+        let s = 17;
+        const nf = rain ? 64 : 40;
+        for (let i = 0; i < nf; i++) {
+          s = G.rnd(s);
+          const x0 = s % 454;
+          s = G.rnd(s);
+          const y = q4(((s % 420) + Math.floor((tt * (5 + (i % 3))) / 100)) % 420 + 16);
+          const x = q4(x0 + Math.sin(tt / 700.0 + i) * 8);
+          dc.setColor(i % 4 === 0 ? 0xffffff : G.mix(pal[2], 0xffffff, 0.75), -1);
+          dc.fillRectangle(x, y, i % 3 === 0 ? P : 2, i % 3 === 0 ? P : 2);
+        }
+      } else if (rain) {
+        let s = 23;
+        dc.setColor(st === 2 ? PK[6] : G.mix(pal[3], 0xffffff, 0.4), -1);
+        for (let i = 0; i < 40; i++) {
+          s = G.rnd(s);
+          const x0 = s % 520;
+          s = G.rnd(s);
+          const y = ((s % 420) + Math.floor((tt * 45) / 100)) % 420 + 20;
+          dc.fillRectangle(x0 - Math.floor(y / 5), y, 2, 10);
         }
       }
     }
 
-    // ---------------- viaduct, street, S-Bahn
-    dc.setColor(pal[15], -1);
-    dc.fillRectangle(0, GY, 454, 36);
-    dc.setColor(st === 2 ? PK[6] : G.mix(pal[13], 0xffffff, 0.3), -1);
-    dc.fillRectangle(0, GY, 454, P);
-    dc.setColor(G.mix(pal[15], 0x000000, 0.3), -1);
-    dc.fillRectangle(0, GY + 8, 454, P);
-    for (let k = 0; k < 8; k++) {
-      const ax = 12 + k * 56;
-      dc.setColor(night && k % 3 === 1 ? pal[11] : pal[16], -1);
-      dc.fillRectangle(ax + 8, GY + 16, 16, P);
-      dc.fillRectangle(ax + 4, GY + 20, 24, P);
-      dc.fillRectangle(ax, GY + 24, 32, 12);
-    }
-    dc.setColor(pal[17], -1);
-    dc.fillRectangle(0, GY + 36, 454, 30);
-    if (st === 3) {
-      dc.setColor(pal[18], -1);
-      dc.fillRectangle(0, GY - P, 454, P);
-    }
-    // train every 7 s
-    const ph = (tt % 7000) / 7000.0;
-    const tx = q4(-200 + ph * 860);
-    const tp = st === 2
-      ? [PK[5], PK[9], PK[8], night ? PK[10] : PK[1], PK[2], PK[7]]
-      : st === 1
-        ? [0x18181e, 0x8a6420, 0x6a1a20, 0xffe08a, 0x3a0e12, 0xfff6c0]
-        : [st === 3 ? pal[18] : 0x3a3a44, 0xe0a030, 0xa8282a, night ? 0xffe08a : 0x2a3040, 0x6a1a1a, 0xfff6c0];
-    SPR.draw(dc, SP.TRAIN_CAR, tx, GY - 28, P, tp, false);
-    SPR.draw(dc, SP.TRAIN_HEAD, tx + 100, GY - 28, P, tp, false);
-
-    // ---------------- weather
-    if (st === 3) {
-      let s = 17;
-      const nf = rain ? 64 : 40;
-      for (let i = 0; i < nf; i++) {
-        s = G.rnd(s);
-        const x0 = s % 454;
-        s = G.rnd(s);
-        const y = q4(((s % 420) + Math.floor((tt * (5 + (i % 3))) / 100)) % 420 + 16);
-        const x = q4(x0 + Math.sin(tt / 700.0 + i) * 8);
-        dc.setColor(i % 4 === 0 ? 0xffffff : G.mix(pal[2], 0xffffff, 0.75), -1);
-        dc.fillRectangle(x, y, i % 3 === 0 ? P : 2, i % 3 === 0 ? P : 2);
-      }
-    } else if (rain) {
-      let s = 23;
-      dc.setColor(st === 2 ? PK[6] : G.mix(pal[3], 0xffffff, 0.4), -1);
-      for (let i = 0; i < 40; i++) {
-        s = G.rnd(s);
-        const x0 = s % 520;
-        s = G.rnd(s);
-        const y = ((s % 420) + Math.floor((tt * 45) / 100)) % 420 + 20;
-        dc.fillRectangle(x0 - Math.floor(y / 5), y, 2, 10);
-      }
-    }
-
+    if (!S) return;
     // ---------------- time + date
     const tq = G.stag(p, 1, 0.12, 0.55);
     const ty = 56 - q4((1 - G.spring(tq)) * 130);

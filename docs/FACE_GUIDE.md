@@ -95,6 +95,24 @@ History arrays can contain `-1` gaps and may be empty on the watch – always gu
   function of `a.t` + data (no per-frame state).
 * The frame at `intro = 1, live = false` must look complete and beautiful (that's what most people see).
 
+## Static layer cache (performance — use it)
+The watch is 10–15× slower than the simulator: a full-screen scene easily costs 200–400 ms per frame on
+the device, which stutters badly. So every face splits its drawing into a **static layer** (rendered once
+into a cached bitmap) and the **moving parts** (drawn over the cached bitmap every frame).
+* `bgKey(d)` returns a number that changes whenever the static layer must be redrawn; usually
+  `d.doy * 1440 + d.mins` (JS) / `minuteKey(d)` (MC). Return `-1` (MC) / omit it (JS) to opt out.
+* In `draw` start with `const S = !a.bg, M = !a.so;` (MC: `var S = !a.bg; var M = !a.so;`) and wrap
+  everything static in `if (S)` and everything that moves in `if (M)`. `a.so` = the engine is rendering the
+  static layer only, `a.bg` = the static layer is already on screen. Static things must not depend on
+  `a.t`, `a.intro` or `a.live` (the layer is reused for a whole minute); things that change during the
+  intro are moving parts. Draw order matters: moving parts are always drawn after the whole static layer.
+* The engine renders the static layer in its own timer callback (separate watchdog budget) and paints the
+  full frame without it until it is ready. During the intro it reveals the cached layer like a CRT
+  switching on; return `false` from `reveal()` if the face has its own reveal.
+* Faces whose shared preamble is heavy (game logic) should opt out instead of running it twice.
+* Check with `node tools/cachecheck.mjs KEY`: the cached render must match a full render (only edge
+  anti-aliasing may differ).
+
 ## Always-on (`aod`)
 AMOLED low-power mode: black, **< 10 % of pixels lit**, no animation, thin strokes, dimmed colours,
 apply `St.shift(d)` offsets to everything. Make it a recognisable, elegant echo of the face.

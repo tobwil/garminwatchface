@@ -221,7 +221,14 @@ class FaceCoach extends Face {
         return s < 0 ? 0 : s;
     }
 
+    // static layer: background, time, slot chips; the conversation is typed live
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var acc = st == 2 ? 0x3BFF6A : d.accent;
         var p = a.intro;
@@ -241,210 +248,217 @@ class FaceCoach extends Face {
         var shown = ms < T_TXT ? 0 : (ms - T_TXT) / CPS;
         var qp = G.ease((ms - T_Q) / 320.0);
 
-        // ---- background
-        if (st == 3) {
-            for (var k = 0; k < 19; k++) {
-                dc.setColor(glassBg(k * 24 + 12), -1);
-                dc.fillRectangle(0, k * 24, 454, 24);
-            }
-            // soft bokeh blobs drifting slowly
-            var tt = live ? a.t / 1000.0 : 0.0;
-            for (var b = 0; b < 3; b++) {
-                var bx = 227 + (b - 1) * 120 + Math.sin(tt * 0.5 + b * 2.1) * 18;
-                var by = 150 + b * 90 + Math.cos(tt * 0.4 + b) * 14;
-                var bc = b == 1 ? 0xD65DB1 : acc;
-                var bg = glassBg(by);
-                for (var r = 0; r < 6; r++) {
-                    dc.setColor(G.mix(bg, bc, 0.06 + r * 0.045), -1);
-                    dc.fillCircle(bx, by, 80 - r * 12);
+        if (S) {
+            // ---- background
+            if (st == 3) {
+                for (var k = 0; k < 19; k++) {
+                    dc.setColor(glassBg(k * 24 + 12), -1);
+                    dc.fillRectangle(0, k * 24, 454, 24);
                 }
-            }
-        }
-
-        // ---- time
-        var ts = G.timeStr(d);
-        if (st == 2) {
-            var tw = F.pxW(ts, 6);
-            dc.setColor(G.dim(acc, 0.22), -1);
-            F.px(dc, ts, 227 - tw / 2 - 2, 38, 6, 0, -4);
-            dc.setColor(acc, -1);
-            F.px(dc, ts, 227 - tw / 2, 40, 6, 0, 0);
-        } else {
-            dc.setColor(0xFFFFFF, -1);
-            F.st(dc, ts, 227, 66, 48, st == 3 ? 3 : 5, 1, G.ease(p * 1.3), 0);
-        }
-
-        // ---- header: pulsing presence dot + "Coach online / tippt..."
-        var hp = G.ease(p * 1.5 - 0.2);
-        if (hp > 0) {
-            var sub = typing ? "tippt..." : "online";
-            var head = st == 2 ? "coach.ki" : "COACH";
-            var hw = F.pxW(head + " online", 2) + 16;
-            var hx = 227 - hw / 2;
-            var hy = 102;
-            var onC = st == 2 ? acc : 0x34D27B;
-            var pulse = (live && !_busy) ? (a.t % 1400) / 1400.0 : 1.0;
-            if (pulse < 1) {
-                dc.setColor(G.dim(onC, (1 - pulse) * 0.6), -1);
-                dc.fillCircle(hx + 5, hy + 7, 5 + pulse * 6);
-            }
-            dc.setColor(G.dim(onC, hp), -1);
-            dc.fillCircle(hx + 5, hy + 7, 5);
-            dc.setColor(G.dim(st == 2 ? acc : 0xFFFFFF, hp), -1);
-            F.px(dc, head, hx + 16, hy, 2, 0, 0);
-            dc.setColor(G.dim(st == 2 ? acc : 0x9AA3AD, hp * 0.8), -1);
-            F.px(dc, sub, hx + 16 + F.pxW(head + " ", 2) + 2, hy, 2, 0, 0);
-        }
-
-        // ---- conversation
-        if (st == 2) {
-            // terminal transcript
-            var x0 = 70;
-            var y = 132 + (206 - (30 + nl * LH + LH)) / 2;
-            var dimC = G.dim(acc, 0.55);
-            if (qp > 0) {
-                dc.setColor(G.dim(acc, 0.55 * qp), -1);
-                F.px(dc, ">", x0, y, 2, 0, 0);
-                dc.setColor(G.dim(acc, qp), -1);
-                F.px(dc, _cQ, x0 + 24, y, 2, 0, 0);
-            }
-            y += 30;
-            if (ms >= T_DOT) {
-                dc.setColor(dimC, -1);
-                F.px(dc, "coach:", x0, y, 2, 0, 0);
-                if (typing) {
-                    dots(dc, x0 + 92, y + 7, ms - T_DOT, acc);
-                } else {
-                    var left = shown;
-                    var cx = -1;
-                    var cy = -1;
-                    for (var k = 0; k < nl; k++) {
-                        var lx = k == 0 ? x0 + 84 : x0;
-                        var ly = y + k * LH;
-                        var s = lines[k] as String;
-                        var len = s.length();
-                        if (left < len) {
-                            s = s.substring(0, left) as String;
-                            cx = lx + left * 12;
-                            cy = ly;
-                        }
-                        left -= len;
-                        dc.setColor(acc, -1);
-                        if (s.length() > 0) {
-                            F.px(dc, s, lx, ly, 2, 0, 0);
-                        }
-                        if (cy >= 0) {
-                            break;
-                        }
-                    }
-                    if (cy < 0) {
-                        cx = x0;
-                        cy = y + nl * LH;
-                    }
-                    if (_busy || !live || (a.t / 500) % 2 == 0) {
-                        dc.setColor(acc, -1);
-                        dc.fillRectangle(cx, cy - 1, 10, 16);
+                // soft bokeh blobs drifting slowly
+                var tt = live ? a.t / 1000.0 : 0.0;
+                for (var b = 0; b < 3; b++) {
+                    var bx = 227 + (b - 1) * 120 + Math.sin(tt * 0.5 + b * 2.1) * 18;
+                    var by = 150 + b * 90 + Math.cos(tt * 0.4 + b) * 14;
+                    var bc = b == 1 ? 0xD65DB1 : acc;
+                    var bg = glassBg(by);
+                    for (var r = 0; r < 6; r++) {
+                        dc.setColor(G.mix(bg, bc, 0.06 + r * 0.045), -1);
+                        dc.fillCircle(bx, by, 80 - r * 12);
                     }
                 }
             }
-        } else {
-            // bubbles
-            var bh = nl * LH - 6 + 24; // final coach bubble height
-            var top = 132 + (206 - (30 + 12 + bh)) / 2;
-            // question (user, right)
-            if (qp > 0) {
-                var qw = F.pxW(_cQ, 2) + 24;
-                var qx = 372 - qw;
-                var qy = top + (1 - qp) * 14;
-                var qc;
-                if (st == 3) {
-                    qc = G.mix(glassBg(qy + 15), acc, 0.55 * qp);
-                } else {
-                    qc = G.dim(acc, qp);
-                }
-                dc.setColor(qc, -1);
-                dc.fillRoundedRectangle(qx, qy, qw, 30, 14);
-                dc.fillPolygon([[qx + qw - 16, qy + 20], [qx + qw + 6, qy + 31], [qx + qw - 4, qy + 14]]);
-                if (st == 3) {
-                    dc.setColor(G.mix(qc, 0xFFFFFF, 0.35), -1);
-                    dc.setPenWidth(1);
-                    dc.drawRoundedRectangle(qx, qy, qw, 30, 14);
-                }
-                dc.setColor(G.dim(0xFFFFFF, qp), -1);
-                F.px(dc, _cQ, qx + 12, qy + 8, 2, 0, 0);
+
+            // ---- time
+            var ts = G.timeStr(d);
+            if (st == 2) {
+                var tw = F.pxW(ts, 6);
+                dc.setColor(G.dim(acc, 0.22), -1);
+                F.px(dc, ts, 227 - tw / 2 - 2, 38, 6, 0, -4);
+                dc.setColor(acc, -1);
+                F.px(dc, ts, 227 - tw / 2, 40, 6, 0, 0);
+            } else {
+                dc.setColor(0xFFFFFF, -1);
+                F.st(dc, ts, 227, 66, 48, st == 3 ? 3 : 5, 1, G.ease(p * 1.3), 0);
             }
-            // coach (left) with avatar
-            if (ms >= T_DOT) {
-                var by = top + 42;
-                var bw;
-                var h;
-                if (typing) {
-                    bw = 74;
-                    h = 30;
-                } else {
-                    // grow with the typed text (width of the widest typed line, rows typed so far)
-                    var left = shown;
-                    var rows = 1;
-                    var mw = 0;
-                    for (var k = 0; k < nl; k++) {
-                        var len = (lines[k] as String).length();
-                        var n = left < len ? left : len;
-                        if (n > 0) {
-                            rows = k + 1;
-                            if (n * 12 - 2 > mw) {
-                                mw = n * 12 - 2;
+        }
+
+        if (M) {
+            // ---- header: pulsing presence dot + "Coach online / tippt..."
+            var hp = G.ease(p * 1.5 - 0.2);
+            if (hp > 0) {
+                var sub = typing ? "tippt..." : "online";
+                var head = st == 2 ? "coach.ki" : "COACH";
+                var hw = F.pxW(head + " online", 2) + 16;
+                var hx = 227 - hw / 2;
+                var hy = 102;
+                var onC = st == 2 ? acc : 0x34D27B;
+                var pulse = (live && !_busy) ? (a.t % 1400) / 1400.0 : 1.0;
+                if (pulse < 1) {
+                    dc.setColor(G.dim(onC, (1 - pulse) * 0.6), -1);
+                    dc.fillCircle(hx + 5, hy + 7, 5 + pulse * 6);
+                }
+                dc.setColor(G.dim(onC, hp), -1);
+                dc.fillCircle(hx + 5, hy + 7, 5);
+                dc.setColor(G.dim(st == 2 ? acc : 0xFFFFFF, hp), -1);
+                F.px(dc, head, hx + 16, hy, 2, 0, 0);
+                dc.setColor(G.dim(st == 2 ? acc : 0x9AA3AD, hp * 0.8), -1);
+                F.px(dc, sub, hx + 16 + F.pxW(head + " ", 2) + 2, hy, 2, 0, 0);
+            }
+
+            // ---- conversation
+            if (st == 2) {
+                // terminal transcript
+                var x0 = 70;
+                var y = 132 + (206 - (30 + nl * LH + LH)) / 2;
+                var dimC = G.dim(acc, 0.55);
+                if (qp > 0) {
+                    dc.setColor(G.dim(acc, 0.55 * qp), -1);
+                    F.px(dc, ">", x0, y, 2, 0, 0);
+                    dc.setColor(G.dim(acc, qp), -1);
+                    F.px(dc, _cQ, x0 + 24, y, 2, 0, 0);
+                }
+                y += 30;
+                if (ms >= T_DOT) {
+                    dc.setColor(dimC, -1);
+                    F.px(dc, "coach:", x0, y, 2, 0, 0);
+                    if (typing) {
+                        dots(dc, x0 + 92, y + 7, ms - T_DOT, acc);
+                    } else {
+                        var left = shown;
+                        var cx = -1;
+                        var cy = -1;
+                        for (var k = 0; k < nl; k++) {
+                            var lx = k == 0 ? x0 + 84 : x0;
+                            var ly = y + k * LH;
+                            var s = lines[k] as String;
+                            var len = s.length();
+                            if (left < len) {
+                                s = s.substring(0, left) as String;
+                                cx = lx + left * 12;
+                                cy = ly;
+                            }
+                            left -= len;
+                            dc.setColor(acc, -1);
+                            if (s.length() > 0) {
+                                F.px(dc, s, lx, ly, 2, 0, 0);
+                            }
+                            if (cy >= 0) {
+                                break;
                             }
                         }
-                        left -= len;
-                    }
-                    bw = mw + 24 > 74 ? mw + 24 : 74;
-                    h = rows * LH - 6 + 24;
-                }
-                var bx = 76;
-                var bc;
-                var tc;
-                if (st == 3) {
-                    bc = G.mix(glassBg(by + h / 2.0), 0xFFFFFF, 0.16);
-                    tc = 0xFFFFFF;
-                } else {
-                    bc = 0x262B33;
-                    tc = 0xF2F4F7;
-                }
-                // avatar
-                var ay = by + h - 13;
-                dc.setColor(st == 3 ? G.mix(acc, 0xFFFFFF, 0.25) : acc, -1);
-                dc.fillCircle(52, ay, 14);
-                dc.setColor(0xFFFFFF, -1);
-                F.px(dc, "C", 52, ay - 7, 2, 1, 0);
-                // bubble + tail
-                dc.setColor(bc, -1);
-                dc.fillRoundedRectangle(bx, by, bw, h, 14);
-                dc.fillPolygon([[bx + 16, by + h - 4], [bx - 6, by + h + 1], [bx + 4, by + h - 16]]);
-                if (st == 3) {
-                    dc.setColor(G.mix(bc, 0xFFFFFF, 0.3), -1);
-                    dc.setPenWidth(1);
-                    dc.drawRoundedRectangle(bx, by, bw, h, 14);
-                    dc.setColor(G.mix(bc, 0xFFFFFF, 0.55), -1);
-                    dc.fillRectangle(bx + 14, by + 1, bw - 28, 1);
-                }
-                if (typing) {
-                    dots(dc, bx + 23, by + 15, ms - T_DOT, st == 3 ? 0xFFFFFF : 0xAAB4C0);
-                } else {
-                    var left = shown;
-                    dc.setColor(tc, -1);
-                    for (var k = 0; k < nl && left > 0; k++) {
-                        var s = lines[k] as String;
-                        var len = s.length();
-                        if (left < len) {
-                            s = s.substring(0, left) as String;
+                        if (cy < 0) {
+                            cx = x0;
+                            cy = y + nl * LH;
                         }
-                        left -= len;
-                        F.px(dc, s, bx + 12, by + 12 + k * LH, 2, 0, 0);
+                        if (_busy || !live || (a.t / 500) % 2 == 0) {
+                            dc.setColor(acc, -1);
+                            dc.fillRectangle(cx, cy - 1, 10, 16);
+                        }
+                    }
+                }
+            } else {
+                // bubbles
+                var bh = nl * LH - 6 + 24; // final coach bubble height
+                var top = 132 + (206 - (30 + 12 + bh)) / 2;
+                // question (user, right)
+                if (qp > 0) {
+                    var qw = F.pxW(_cQ, 2) + 24;
+                    var qx = 372 - qw;
+                    var qy = top + (1 - qp) * 14;
+                    var qc;
+                    if (st == 3) {
+                        qc = G.mix(glassBg(qy + 15), acc, 0.55 * qp);
+                    } else {
+                        qc = G.dim(acc, qp);
+                    }
+                    dc.setColor(qc, -1);
+                    dc.fillRoundedRectangle(qx, qy, qw, 30, 14);
+                    dc.fillPolygon([[qx + qw - 16, qy + 20], [qx + qw + 6, qy + 31], [qx + qw - 4, qy + 14]]);
+                    if (st == 3) {
+                        dc.setColor(G.mix(qc, 0xFFFFFF, 0.35), -1);
+                        dc.setPenWidth(1);
+                        dc.drawRoundedRectangle(qx, qy, qw, 30, 14);
+                    }
+                    dc.setColor(G.dim(0xFFFFFF, qp), -1);
+                    F.px(dc, _cQ, qx + 12, qy + 8, 2, 0, 0);
+                }
+                // coach (left) with avatar
+                if (ms >= T_DOT) {
+                    var by = top + 42;
+                    var bw;
+                    var h;
+                    if (typing) {
+                        bw = 74;
+                        h = 30;
+                    } else {
+                        // grow with the typed text (width of the widest typed line, rows typed so far)
+                        var left = shown;
+                        var rows = 1;
+                        var mw = 0;
+                        for (var k = 0; k < nl; k++) {
+                            var len = (lines[k] as String).length();
+                            var n = left < len ? left : len;
+                            if (n > 0) {
+                                rows = k + 1;
+                                if (n * 12 - 2 > mw) {
+                                    mw = n * 12 - 2;
+                                }
+                            }
+                            left -= len;
+                        }
+                        bw = mw + 24 > 74 ? mw + 24 : 74;
+                        h = rows * LH - 6 + 24;
+                    }
+                    var bx = 76;
+                    var bc;
+                    var tc;
+                    if (st == 3) {
+                        bc = G.mix(glassBg(by + h / 2.0), 0xFFFFFF, 0.16);
+                        tc = 0xFFFFFF;
+                    } else {
+                        bc = 0x262B33;
+                        tc = 0xF2F4F7;
+                    }
+                    // avatar
+                    var ay = by + h - 13;
+                    dc.setColor(st == 3 ? G.mix(acc, 0xFFFFFF, 0.25) : acc, -1);
+                    dc.fillCircle(52, ay, 14);
+                    dc.setColor(0xFFFFFF, -1);
+                    F.px(dc, "C", 52, ay - 7, 2, 1, 0);
+                    // bubble + tail
+                    dc.setColor(bc, -1);
+                    dc.fillRoundedRectangle(bx, by, bw, h, 14);
+                    dc.fillPolygon([[bx + 16, by + h - 4], [bx - 6, by + h + 1], [bx + 4, by + h - 16]]);
+                    if (st == 3) {
+                        dc.setColor(G.mix(bc, 0xFFFFFF, 0.3), -1);
+                        dc.setPenWidth(1);
+                        dc.drawRoundedRectangle(bx, by, bw, h, 14);
+                        dc.setColor(G.mix(bc, 0xFFFFFF, 0.55), -1);
+                        dc.fillRectangle(bx + 14, by + 1, bw - 28, 1);
+                    }
+                    if (typing) {
+                        dots(dc, bx + 23, by + 15, ms - T_DOT, st == 3 ? 0xFFFFFF : 0xAAB4C0);
+                    } else {
+                        var left = shown;
+                        dc.setColor(tc, -1);
+                        for (var k = 0; k < nl && left > 0; k++) {
+                            var s = lines[k] as String;
+                            var len = s.length();
+                            if (left < len) {
+                                s = s.substring(0, left) as String;
+                            }
+                            left -= len;
+                            F.px(dc, s, bx + 12, by + 12 + k * LH, 2, 0, 0);
+                        }
                     }
                 }
             }
         }
 
+        if (!S) {
+            return;
+        }
         // ---- slot chips
         var lb = new [3];
         var ws = new [3];

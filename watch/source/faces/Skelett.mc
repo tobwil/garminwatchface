@@ -254,7 +254,14 @@ class FaceSkelett extends Face {
         dc.fillPolygon(hpts(s, c, len - 9, w - 3.5, -18));
     }
 
+    // static layer: plate ring, chapter ring, power reserve, date, slots; the movement and the hands run
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var acc = d.accent;
         var p = a.intro;
@@ -295,251 +302,260 @@ class FaceSkelett extends Face {
         var amp = 150 * G.ease(G.clamp(p * 1.3, 0.0, 1.0));
         var bal = live ? amp * Math.sin(2 * Math.PI * HZ * sec) : 0.0;
 
-        // ---- main plate ring with polished reflections + chapter ring: minute track + applied indices
-        dc.setColor(cPl, -1);
-        dc.fillPolygon(pts(_pf[0] as Array, _ppl));
-        dc.fillPolygon(pts(_pf[1] as Array, _ppl));
-        dc.setColor(G.mix(cPl, 0xFFFFFF, 0.12), -1);
-        dc.setPenWidth(1);
-        G.arcC(dc, 227, 227, 186, 296, 346);
-        G.arcC(dc, 227, 227, 198, 300, 336);
-        G.arcC(dc, 227, 227, 186, 116, 166);
-        G.arcC(dc, 227, 227, 198, 120, 156);
-        if (p < 1) {
-            // intro: a polish glint runs round the plate
-            var g = p * 400 - 20;
-            dc.setColor(G.mix(cPl, 0xFFFFFF, 0.22 * (1 - p)), -1);
-            dc.fillPolygon(pts(band(190, 26, g - 30, g), _bpl));
-        }
-        dc.setPenWidth(2);
-        dc.setColor(0x6A6A6A, -1);
-        var tkk = _tk;
-        for (var i = 0; i < 192; i += 4) {
-            dc.drawLine(tkk[i], tkk[i + 1], tkk[i + 2], tkk[i + 3]);
-        }
-        dc.setColor(cRg, -1);
-        for (var i = 0; i < 12; i++) {
-            dc.fillPolygon(_iq[i] as Array);
-        }
-        dc.setColor(cLu, -1);
-        var il = _il;
-        for (var i = 0; i < 48; i += 4) {
-            dc.drawLine(il[i], il[i + 1], il[i + 2], il[i + 3]);
-        }
-
-        // ---- wheels (bottom level)
-        var a4 = step * 2; // fourth wheel: 6 deg/s
-        var a3 = -a4 * R4 / R3.toFloat();
-        var a2 = -a3 * P3 / R2.toFloat();
-        var aB = -a2 * R2 / BR.toFloat();
-        var aE = -step * 12;
-        if (!tour) {
-            wheel(dc, W4X, W4Y, R4, N4, a4, 4, cW, cWH);
-        }
-        wheel(dc, W3X, W3Y, R3, N3, a3, 5, cW, cWH);
-        pinion(dc, W3X, W3Y, P3, 8, a3, G.mix(cW, cWH, 0.3));
-        wheel(dc, 227, 227, R2, N2, a2, 4, cW, cWH);
-
-        // barrel: drum, mainspring (battery), teeth
-        dc.setColor(0x101010, -1);
-        dc.fillCircle(BX, BY, BR - 3);
-        dc.setColor(G.dim(cW, 0.75), -1);
-        dc.setPenWidth(2);
-        spiral(dc, BX, BY, 12 + (1 - bf) * 20, 2.6 + (1 - bf) * 0.6, 4, aB * 3);
-        dc.setColor(cW, -1);
-        dc.setPenWidth(5);
-        dc.drawCircle(BX, BY, BR - 4);
-        dc.setPenWidth(3);
-        teeth(dc, BX, BY, BR - 3, BR + 1, BN, aB, 0);
-
-        // escapement (styles 1/2): escape wheel, pallet fork, balance
-        if (!tour) {
-            dc.setColor(cW, -1);
-            dc.setPenWidth(3);
-            dc.drawCircle(EX, EY, ER - 5);
-            teeth(dc, EX, EY, ER - 5, ER + 1, EN, aE, 14);
-            for (var i = 0; i < 4; i++) {
-                G.hand(dc, EX, EY, aE + i * 90, ER - 6, 0, 4, 3);
+        if (S) {
+            // ---- main plate ring with polished reflections + chapter ring: minute track + applied indices
+            dc.setColor(cPl, -1);
+            dc.fillPolygon(pts(_pf[0] as Array, _ppl));
+            dc.fillPolygon(pts(_pf[1] as Array, _ppl));
+            dc.setColor(G.mix(cPl, 0xFFFFFF, 0.12), -1);
+            dc.setPenWidth(1);
+            G.arcC(dc, 227, 227, 186, 296, 346);
+            G.arcC(dc, 227, 227, 198, 300, 336);
+            G.arcC(dc, 227, 227, 186, 116, 166);
+            G.arcC(dc, 227, 227, 198, 120, 156);
+            if (p < 1) {
+                // intro: a polish glint runs round the plate
+                var g = p * 400 - 20;
+                dc.setColor(G.mix(cPl, 0xFFFFFF, 0.22 * (1 - p)), -1);
+                dc.fillPolygon(pts(band(190, 26, g - 30, g), _bpl));
             }
-            pinion(dc, EX, EY, 7, 7, aE, G.mix(cW, cWH, 0.3));
-            // fork: toward the balance with pallet arms at the escape wheel
-            var fa = 296 + 8 * G.clamp(bal / 25.0, -1.0, 1.0);
-            dc.setColor(cWH, -1);
-            G.hand(dc, PX, PY, fa, 34, 0, 6, 3);
-            G.hand(dc, PX, PY, fa + 180 - 34, 22, 0, 5, 4);
-            G.hand(dc, PX, PY, fa + 180 + 34, 22, 0, 5, 4);
-            dc.setColor(0xC0183A, -1);
-            dc.fillCircle(G.ptX(PX, 21, fa + 146), G.ptY(PY, 21, fa + 146), 2.5);
-            dc.fillCircle(G.ptX(PX, 21, fa + 214), G.ptY(PY, 21, fa + 214), 2.5);
-            // balance wheel
+            dc.setPenWidth(2);
+            dc.setColor(0x6A6A6A, -1);
+            var tkk = _tk;
+            for (var i = 0; i < 192; i += 4) {
+                dc.drawLine(tkk[i], tkk[i + 1], tkk[i + 2], tkk[i + 3]);
+            }
+            dc.setColor(cRg, -1);
+            for (var i = 0; i < 12; i++) {
+                dc.fillPolygon(_iq[i] as Array);
+            }
+            dc.setColor(cLu, -1);
+            var il = _il;
+            for (var i = 0; i < 48; i += 4) {
+                dc.drawLine(il[i], il[i + 1], il[i + 2], il[i + 3]);
+            }
+        }
+
+        if (M) {
+            // ---- wheels (bottom level)
+            var a4 = step * 2; // fourth wheel: 6 deg/s
+            var a3 = -a4 * R4 / R3.toFloat();
+            var a2 = -a3 * P3 / R2.toFloat();
+            var aB = -a2 * R2 / BR.toFloat();
+            var aE = -step * 12;
+            if (!tour) {
+                wheel(dc, W4X, W4Y, R4, N4, a4, 4, cW, cWH);
+            }
+            wheel(dc, W3X, W3Y, R3, N3, a3, 5, cW, cWH);
+            pinion(dc, W3X, W3Y, P3, 8, a3, G.mix(cW, cWH, 0.3));
+            wheel(dc, 227, 227, R2, N2, a2, 4, cW, cWH);
+
+            // barrel: drum, mainspring (battery), teeth
+            dc.setColor(0x101010, -1);
+            dc.fillCircle(BX, BY, BR - 3);
+            dc.setColor(G.dim(cW, 0.75), -1);
+            dc.setPenWidth(2);
+            spiral(dc, BX, BY, 12 + (1 - bf) * 20, 2.6 + (1 - bf) * 0.6, 4, aB * 3);
             dc.setColor(cW, -1);
             dc.setPenWidth(5);
-            dc.drawCircle(LX, LY, LR);
-            for (var i = 0; i < 3; i++) {
-                G.hand(dc, LX, LY, bal + i * 120, LR - 2, 0, 5, 4);
-            }
-            for (var i = 0; i < 4; i++) {
-                var wa = bal + 60 + i * 90;
-                dc.fillCircle(G.ptX(LX, LR + 1, wa), G.ptY(LY, LR + 1, wa), 4);
-            }
-            dc.setColor(cWH, -1);
-            dc.setPenWidth(1);
-            G.arcC(dc, LX, LY, LR - 2, 290, 340);
-            // hairspring: breathes with the balance
-            dc.setColor(G.mix(cBrH, 0x4466AA, st == 2 ? 0.1 : 0.45), -1);
-            spiral(dc, LX, LY, 6, 2.3 * (1 + 0.08 * Math.sin(bal * RAD)), 5, bal * 0.5);
-        }
-
-        // ---- tourbillon (style 3): fixed seconds wheel, cage turning once a minute, balance inside
-        if (tour) {
-            dc.setColor(cW, -1);
+            dc.drawCircle(BX, BY, BR - 4);
             dc.setPenWidth(3);
-            dc.drawCircle(W4X, W4Y, 52);
-            teeth(dc, W4X, W4Y, 52, 57, 44, 0, 0);
-            // seconds scale around the cage
-            dc.setColor(cRg, -1);
-            dc.setPenWidth(2);
-            for (var i = 0; i < 12; i++) {
-                G.tick(dc, W4X, W4Y, 60, i % 3 == 0 ? 68 : 64, i * 30);
-            }
-            var cg = step * 2; // cage angle = seconds
-            // cage: ring + three arms (one is the seconds pointer)
-            dc.setColor(cBrH, -1);
-            dc.setPenWidth(3);
-            dc.drawCircle(W4X, W4Y, 45);
-            for (var i = 0; i < 3; i++) {
-                G.hand(dc, W4X, W4Y, cg + i * 120, 45, 0, 10, 6);
-            }
-            dc.setColor(cLu, -1);
-            G.hand(dc, W4X, W4Y, cg, 58, -42, 4, 2);
-            // escape wheel riding on the cage
-            var ex = G.ptX(W4X, 31, cg + 60);
-            var ey = G.ptY(W4Y, 31, cg + 60);
-            dc.setColor(cW, -1);
-            dc.setPenWidth(2);
-            dc.drawCircle(ex, ey, 7);
-            teeth(dc, ex, ey, 7, 11, 15, aE * 2, 14);
-            // balance at the cage axis
-            dc.setColor(cW, -1);
-            dc.setPenWidth(4);
-            dc.drawCircle(W4X, W4Y, 30);
-            for (var i = 0; i < 3; i++) {
-                G.hand(dc, W4X, W4Y, cg + bal + i * 120, 29, 0, 4, 3);
-            }
-            dc.setColor(G.mix(cBrH, 0x4466AA, 0.45), -1);
-            dc.setPenWidth(1);
-            spiral(dc, W4X, W4Y, 4, 2.1 * (1 + 0.08 * Math.sin(bal * RAD)), 4, cg + bal * 0.5);
-            for (var i = 0; i < 3; i++) {
-                screw(dc, G.ptX(W4X, 45, cg + i * 120), G.ptY(W4Y, 45, cg + i * 120), cg, cSc, cScH);
-            }
-        }
+            teeth(dc, BX, BY, BR - 3, BR + 1, BN, aB, 0);
 
-        // ---- bridges: concentric crescents around the dial centre
-        var cLo = G.mix(cBr, 0x000000, 0.45);
-        arcBr(dc, 0, cBr, cBrH, cLo); // barrel bridge through the barrel arbor
-        // ratchet wheel on the barrel arbor (turns with the barrel)
-        dc.setColor(G.mix(cBr, 0xFFFFFF, 0.25), -1);
-        dc.fillCircle(BX, BY, 20);
-        dc.setColor(cLo, -1);
-        dc.setPenWidth(2);
-        teeth(dc, BX, BY, 15, 21, 22, aB, 22);
-        dc.setColor(cBrH, -1);
-        dc.setPenWidth(1);
-        dc.drawCircle(BX, BY, 21);
-        screw(dc, BX, BY, aB * 5, cBr, cLo);
-        arcBr(dc, 1, cBr, cBrH, cLo); // third wheel bridge
-        arcBr(dc, 2, cBr, cBrH, cLo); // counter bridge (4 o'clock)
-        jewel(dc, G.ptX(227, 140, 124), G.ptY(227, 140, 124), 3, cBrH);
-        screw(dc, G.ptX(227, 140, 110), G.ptY(227, 140, 110), 30, cSc, cScH);
-        screw(dc, G.ptX(227, 140, 138), G.ptY(227, 140, 138), 150, cSc, cScH);
-        if (tour) {
-            arcBr(dc, 3, cBr, cBrH, cLo); // mirrored bridge (8 o'clock)
-            jewel(dc, G.ptX(227, 140, 236), G.ptY(227, 140, 236), 3, cBrH);
-            screw(dc, G.ptX(227, 140, 222), G.ptY(227, 140, 222), 70, cSc, cScH);
-            screw(dc, G.ptX(227, 140, 250), G.ptY(227, 140, 250), 120, cSc, cScH);
-        }
-        if (!tour) {
-            arcBr(dc, 4, cBr, cBrH, cLo); // fourth + escape wheel bridge
-            arcBr(dc, 3, cBr, cBrH, cLo); // balance cock
-            jewel(dc, LX, LY, 4, cBrH);
-            dc.setColor(cBrH, -1);
-            dc.setPenWidth(1);
-            G.tick(dc, LX, LY, 6, 30, 30); // regulator index
-            jewel(dc, EX, EY, 3, cBrH);
-            jewel(dc, PX, PY, 3, cBrH);
-            screw(dc, G.ptX(227, 111, 150), G.ptY(227, 111, 150), 20, cSc, cScH);
-            screw(dc, G.ptX(227, 140, 222), G.ptY(227, 140, 222), 70, cSc, cScH);
-            screw(dc, G.ptX(227, 140, 250), G.ptY(227, 140, 250), 120, cSc, cScH);
-            // small seconds on the fourth wheel
-            dc.setColor(cRg, -1);
-            dc.setPenWidth(2);
-            for (var i = 0; i < 12; i++) {
-                if (i < 8 || i > 10) {
-                    G.tick(dc, W4X, W4Y, 48, i % 3 == 0 ? 55 : 52, i * 30);
+            // escapement (styles 1/2): escape wheel, pallet fork, balance
+            if (!tour) {
+                dc.setColor(cW, -1);
+                dc.setPenWidth(3);
+                dc.drawCircle(EX, EY, ER - 5);
+                teeth(dc, EX, EY, ER - 5, ER + 1, EN, aE, 14);
+                for (var i = 0; i < 4; i++) {
+                    G.hand(dc, EX, EY, aE + i * 90, ER - 6, 0, 4, 3);
+                }
+                pinion(dc, EX, EY, 7, 7, aE, G.mix(cW, cWH, 0.3));
+                // fork: toward the balance with pallet arms at the escape wheel
+                var fa = 296 + 8 * G.clamp(bal / 25.0, -1.0, 1.0);
+                dc.setColor(cWH, -1);
+                G.hand(dc, PX, PY, fa, 34, 0, 6, 3);
+                G.hand(dc, PX, PY, fa + 180 - 34, 22, 0, 5, 4);
+                G.hand(dc, PX, PY, fa + 180 + 34, 22, 0, 5, 4);
+                dc.setColor(0xC0183A, -1);
+                dc.fillCircle(G.ptX(PX, 21, fa + 146), G.ptY(PY, 21, fa + 146), 2.5);
+                dc.fillCircle(G.ptX(PX, 21, fa + 214), G.ptY(PY, 21, fa + 214), 2.5);
+                // balance wheel
+                dc.setColor(cW, -1);
+                dc.setPenWidth(5);
+                dc.drawCircle(LX, LY, LR);
+                for (var i = 0; i < 3; i++) {
+                    G.hand(dc, LX, LY, bal + i * 120, LR - 2, 0, 5, 4);
+                }
+                for (var i = 0; i < 4; i++) {
+                    var wa = bal + 60 + i * 90;
+                    dc.fillCircle(G.ptX(LX, LR + 1, wa), G.ptY(LY, LR + 1, wa), 4);
+                }
+                dc.setColor(cWH, -1);
+                dc.setPenWidth(1);
+                G.arcC(dc, LX, LY, LR - 2, 290, 340);
+                // hairspring: breathes with the balance
+                dc.setColor(G.mix(cBrH, 0x4466AA, st == 2 ? 0.1 : 0.45), -1);
+                spiral(dc, LX, LY, 6, 2.3 * (1 + 0.08 * Math.sin(bal * RAD)), 5, bal * 0.5);
+            }
+
+            // ---- tourbillon (style 3): fixed seconds wheel, cage turning once a minute, balance inside
+            if (tour) {
+                dc.setColor(cW, -1);
+                dc.setPenWidth(3);
+                dc.drawCircle(W4X, W4Y, 52);
+                teeth(dc, W4X, W4Y, 52, 57, 44, 0, 0);
+                // seconds scale around the cage
+                dc.setColor(cRg, -1);
+                dc.setPenWidth(2);
+                for (var i = 0; i < 12; i++) {
+                    G.tick(dc, W4X, W4Y, 60, i % 3 == 0 ? 68 : 64, i * 30);
+                }
+                var cg = step * 2; // cage angle = seconds
+                // cage: ring + three arms (one is the seconds pointer)
+                dc.setColor(cBrH, -1);
+                dc.setPenWidth(3);
+                dc.drawCircle(W4X, W4Y, 45);
+                for (var i = 0; i < 3; i++) {
+                    G.hand(dc, W4X, W4Y, cg + i * 120, 45, 0, 10, 6);
+                }
+                dc.setColor(cLu, -1);
+                G.hand(dc, W4X, W4Y, cg, 58, -42, 4, 2);
+                // escape wheel riding on the cage
+                var ex = G.ptX(W4X, 31, cg + 60);
+                var ey = G.ptY(W4Y, 31, cg + 60);
+                dc.setColor(cW, -1);
+                dc.setPenWidth(2);
+                dc.drawCircle(ex, ey, 7);
+                teeth(dc, ex, ey, 7, 11, 15, aE * 2, 14);
+                // balance at the cage axis
+                dc.setColor(cW, -1);
+                dc.setPenWidth(4);
+                dc.drawCircle(W4X, W4Y, 30);
+                for (var i = 0; i < 3; i++) {
+                    G.hand(dc, W4X, W4Y, cg + bal + i * 120, 29, 0, 4, 3);
+                }
+                dc.setColor(G.mix(cBrH, 0x4466AA, 0.45), -1);
+                dc.setPenWidth(1);
+                spiral(dc, W4X, W4Y, 4, 2.1 * (1 + 0.08 * Math.sin(bal * RAD)), 4, cg + bal * 0.5);
+                for (var i = 0; i < 3; i++) {
+                    screw(dc, G.ptX(W4X, 45, cg + i * 120), G.ptY(W4Y, 45, cg + i * 120), cg, cSc, cScH);
                 }
             }
-            var sd = live ? step * 2 : d.s * 6;
-            dc.setColor(0x000000, -1);
-            G.hand(dc, W4X, W4Y, sd, 47, 14, 6, 4);
-            dc.setColor(cLu, -1);
-            G.hand(dc, W4X, W4Y, sd, 45, 12, 3, 1.5);
-            dc.setColor(st == 2 ? 0xFF5A1F : cHd, -1);
-            G.hand(dc, W4X, W4Y, sd, 45, -30, 3, 1.5);
-            jewel(dc, W4X, W4Y, 3, cBrH);
-        } else {
-            arcBr(dc, 5, cBr, cBrH, cLo); // tourbillon bridge over the cage
-            jewel(dc, W4X, W4Y, 4, cBrH);
-            screw(dc, G.ptX(227, 111, 156), G.ptY(227, 111, 156), 20, cSc, cScH);
-            screw(dc, G.ptX(227, 111, 204), G.ptY(227, 111, 204), 70, cSc, cScH);
-        }
-        jewel(dc, W3X, W3Y, 3, cBrH);
-        screw(dc, G.ptX(227, 109, -32), G.ptY(227, 109, -32), 40, cSc, cScH);
-        screw(dc, G.ptX(227, 109, 32), G.ptY(227, 109, 32), 110, cSc, cScH);
-        screw(dc, G.ptX(227, 61, 104), G.ptY(227, 61, 104), 80, cSc, cScH);
 
-        // ---- power reserve (battery) on the plate ring at 12: AB ... AUF
-        var ip = G.ease(G.clamp((p - 0.2) / 0.6, 0.0, 1.0));
-        var bfv = bf * ip;
-        dc.setColor(G.mix(cPl, 0x000000, 0.6), -1);
-        dc.setPenWidth(7);
-        G.arcC(dc, 227, 227, 186, -26, 26);
-        dc.setColor(bf < 0.15 ? 0xD8432F : cRg, -1);
-        dc.setPenWidth(5);
-        if (bfv > 0.02) {
-            G.arcC(dc, 227, 227, 186, -26, -26 + 52 * bfv);
-        }
-        dc.setColor(cLu, -1);
-        dc.fillCircle(G.ptX(227, 186, -26 + 52 * bfv), G.ptY(227, 186, -26 + 52 * bfv), 4);
-        dc.setColor(0x8A8A8A, -1);
-        F.px(dc, "AB", G.ptX(227, 185, -34), G.ptY(227, 185, -34) - 7, 2, 1, 0);
-        F.px(dc, "AUF", G.ptX(227, 185, 35), G.ptY(227, 185, 35) - 7, 2, 1, 0);
-
-        // ---- date window at 3, slots at 10, 2 and 9
-        dc.setColor(0x8A8A8A, -1);
-        F.px(dc, d.dowStr, 358, 190, 2, 1, 0);
-        dc.setColor(0x000000, -1);
-        dc.fillRoundedRectangle(332, 208, 52, 36, 5);
-        dc.setColor(cRg, -1);
-        dc.setPenWidth(2);
-        dc.drawRoundedRectangle(332, 208, 52, 36, 5);
-        dc.setColor(0xF2F2F2, -1);
-        F.st(dc, "" + d.day, 358, 226, 20, 3, 1, 1.0, 0);
-        var SX = [112, 342, 96];
-        var SY = [140, 140, 222];
-        for (var k = 0; k < 3; k++) {
-            var sl = d.slots[k];
-            var sp = G.stag(p, k, 0.12, 0.45);
-            if (sp <= 0) {
-                continue;
+            // ---- bridges: concentric crescents around the dial centre
+            var cLo = G.mix(cBr, 0x000000, 0.45);
+            arcBr(dc, 0, cBr, cBrH, cLo); // barrel bridge through the barrel arbor
+            // ratchet wheel on the barrel arbor (turns with the barrel)
+            dc.setColor(G.mix(cBr, 0xFFFFFF, 0.25), -1);
+            dc.fillCircle(BX, BY, 20);
+            dc.setColor(cLo, -1);
+            dc.setPenWidth(2);
+            teeth(dc, BX, BY, 15, 21, 22, aB, 22);
+            dc.setColor(cBrH, -1);
+            dc.setPenWidth(1);
+            dc.drawCircle(BX, BY, 21);
+            screw(dc, BX, BY, aB * 5, cBr, cLo);
+            arcBr(dc, 1, cBr, cBrH, cLo); // third wheel bridge
+            arcBr(dc, 2, cBr, cBrH, cLo); // counter bridge (4 o'clock)
+            jewel(dc, G.ptX(227, 140, 124), G.ptY(227, 140, 124), 3, cBrH);
+            screw(dc, G.ptX(227, 140, 110), G.ptY(227, 140, 110), 30, cSc, cScH);
+            screw(dc, G.ptX(227, 140, 138), G.ptY(227, 140, 138), 150, cSc, cScH);
+            if (tour) {
+                arcBr(dc, 3, cBr, cBrH, cLo); // mirrored bridge (8 o'clock)
+                jewel(dc, G.ptX(227, 140, 236), G.ptY(227, 140, 236), 3, cBrH);
+                screw(dc, G.ptX(227, 140, 222), G.ptY(227, 140, 222), 70, cSc, cScH);
+                screw(dc, G.ptX(227, 140, 250), G.ptY(227, 140, 250), 120, cSc, cScH);
             }
-            dc.setColor(G.dim(0x8A8A8A, sp), -1);
-            F.px(dc, sl[:lbl] as String, SX[k], SY[k] - 20, 2, 1, 0);
-            dc.setColor(G.mix(0x000000, d.dcol, sp), -1);
-            var val = sl[:val] as String;
-            var vw = F.stW(val, 18);
-            F.st(dc, val, SX[k], SY[k] + 6, vw > 80 ? 18 * 80 / vw : 18, 2, 1, 1.0, 0);
+            if (!tour) {
+                arcBr(dc, 4, cBr, cBrH, cLo); // fourth + escape wheel bridge
+                arcBr(dc, 3, cBr, cBrH, cLo); // balance cock
+                jewel(dc, LX, LY, 4, cBrH);
+                dc.setColor(cBrH, -1);
+                dc.setPenWidth(1);
+                G.tick(dc, LX, LY, 6, 30, 30); // regulator index
+                jewel(dc, EX, EY, 3, cBrH);
+                jewel(dc, PX, PY, 3, cBrH);
+                screw(dc, G.ptX(227, 111, 150), G.ptY(227, 111, 150), 20, cSc, cScH);
+                screw(dc, G.ptX(227, 140, 222), G.ptY(227, 140, 222), 70, cSc, cScH);
+                screw(dc, G.ptX(227, 140, 250), G.ptY(227, 140, 250), 120, cSc, cScH);
+                // small seconds on the fourth wheel
+                dc.setColor(cRg, -1);
+                dc.setPenWidth(2);
+                for (var i = 0; i < 12; i++) {
+                    if (i < 8 || i > 10) {
+                        G.tick(dc, W4X, W4Y, 48, i % 3 == 0 ? 55 : 52, i * 30);
+                    }
+                }
+                var sd = live ? step * 2 : d.s * 6;
+                dc.setColor(0x000000, -1);
+                G.hand(dc, W4X, W4Y, sd, 47, 14, 6, 4);
+                dc.setColor(cLu, -1);
+                G.hand(dc, W4X, W4Y, sd, 45, 12, 3, 1.5);
+                dc.setColor(st == 2 ? 0xFF5A1F : cHd, -1);
+                G.hand(dc, W4X, W4Y, sd, 45, -30, 3, 1.5);
+                jewel(dc, W4X, W4Y, 3, cBrH);
+            } else {
+                arcBr(dc, 5, cBr, cBrH, cLo); // tourbillon bridge over the cage
+                jewel(dc, W4X, W4Y, 4, cBrH);
+                screw(dc, G.ptX(227, 111, 156), G.ptY(227, 111, 156), 20, cSc, cScH);
+                screw(dc, G.ptX(227, 111, 204), G.ptY(227, 111, 204), 70, cSc, cScH);
+            }
+            jewel(dc, W3X, W3Y, 3, cBrH);
+            screw(dc, G.ptX(227, 109, -32), G.ptY(227, 109, -32), 40, cSc, cScH);
+            screw(dc, G.ptX(227, 109, 32), G.ptY(227, 109, 32), 110, cSc, cScH);
+            screw(dc, G.ptX(227, 61, 104), G.ptY(227, 61, 104), 80, cSc, cScH);
         }
 
+        if (S) {
+            // ---- power reserve (battery) on the plate ring at 12: AB ... AUF
+            var ip = G.ease(G.clamp((p - 0.2) / 0.6, 0.0, 1.0));
+            var bfv = bf * ip;
+            dc.setColor(G.mix(cPl, 0x000000, 0.6), -1);
+            dc.setPenWidth(7);
+            G.arcC(dc, 227, 227, 186, -26, 26);
+            dc.setColor(bf < 0.15 ? 0xD8432F : cRg, -1);
+            dc.setPenWidth(5);
+            if (bfv > 0.02) {
+                G.arcC(dc, 227, 227, 186, -26, -26 + 52 * bfv);
+            }
+            dc.setColor(cLu, -1);
+            dc.fillCircle(G.ptX(227, 186, -26 + 52 * bfv), G.ptY(227, 186, -26 + 52 * bfv), 4);
+            dc.setColor(0x8A8A8A, -1);
+            F.px(dc, "AB", G.ptX(227, 185, -34), G.ptY(227, 185, -34) - 7, 2, 1, 0);
+            F.px(dc, "AUF", G.ptX(227, 185, 35), G.ptY(227, 185, 35) - 7, 2, 1, 0);
+
+            // ---- date window at 3, slots at 10, 2 and 9
+            dc.setColor(0x8A8A8A, -1);
+            F.px(dc, d.dowStr, 358, 190, 2, 1, 0);
+            dc.setColor(0x000000, -1);
+            dc.fillRoundedRectangle(332, 208, 52, 36, 5);
+            dc.setColor(cRg, -1);
+            dc.setPenWidth(2);
+            dc.drawRoundedRectangle(332, 208, 52, 36, 5);
+            dc.setColor(0xF2F2F2, -1);
+            F.st(dc, "" + d.day, 358, 226, 20, 3, 1, 1.0, 0);
+            var SX = [112, 342, 96];
+            var SY = [140, 140, 222];
+            for (var k = 0; k < 3; k++) {
+                var sl = d.slots[k];
+                var sp = G.stag(p, k, 0.12, 0.45);
+                if (sp <= 0) {
+                    continue;
+                }
+                dc.setColor(G.dim(0x8A8A8A, sp), -1);
+                F.px(dc, sl[:lbl] as String, SX[k], SY[k] - 20, 2, 1, 0);
+                dc.setColor(G.mix(0x000000, d.dcol, sp), -1);
+                var val = sl[:val] as String;
+                var vw = F.stW(val, 18);
+                F.st(dc, val, SX[k], SY[k] + 6, vw > 80 ? 18 * 80 / vw : 18, 2, 1, 1.0, 0);
+            }
+        }
+
+        if (!M) {
+            return;
+        }
         // ---- hands (spring in from 12 on every raise)
         var hp = G.spring(G.clamp((p - 0.15) / 0.75, 0.0, 1.0));
         var md = (d.m + d.s / 60.0) * 6 * hp;

@@ -159,6 +159,9 @@ function flipAt(drum, target, lt, n, fd, blank) {
 export default {
   get fps() { return busy ? 20 : 1; },
 
+  // static layer: cached, redrawn when the minute changes
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     let col, tT, tB, pin, lab;
@@ -174,33 +177,38 @@ export default {
 
     // timeline: intro rattle (ms of the 1.4 s intro) or a single flip on minute change
     const key = d.h * 60 + d.m;
-    if (a.t < mT0) mT0 = -1;
-    if (lastKey >= 0 && key !== lastKey && a.live && a.intro >= 1) mT0 = a.t;
-    lastKey = key;
+    // (the static layer render must not touch the flip state)
+    if (!a.so) {
+      if (a.t < mT0) mT0 = -1;
+      if (lastKey >= 0 && key !== lastKey && a.live && a.intro >= 1) mT0 = a.t;
+      lastKey = key;
+    }
     const intro = a.intro < 1;
     const ms = intro ? a.intro * 1400 : 99999;
-    const mm = mT0 >= 0 ? a.t - mT0 : 99999;
-    busy = intro || mm < 900;
+    const mm = mT0 >= 0 && !a.so ? a.t - mT0 : 99999;
+    if (!a.so) busy = intro || mm < 900;
 
-    // ---- date row: mini flaps "FR" "16" "OKT"
-    const dl = [d.dowStr, "" + d.day, d.monStr];
-    const cw = 22, chh = 30, gp = 3, gg = 12;
-    let tw = -gg;
-    for (let g = 0; g < 3; g++) tw += dl[g].length * (cw + gp) - gp + gg;
-    let x = 227 - tw / 2;
-    let ci = 0;
-    for (let g = 0; g < 3; g++) {
-      const s = dl[g];
-      for (let k = 0; k < s.length; k++) {
-        const ch = s.substring(k, k + 1);
-        const f = flipAt(DRUM, ch, ms - 60 - ci * 45, 4, 70, true);
-        cell(dc, x, 60, cw, chh, 3, f[0], f[1], f[2], false, lab, tT, tB);
-        x += cw + gp;
-        ci++;
+    if (!a.bg) {
+      // ---- date row: mini flaps "FR" "16" "OKT"
+      const dl = [d.dowStr, "" + d.day, d.monStr];
+      const cw = 22, chh = 30, gp = 3, gg = 12;
+      let tw = -gg;
+      for (let g = 0; g < 3; g++) tw += dl[g].length * (cw + gp) - gp + gg;
+      let x = 227 - tw / 2;
+      let ci = 0;
+      for (let g = 0; g < 3; g++) {
+        const s = dl[g];
+        for (let k = 0; k < s.length; k++) {
+          const ch = s.substring(k, k + 1);
+          const f = flipAt(DRUM, ch, ms - 60 - ci * 45, 4, 70, true);
+          cell(dc, x, 60, cw, chh, 3, f[0], f[1], f[2], false, lab, tT, tB);
+          x += cw + gp;
+          ci++;
+        }
+        x += gg - gp;
       }
-      x += gg - gp;
-    }
 
+    }
     // ---- big HH MM tiles
     const tm = hhStr(d.h, d.is24) + G.pad2(d.m);
     // previous minute (for the minute-change flip)
@@ -208,6 +216,8 @@ export default {
     const ph = Math.floor(pk / 60);
     const pv = hhStr(ph, d.is24) + G.pad2(pk % 60);
     const bw = 78, bh = 122, by = 110;
+    // on the cached board only the big tiles flip (wrist raise, minute change)
+    if (a.bg && !busy) return;
     for (let i = 0; i < 4; i++) {
       const bx = 227 - 177 + i * (bw + 6) + (i >= 2 ? 24 : 0);
       const tch = tm.substring(i, i + 1);
@@ -230,6 +240,7 @@ export default {
     dc.setColor(G.dim(col, 0.75), -1);
     dc.fillRoundedRectangle(222, by + 38, 10, 10, 3);
     dc.fillRoundedRectangle(222, by + bh - 48, 10, 10, 3);
+    if (a.bg) return;
 
     // ---- board header
     const bx0 = 227 - (COLS * PITCH - 2) / 2;

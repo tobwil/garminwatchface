@@ -415,8 +415,73 @@ function aurora(dc, t, k, refl) {
   }
 }
 
+// shooting star: one per wrist raise (dark sky)
+function shoot(dc, d, a, st, bg, dark, t, rest) {
+  if (a.live && rest && (st === 2 || dark > 0.5)) {
+    let s = G.rnd(d.wakeN * 7919 + 13);
+    const t0 = 1800 + (s % 4200);
+    const u = (t - t0) / 900.0;
+    if (u > 0 && u < 1) {
+      s = G.rnd(s);
+      let x0, y0, dir;
+      if (st === 3) {
+        x0 = 110 + (s % 234); s = G.rnd(s);
+        y0 = 150 + (s % 60); s = G.rnd(s);
+        dir = 200 + (s % 80) + (x0 > CX ? 0 : -60);
+      } else {
+        const ang = s % 360;
+        s = G.rnd(s);
+        const rr = 70 + (s % 90);
+        s = G.rnd(s);
+        dir = ang + 100 + (s % 40);
+        x0 = G.ptX(CX, rr, ang); y0 = G.ptY(CX, rr, ang);
+      }
+      const hd = 150 * G.ease(u);
+      const fade = u < 0.7 ? 1 : (1 - u) / 0.3;
+      for (let k = 0; k < 3; k++) {
+        const a0 = G.clamp(hd - 22 - k * 22, 0, 999), a1 = G.clamp(hd - k * 22, 0, 999);
+        if (a1 <= a0) continue;
+        dc.setColor(G.mix(bg, st === 2 ? INK : 0xffffff, fade * (1 - k * 0.32)), -1);
+        dc.setPenWidth(k === 0 ? 2 : 1);
+        dc.drawLine(G.ptX(x0, a1, dir), G.ptY(y0, a1, dir), G.ptX(x0, a0, dir), G.ptY(y0, a0, dir));
+      }
+    }
+  }
+}
+
+// seconds pointer on the printed chart's cover (style 2)
+function secPtr(dc, d, a, R) {
+  const sa = (d.s + a.ms / 1000.0) * 6;
+  dc.setColor(0xe2574a, -1);
+  dc.fillPolygon([[G.ptX(CX, R + 3, sa), G.ptY(CX, R + 3, sa)], [G.ptX(CX, R + 13, sa - 2.6), G.ptY(CX, R + 13, sa - 2.6)],
+    [G.ptX(CX, R + 13, sa + 2.6), G.ptY(CX, R + 13, sa + 2.6)]]);
+}
+
+// moving parts on top of the cached layer: the bright stars twinkle (not those under the text),
+// the shooting star, the seconds pointer of the chart
+function moving(dc, d, a, st, bg, dark, t, tw, R) {
+  if (st !== 2 && a.live) {
+    for (let i = 0; i < NS; i++) {
+      const mag = MAG[i];
+      if (mag >= 2 || SCI[i] < 0 || SU[i] <= 0 || under(st, SX[i], SY[i], tw)) continue;
+      const pi = (ST[i] & 3) * 16 + Math.floor(SFF[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)) * 15 + 0.5);
+      if (mag < 1.6) star(dc, SX[i], SY[i], mag, pi);
+      else {
+        dc.setColor(SPAL[pi], -1);
+        dc.fillRectangle(SX[i] - 1, SY[i] - 1, 3, 3);
+      }
+    }
+  }
+  shoot(dc, d, a, st, bg, dark, t, true);
+  if (st === 2 && a.live) secPtr(dc, d, a, R);
+}
+
 export default {
   get fps() { return FPS; },
+
+  // static layer (planetarium, chart): everything but twinkle, shooting star and seconds pointer.
+  // The polar-light panorama (aurora, lake) moves almost everywhere: no cache.
+  bgKey(d) { return d.cfg.style === 3 ? -1 : d.doy * 1440 + d.mins; },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -469,6 +534,10 @@ export default {
       SCI[i] = q > 0 ? (ST[i] & 3) * 16 + q : -1;
     }
     if (rest && LK !== KD) { LK = KD; labels(st, R, tw); }
+    if (a.bg) {
+      moving(dc, d, a, st, bg, dark, t, tw, R);
+      return;
+    }
 
     // ---- intro: the dome turns into place (1, 2) / the sky rises (3)
     const rot = st === 3 ? 0 : -50 * (1 - e);
@@ -662,36 +731,7 @@ export default {
     }
 
     // ---- shooting star: one per wrist raise (dark sky)
-    if (a.live && rest && (st === 2 || dark > 0.5)) {
-      let s = G.rnd(d.wakeN * 7919 + 13);
-      const t0 = 1800 + (s % 4200);
-      const u = (t - t0) / 900.0;
-      if (u > 0 && u < 1) {
-        s = G.rnd(s);
-        let x0, y0, dir;
-        if (st === 3) {
-          x0 = 110 + (s % 234); s = G.rnd(s);
-          y0 = 150 + (s % 60); s = G.rnd(s);
-          dir = 200 + (s % 80) + (x0 > CX ? 0 : -60);
-        } else {
-          const ang = s % 360;
-          s = G.rnd(s);
-          const rr = 70 + (s % 90);
-          s = G.rnd(s);
-          dir = ang + 100 + (s % 40);
-          x0 = G.ptX(CX, rr, ang); y0 = G.ptY(CX, rr, ang);
-        }
-        const hd = 150 * G.ease(u);
-        const fade = u < 0.7 ? 1 : (1 - u) / 0.3;
-        for (let k = 0; k < 3; k++) {
-          const a0 = G.clamp(hd - 22 - k * 22, 0, 999), a1 = G.clamp(hd - k * 22, 0, 999);
-          if (a1 <= a0) continue;
-          dc.setColor(G.mix(bg, st === 2 ? INK : 0xffffff, fade * (1 - k * 0.32)), -1);
-          dc.setPenWidth(k === 0 ? 2 : 1);
-          dc.drawLine(G.ptX(x0, a1, dir), G.ptY(y0, a1, dir), G.ptX(x0, a0, dir), G.ptY(y0, a0, dir));
-        }
-      }
-    }
+    shoot(dc, d, a, st, bg, dark, t, rest);
 
     // ---- landscape (3) / rim with compass (1, 2)
     const day = EL > 0;
@@ -764,12 +804,7 @@ export default {
         ux = nx;
       }
       // seconds pointer on the printed chart's cover
-      if (st === 2 && a.live && rest) {
-        const sa = (d.s + a.ms / 1000.0) * 6;
-        dc.setColor(0xe2574a, -1);
-        dc.fillPolygon([[G.ptX(CX, R + 3, sa), G.ptY(CX, R + 3, sa)], [G.ptX(CX, R + 13, sa - 2.6), G.ptY(CX, R + 13, sa - 2.6)],
-          [G.ptX(CX, R + 13, sa + 2.6), G.ptY(CX, R + 13, sa + 2.6)]]);
-      }
+      if (st === 2 && a.live && rest) secPtr(dc, d, a, R);
       const lr = R + 19;
       dc.setColor(st === 2 ? 0xe2574a : acc, -1);
       F.st(dc, "N", CX, CX - lr, 15, 2, 1, 1.0, 0);

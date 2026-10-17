@@ -179,8 +179,57 @@ class FaceHud extends Face {
         dc.fillRectangle(x, yb - h, ww, 2);
     }
 
+    // static layer: everything but the shimmer and the blinking marker (per minute and page)
+    function bgKey(d as D) as Number {
+        return minuteKey(d) * 3 + _pg;
+    }
+
+    // ambient shimmer across the power zone bar (after the intro, while live)
+    hidden function shimmer(dc as Dc, a as A) as Void {
+        if (!a.live) {
+            return;
+        }
+        var bx = 52;
+        var bw = 350;
+        var by = 218;
+        var bh = 18;
+        var sw = bw / 6.0;
+        var ph = (a.t % 2600) / 2600.0;
+        var sx = bx - 30 + (bw + 60) * ph;
+        dc.setClip(bx, by, bw, bh);
+        dc.setPenWidth(5);
+        for (var k = -4; k <= 4; k += 2) {
+            var xx = sx + k * 3;
+            var z = G.clamp(Math.floor((xx - bx) / sw).toNumber(), 0, 5);
+            dc.setColor(G.mix(ZC[z], 0xFFFFFF, 0.55 * (1 - k.abs() / 5.0)), -1);
+            dc.drawLine(xx + 4, by, xx - 4, by + bh);
+        }
+        dc.clearClip();
+    }
+
+    // blinking "you are here" marker on the workout chart (never part of the static layer)
+    hidden function marker(dc as Dc, a as A) as Void {
+        if (a.so || (a.live && a.t % 1000 >= 600)) {
+            return;
+        }
+        var chx = 80;
+        var chb = 376;
+        dc.setColor(0xFFFFFF, -1);
+        dc.setPenWidth(2);
+        dc.drawLine(chx, chb + 1, chx, chb - 36);
+        dc.fillPolygon([[chx - 5, chb - 42], [chx + 5, chb - 42], [chx, chb - 36]]);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var pg = _pg;
+        if (a.bg) {
+            // moving parts on top of the cached layer
+            if (pg == 0) {
+                shimmer(dc, a);
+                marker(dc, a);
+            }
+            return;
+        }
         var st = d.cfg.style;
         var acc = d.accent;
         var P = pal(st);
@@ -329,18 +378,8 @@ class FaceHud extends Face {
             }
         }
         // ambient shimmer across the bar
-        if (a.live && p >= 1) {
-            var ph = (a.t % 2600) / 2600.0;
-            var sx = bx - 30 + (bw + 60) * ph;
-            dc.setClip(bx, by, bw, bh);
-            dc.setPenWidth(5);
-            for (var k = -4; k <= 4; k += 2) {
-                var xx = sx + k * 3;
-                var z = G.clamp(Math.floor((xx - bx) / sw).toNumber(), 0, 5);
-                dc.setColor(G.mix(ZC[z], 0xFFFFFF, 0.55 * (1 - k.abs() / 5.0)), -1);
-                dc.drawLine(xx + 4, by, xx - 4, by + bh);
-            }
-            dc.clearClip();
+        if (p >= 1) {
+            shimmer(dc, a);
         }
         // boundary watts
         dc.setColor(0xB8B8B8, -1);
@@ -382,11 +421,8 @@ class FaceHud extends Face {
         var chb = 376;
         chart(dc, chx, chb, 214, 34, wi, cp);
         // "you are here" marker
-        if (cp >= 1 && (!a.live || a.t % 1000 < 600)) {
-            dc.setColor(0xFFFFFF, -1);
-            dc.setPenWidth(2);
-            dc.drawLine(chx, chb + 1, chx, chb - 36);
-            dc.fillPolygon([[chx - 5, chb - 42], [chx + 5, chb - 42], [chx, chb - 36]]);
+        if (cp >= 1 && ox == 0) {
+            marker(dc, a);
         }
     }
 

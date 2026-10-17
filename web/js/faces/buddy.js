@@ -124,7 +124,11 @@ function needVal(d, i) {
 export default {
   fps: 8,
 
+  // static layer: backdrop, time, needs bars, cushion, slots; the buddy and its bubble move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const P = pal(st, d.accent);
     const p = a.intro;
@@ -135,212 +139,221 @@ export default {
     const today = d.year * 1000 + d.doy;
     if (hatchDay === -2) hatchDay = St.get("bDay", -1);
     const hatch = md !== SLEEP && hatchDay !== today;
-    if (hatch && p >= 1) { hatchDay = today; St.set("bDay", today); }
+    if (hatch && p >= 1 && !a.so) { hatchDay = today; St.set("bDay", today); }
 
-    // ---------------- backdrop
-    if (st === 2) {
-      dc.setColor(P[0], -1);
-      dc.fillRectangle(0, 0, 454, 454);
+    if (S) {
+      // ---------------- backdrop
+      if (st === 2) {
+        dc.setColor(P[0], -1);
+        dc.fillRectangle(0, 0, 454, 454);
+        dc.setColor(P[11], -1);
+        dc.setPenWidth(8);
+        dc.drawCircle(227, 227, 222);
+      } else if (st === 3) {
+        dc.setColor(P[0], -1);
+        dc.fillRectangle(0, 0, 454, 454);
+        dc.setColor(P[38], -1);
+        dc.fillRoundedRectangle(26, 116, 402, 216, 30);
+        dc.setColor(P[37], -1);
+        dc.fillRoundedRectangle(32, 122, 390, 204, 25);
+      }
+
+      // ---------------- time + date
+      const ts = G.timeStr(d);
+      const ty = 40 - Math.round((1 - G.ease(p * 3)) * 30);
       dc.setColor(P[11], -1);
-      dc.setPenWidth(8);
-      dc.drawCircle(227, 227, 222);
-    } else if (st === 3) {
-      dc.setColor(P[0], -1);
-      dc.fillRectangle(0, 0, 454, 454);
-      dc.setColor(P[38], -1);
-      dc.fillRoundedRectangle(26, 116, 402, 216, 30);
-      dc.setColor(P[37], -1);
-      dc.fillRoundedRectangle(32, 122, 390, 204, 25);
-    }
-
-    // ---------------- time + date
-    const ts = G.timeStr(d);
-    const ty = 40 - Math.round((1 - G.ease(p * 3)) * 30);
-    dc.setColor(P[11], -1);
-    F.px(dc, ts, 231, ty + 4, 7, 1, 0);
-    dc.setColor(P[10], -1);
-    F.px(dc, ts, 227, ty, 7, 1, 0);
-    dc.setColor(P[12], -1);
-    F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 97, 2, 1, 0);
-
-    // ---------------- needs bars (2 left, 2 right)
-    for (let i = 0; i < 4; i++) {
-      const right = i >= 2;
-      const y = (i % 2) * 56 + 200;
-      const v = needVal(d, i);
-      const n = v < 0 ? 0 : G.clamp(Math.ceil(v / 20 - 0.001), v > 0 ? 1 : 0, 5);
-      const fill = p >= 1 ? n : Math.floor(n * G.ease(G.stag(p - 0.45, i, 0.06, 0.3)) + 0.001);
-      const warn = v >= 0 && n <= 1 && (!live || k % 8 < 5);
-      const lx = right ? 410 : 44;
+      F.px(dc, ts, 231, ty + 4, 7, 1, 0);
+      dc.setColor(P[10], -1);
+      F.px(dc, ts, 227, ty, 7, 1, 0);
       dc.setColor(P[12], -1);
-      F.px(dc, LBL[i], lx, y, 2, right ? 2 : 0, 0);
-      const ix = right ? 389 : 44;
-      SPR.draw(dc, ICONS[i], ix, y + 18, 3, [-1, warn ? P[35] : P[17 + i], st === 1 ? P[13] : st === 2 ? P[11] : P[1]], false);
-      const sx = right ? 322 : 70;
-      for (let s = 0; s < 5; s++) {
-        const on = right ? 4 - s < fill : s < fill;
-        dc.setColor(on ? P[17 + i] : P[16], -1);
-        dc.fillRectangle(sx + s * 13, y + 21, 10, 15);
-      }
-    }
+      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 97, 2, 1, 0);
 
-    // ---------------- night sky (sleeping)
-    if (md === SLEEP) {
-      dc.setColor(P[27], -1);
+      // ---------------- needs bars (2 left, 2 right)
       for (let i = 0; i < 4; i++) {
-        const sx = STX[i], sy = STY[i];
-        dc.fillRectangle(sx, sy, 3, 3);
-        if ((k + i * 3) % 10 < 6) {
-          dc.fillRectangle(sx - 3, sy, 9, 3);
-          dc.fillRectangle(sx, sy - 3, 3, 9);
+        const right = i >= 2;
+        const y = (i % 2) * 56 + 200;
+        const v = needVal(d, i);
+        const n = v < 0 ? 0 : G.clamp(Math.ceil(v / 20 - 0.001), v > 0 ? 1 : 0, 5);
+        const fill = p >= 1 ? n : Math.floor(n * G.ease(G.stag(p - 0.45, i, 0.06, 0.3)) + 0.001);
+        const warn = v >= 0 && n <= 1 && (!live || k % 8 < 5);
+        const lx = right ? 410 : 44;
+        dc.setColor(P[12], -1);
+        F.px(dc, LBL[i], lx, y, 2, right ? 2 : 0, 0);
+        const ix = right ? 389 : 44;
+        SPR.draw(dc, ICONS[i], ix, y + 18, 3, [-1, warn ? P[35] : P[17 + i], st === 1 ? P[13] : st === 2 ? P[11] : P[1]], false);
+        const sx = right ? 322 : 70;
+        for (let s = 0; s < 5; s++) {
+          const on = right ? 4 - s < fill : s < fill;
+          dc.setColor(on ? P[17 + i] : P[16], -1);
+          dc.fillRectangle(sx + s * 13, y + 21, 10, 15);
         }
       }
     }
 
-    // ---------------- cushion
-    const cy0 = BASE - 20;
-    SPR.draw(dc, SP.CUSHION, 137, cy0, PX, [P[23], P[21], P[22], P[27]], false);
-
-    // ---------------- buddy pose
-    let fr = 0, by = 0, bx = 0, eye = 0, mouth = 0, show = true;
-    let egg = -1, eggX = 0, eggY = 0, shellT = -1;
-    if (md === HAPPY) {
-      const q = k % 16;
-      fr = HOP_F[q]; by = HOP_Y[q];
-      eye = by < 0 ? 2 : k % 27 === 5 ? 1 : 0;
-      mouth = by < 0 ? 1 : 0;
-    } else if (md === PARTY) {
-      const q = k % 6;
-      fr = PAR_F[q]; by = PAR_Y[q];
-      eye = 2; mouth = 1;
-    } else if (md === STRESS) {
-      bx = k % 10 < 5 ? ((k % 2) * 2 - 1) * 5 : 0;
-      eye = 5; mouth = 3;
-    } else if (md === SLEEP) {
-      fr = k % 16 < 8 ? 0 : 1;
-      eye = 3; mouth = fr === 0 ? 4 : 5;
-    } else if (md === TIRED) {
-      fr = k % 12 < 6 ? 0 : 1;
-      const yawn = k % 48 >= 30 && k % 48 < 38;
-      eye = yawn ? 1 : 4; mouth = yawn ? 4 : 2;
-    } else {
-      fr = 3;
-      eye = k % 30 === 4 ? 1 : 4; mouth = 2;
-    }
-    // intro: egg hatch (first wake of the day) or a squash & stretch pop
-    if (p < 1) {
-      bx = 0;
-      if (hatch) {
-        if (p < 0.5) {
-          show = false;
-          egg = p < 0.28 ? 0 : p < 0.4 ? 1 : 2;
-          eggY = -Math.round((1 - G.ease(p / 0.15)) * 24) * 5;
-          eggX = p > 0.15 ? (Math.floor(p * 22) % 2) * 10 - 5 : 0;
-        } else {
-          const u = (p - 0.5) / 0.5;
-          const q = G.clamp(Math.floor(u * 8), 0, 7);
-          fr = md === LAZY ? 3 : HAT_F[q]; by = HAT_Y[q];
-          eye = q < 5 ? 2 : eye; mouth = q < 5 ? 1 : mouth;
-          shellT = u;
+    if (M) {
+      // ---------------- night sky (sleeping)
+      if (md === SLEEP) {
+        dc.setColor(P[27], -1);
+        for (let i = 0; i < 4; i++) {
+          const sx = STX[i], sy = STY[i];
+          dc.fillRectangle(sx, sy, 3, 3);
+          if ((k + i * 3) % 10 < 6) {
+            dc.fillRectangle(sx - 3, sy, 9, 3);
+            dc.fillRectangle(sx, sy - 3, 3, 9);
+          }
         }
-      } else {
-        const q = G.clamp(Math.floor(p * 10), 0, 9);
-        if (md !== LAZY) { fr = POP_F[q]; }
-        by = POP_Y[q];
-        if (q < 3) eye = md === SLEEP ? 3 : 1;
       }
     }
 
-    // ---------------- confetti (behind)
-    if (md === PARTY && p >= 0.75) {
-      const cc = st === 2 ? [P[1], P[4], P[1], P[4], P[1]] : [P[17], P[18], P[28], P[20], P[19]];
-      let sd = 4242;
-      for (let i = 0; i < 16; i++) {
-        sd = G.rnd(sd);
-        const x = 145 + (sd % 160);
-        sd = G.rnd(sd);
-        const v = 40 + (sd % 50);
-        sd = G.rnd(sd);
-        const yy = 130 + Math.floor(((t * v) / 1000 + (sd % 190)) % 190);
-        const sy = Math.floor(yy / 5) * 5 + 4;
-        const sx = Math.floor((x + G.noise(t / 400 + i) * 8) / 5) * 5 + 2;
-        if (sy > 285) continue;
-        dc.setColor(cc[i % 5], -1);
-        if ((i + k) % 3 === 0) dc.fillRectangle(sx, sy, 5, 5);
-        else dc.fillRectangle(sx, sy, i % 2 === 0 ? 10 : 5, i % 2 === 0 ? 5 : 10);
-      }
+    if (S) {
+      // ---------------- cushion
+      const cy0 = BASE - 20;
+      SPR.draw(dc, SP.CUSHION, 137, cy0, PX, [P[23], P[21], P[22], P[27]], false);
     }
 
-    // ---------------- egg
-    if (egg >= 0) {
-      const ex = 187 + eggX, ey = BASE - 100 + eggY;
-      const ep = [P[1], P[32], P[33], P[34]];
-      SPR.draw(dc, SP.EGG, ex, ey, PX, ep, false);
-      if (egg === 1) SPR.draw(dc, SP.CRACK1, ex, ey, PX, ep, false);
-      if (egg === 2) SPR.draw(dc, SP.CRACK2, ex, ey, PX, ep, false);
-    }
-
-    // ---------------- buddy
-    const B = BODIES[fr];
-    const W = B[0], H = B[1];
-    const X = 227 - Math.floor((W * PX) / 2) + bx;
-    const Y = BASE - H * PX + by;
-    if (show) {
-      SPR.draw(dc, B, X, Y, PX, [P[1], P[2], P[3], P[4], P[5], P[6]], false);
-      const fp = [P[7], P[8], -1, P[4], -1, P[6], P[9]];
-      SPR.draw(dc, EYES[eye], X + FDX[fr] * PX, Y + FDY[fr] * PX, PX, fp, false);
-      SPR.draw(dc, MOUTHS[mouth], X + FDX[fr] * PX, Y + (FDY[fr] + 3) * PX, PX, fp, false);
-      const hy = Y + (HT[fr] + 1) * PX;
-      if (md === SLEEP) SPR.draw(dc, SP.NIGHTCAP, X + (W / 2 - 8) * PX - 5, hy - 9 * PX, PX, [P[1], P[24], P[25], P[26]], false);
-      if (md === PARTY) SPR.draw(dc, SP.PARTYHAT, X + Math.floor(W / 2 - 3.5) * PX, hy - 9 * PX, PX, [P[1], P[27], P[28], P[29]], false);
-    }
-    // shell pieces of the hatch
-    if (shellT >= 0 && shellT < 1) {
-      const ep = [P[1], P[32], P[33], P[34]];
-      const sx = 187 - Math.round(shellT * 18) * 5;
-      const sy = BASE - 100 - Math.round(40 * shellT - 50 * shellT * shellT) * 5;
-      if (shellT < 0.8) SPR.draw(dc, SP.SHELL_TOP, sx, sy, PX, ep, false);
-      if (shellT < 0.4) SPR.draw(dc, SP.SHELL_BOT, 187, BASE - 50, PX, ep, false);
-      else if (shellT < 0.6) {
-        dc.setColor(P[32], -1);
-        const r = Math.round((shellT - 0.4) * 100);
-        for (let i = 0; i < 6; i++) dc.fillRectangle(222 + Math.round(Math.sin(i * 1.05) * (40 + r)), BASE - 15 - Math.round(Math.abs(Math.cos(i * 1.05)) * r), 5, 5);
-      }
-    }
-
-    // ---------------- mood props
-    if (show && p >= 0.6) {
-      if (md === STRESS) {
-        const sp = [P[30], st === 2 ? P[3] : 0xffffff];
-        for (let i = 0; i < 2; i++) {
-          const ph = ((t + i * 520) % 1040) / 1040;
-          const sx = i === 0 ? X - 10 - Math.round(ph * 3) * 5 : X + W * PX - 5 + Math.round(ph * 3) * 5;
-          SPR.draw(dc, SP.SWEAT, sx, Y + 25 + Math.round(ph * 8) * 5, PX, sp, false);
-        }
+    if (M) {
+      // ---------------- buddy pose
+      let fr = 0, by = 0, bx = 0, eye = 0, mouth = 0, show = true;
+      let egg = -1, eggX = 0, eggY = 0, shellT = -1;
+      if (md === HAPPY) {
+        const q = k % 16;
+        fr = HOP_F[q]; by = HOP_Y[q];
+        eye = by < 0 ? 2 : k % 27 === 5 ? 1 : 0;
+        mouth = by < 0 ? 1 : 0;
+      } else if (md === PARTY) {
+        const q = k % 6;
+        fr = PAR_F[q]; by = PAR_Y[q];
+        eye = 2; mouth = 1;
+      } else if (md === STRESS) {
+        bx = k % 10 < 5 ? ((k % 2) * 2 - 1) * 5 : 0;
+        eye = 5; mouth = 3;
       } else if (md === SLEEP) {
-        dc.setColor(P[31], -1);
-        for (let i = 0; i < 3; i++) {
-          const ph = ((t + i * 800) % 2400) / 2400;
-          const zs = 2 + Math.floor(ph * 3);
-          F.px(dc, zs >= 4 ? "Z" : "z", X + W * PX - 5 + Math.round(ph * 5) * 5, Y + 15 - Math.round(ph * 7) * 5, zs, 0, 0);
+        fr = k % 16 < 8 ? 0 : 1;
+        eye = 3; mouth = fr === 0 ? 4 : 5;
+      } else if (md === TIRED) {
+        fr = k % 12 < 6 ? 0 : 1;
+        const yawn = k % 48 >= 30 && k % 48 < 38;
+        eye = yawn ? 1 : 4; mouth = yawn ? 4 : 2;
+      } else {
+        fr = 3;
+        eye = k % 30 === 4 ? 1 : 4; mouth = 2;
+      }
+      // intro: egg hatch (first wake of the day) or a squash & stretch pop
+      if (p < 1) {
+        bx = 0;
+        if (hatch) {
+          if (p < 0.5) {
+            show = false;
+            egg = p < 0.28 ? 0 : p < 0.4 ? 1 : 2;
+            eggY = -Math.round((1 - G.ease(p / 0.15)) * 24) * 5;
+            eggX = p > 0.15 ? (Math.floor(p * 22) % 2) * 10 - 5 : 0;
+          } else {
+            const u = (p - 0.5) / 0.5;
+            const q = G.clamp(Math.floor(u * 8), 0, 7);
+            fr = md === LAZY ? 3 : HAT_F[q]; by = HAT_Y[q];
+            eye = q < 5 ? 2 : eye; mouth = q < 5 ? 1 : mouth;
+            shellT = u;
+          }
+        } else {
+          const q = G.clamp(Math.floor(p * 10), 0, 9);
+          if (md !== LAZY) { fr = POP_F[q]; }
+          by = POP_Y[q];
+          if (q < 3) eye = md === SLEEP ? 3 : 1;
         }
       }
-    }
 
-    // ---------------- speech bubble
-    if (p >= 1) {
-      let txt = line(d, md);
-      let bw = txt;
-      let n = txt.length;
-      if (live) {
-        if (md === LAZY) {
-          if (Math.floor(t / 2000) % 2 === 0) { bw = "..."; txt = "...".substring(0, k % 4); n = txt.length; }
-        } else n = G.clamp(Math.floor((t - 1400) / 45), 0, txt.length);
+      // ---------------- confetti (behind)
+      if (md === PARTY && p >= 0.75) {
+        const cc = st === 2 ? [P[1], P[4], P[1], P[4], P[1]] : [P[17], P[18], P[28], P[20], P[19]];
+        let sd = 4242;
+        for (let i = 0; i < 16; i++) {
+          sd = G.rnd(sd);
+          const x = 145 + (sd % 160);
+          sd = G.rnd(sd);
+          const v = 40 + (sd % 50);
+          sd = G.rnd(sd);
+          const yy = 130 + Math.floor(((t * v) / 1000 + (sd % 190)) % 190);
+          const sy = Math.floor(yy / 5) * 5 + 4;
+          const sx = Math.floor((x + G.noise(t / 400 + i) * 8) / 5) * 5 + 2;
+          if (sy > 285) continue;
+          dc.setColor(cc[i % 5], -1);
+          if ((i + k) % 3 === 0) dc.fillRectangle(sx, sy, 5, 5);
+          else dc.fillRectangle(sx, sy, i % 2 === 0 ? 10 : 5, i % 2 === 0 ? 5 : 10);
+        }
       }
-      const tx = bubble(dc, P, bw, 227, 129, md === SLEEP || md === LAZY);
-      if (n > 0) F.px(dc, txt.substring(0, n), tx, 136, 2, 0, 0);
+
+      // ---------------- egg
+      if (egg >= 0) {
+        const ex = 187 + eggX, ey = BASE - 100 + eggY;
+        const ep = [P[1], P[32], P[33], P[34]];
+        SPR.draw(dc, SP.EGG, ex, ey, PX, ep, false);
+        if (egg === 1) SPR.draw(dc, SP.CRACK1, ex, ey, PX, ep, false);
+        if (egg === 2) SPR.draw(dc, SP.CRACK2, ex, ey, PX, ep, false);
+      }
+
+      // ---------------- buddy
+      const B = BODIES[fr];
+      const W = B[0], H = B[1];
+      const X = 227 - Math.floor((W * PX) / 2) + bx;
+      const Y = BASE - H * PX + by;
+      if (show) {
+        SPR.draw(dc, B, X, Y, PX, [P[1], P[2], P[3], P[4], P[5], P[6]], false);
+        const fp = [P[7], P[8], -1, P[4], -1, P[6], P[9]];
+        SPR.draw(dc, EYES[eye], X + FDX[fr] * PX, Y + FDY[fr] * PX, PX, fp, false);
+        SPR.draw(dc, MOUTHS[mouth], X + FDX[fr] * PX, Y + (FDY[fr] + 3) * PX, PX, fp, false);
+        const hy = Y + (HT[fr] + 1) * PX;
+        if (md === SLEEP) SPR.draw(dc, SP.NIGHTCAP, X + (W / 2 - 8) * PX - 5, hy - 9 * PX, PX, [P[1], P[24], P[25], P[26]], false);
+        if (md === PARTY) SPR.draw(dc, SP.PARTYHAT, X + Math.floor(W / 2 - 3.5) * PX, hy - 9 * PX, PX, [P[1], P[27], P[28], P[29]], false);
+      }
+      // shell pieces of the hatch
+      if (shellT >= 0 && shellT < 1) {
+        const ep = [P[1], P[32], P[33], P[34]];
+        const sx = 187 - Math.round(shellT * 18) * 5;
+        const sy = BASE - 100 - Math.round(40 * shellT - 50 * shellT * shellT) * 5;
+        if (shellT < 0.8) SPR.draw(dc, SP.SHELL_TOP, sx, sy, PX, ep, false);
+        if (shellT < 0.4) SPR.draw(dc, SP.SHELL_BOT, 187, BASE - 50, PX, ep, false);
+        else if (shellT < 0.6) {
+          dc.setColor(P[32], -1);
+          const r = Math.round((shellT - 0.4) * 100);
+          for (let i = 0; i < 6; i++) dc.fillRectangle(222 + Math.round(Math.sin(i * 1.05) * (40 + r)), BASE - 15 - Math.round(Math.abs(Math.cos(i * 1.05)) * r), 5, 5);
+        }
+      }
+
+      // ---------------- mood props
+      if (show && p >= 0.6) {
+        if (md === STRESS) {
+          const sp = [P[30], st === 2 ? P[3] : 0xffffff];
+          for (let i = 0; i < 2; i++) {
+            const ph = ((t + i * 520) % 1040) / 1040;
+            const sx = i === 0 ? X - 10 - Math.round(ph * 3) * 5 : X + W * PX - 5 + Math.round(ph * 3) * 5;
+            SPR.draw(dc, SP.SWEAT, sx, Y + 25 + Math.round(ph * 8) * 5, PX, sp, false);
+          }
+        } else if (md === SLEEP) {
+          dc.setColor(P[31], -1);
+          for (let i = 0; i < 3; i++) {
+            const ph = ((t + i * 800) % 2400) / 2400;
+            const zs = 2 + Math.floor(ph * 3);
+            F.px(dc, zs >= 4 ? "Z" : "z", X + W * PX - 5 + Math.round(ph * 5) * 5, Y + 15 - Math.round(ph * 7) * 5, zs, 0, 0);
+          }
+        }
+      }
+
+      // ---------------- speech bubble
+      if (p >= 1) {
+        let txt = line(d, md);
+        let bw = txt;
+        let n = txt.length;
+        if (live) {
+          if (md === LAZY) {
+            if (Math.floor(t / 2000) % 2 === 0) { bw = "..."; txt = "...".substring(0, k % 4); n = txt.length; }
+          } else n = G.clamp(Math.floor((t - 1400) / 45), 0, txt.length);
+        }
+        const tx = bubble(dc, P, bw, 227, 129, md === SLEEP || md === LAZY);
+        if (n > 0) F.px(dc, txt.substring(0, n), tx, 136, 2, 0, 0);
+      }
     }
 
+    if (!S) return;
     // ---------------- slots
     for (let i = 0; i < 3; i++) {
       const sl = d.slots[i];

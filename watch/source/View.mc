@@ -12,6 +12,7 @@ import Toybox.WatchUi;
 // raise): a Timer drives requestUpdate() at up to 20 fps.
 class FaceView extends WatchUi.WatchFace {
     const INTRO_MS = 1400;
+    const REVEAL = 0.4;    // share of the intro that reveals the cached static layer
     const MAX_ANIM_MS = 12000;
     const TAP_MS = 5000;   // frames keep running this long after a tap (reveals, games)
 
@@ -28,6 +29,11 @@ class FaceView extends WatchUi.WatchFace {
     hidden var _lastSec = -1;
     hidden var _tapAt = -1;
     hidden var _secAt = 0;
+    hidden var _dt = 0;          // smoothed draw time per frame (ms)
+    hidden var _bg = null;       // BufferedBitmapReference of the static layer
+    hidden var _bgKey = -1;
+    hidden var _bgFail = false;
+    hidden var _bgMs = -1;       // debug: time of the last static layer render
 
     function initialize(editMode as Boolean) {
         WatchFace.initialize();
@@ -95,12 +101,14 @@ class FaceView extends WatchUi.WatchFace {
     }
 
     function onSettingsChanged() as Void {
+        _bgKey = -1;
         cfg.load();
         d.refresh(true);
         wake();
     }
 
     function onConfigEdited() as Void {
+        _bgKey = -1;
         cfg.syncNative(true);
         d.refresh(true);
         WatchUi.requestUpdate();
@@ -110,13 +118,14 @@ class FaceView extends WatchUi.WatchFace {
     hidden function wake() as Void {
         _wake = System.getTimer();
         if (cfg.anim > 0 && !_sleeping && !_edit) {
-            startTimer(50);
+            startTimer(period(20));
         }
         WatchUi.requestUpdate();
     }
 
     hidden function startTimer(ms as Number) as Void {
-        if (_timer != null && _period == ms) {
+        // small changes of the adaptive period are not worth restarting the timer
+        if (_timer != null && (ms - _period).abs() < 20) {
             return;
         }
         stopTimer();
@@ -126,6 +135,81 @@ class FaceView extends WatchUi.WatchFace {
             _period = ms;
         } catch (e) {
             _timer = null;
+        }
+    }
+
+    // half height of the reveal band for reveal progress r (0..1)
+    hidden function band(r) as Number {
+        var h = Math.round(227 * r).toNumber();
+        return h < 2 ? 2 : h;
+    }
+
+    // Frame period for the wanted fps, but never faster than the watch can draw: a frame
+    // that is requested before the previous one is done only queues up and stutters.
+    hidden function period(fps as Number) as Number {
+        var ms = 1000 / fps;
+        var need = _dt * 5 / 4 + 15;
+        if (need > ms) {
+            ms = need;
+        }
+        return (ms + 9) / 10 * 10;
+    }
+
+    // Key of the static layer for the current data and settings.
+    hidden function layerKey() as Number {
+        return face.bgKey(d) * 31 + cfg.style * 7 + cfg.accent + cfg.dcol * 3 + (d.metric ? 1 : 0);
+    }
+
+    // True if the cached static layer is rendered for key (and was not purged).
+    hidden function layerReady(key as Number) as Boolean {
+        if (_bg == null || key != _bgKey) {
+            return false;
+        }
+        return (_bg as Graphics.BufferedBitmapReference).get() != null;
+    }
+
+    // Renders the static layer into the cached bitmap when its key changed.
+    // Returns false if no bitmap is available (then draw() paints everything).
+    hidden function staticLayer(key as Number) as Boolean {
+        if (_bgFail) {
+            return false;
+        }
+        try {
+            var b = null;
+            if (_bg != null) {
+                b = (_bg as Graphics.BufferedBitmapReference).get();
+            }
+            if (b == null) {
+                // (re)created, e.g. after the system purged the graphics pool
+                var tc = System.getTimer();
+                _bg = Graphics.createBufferedBitmap({:width => 454, :height => 454});
+                if (Registry.DEBUG) {
+                    System.println("bg alloc " + (System.getTimer() - tc));
+                }
+                b = (_bg as Graphics.BufferedBitmapReference).get();
+                _bgKey = -1;
+                if (b == null) {
+                    _bgFail = true;
+                    return false;
+                }
+            }
+            if (key != _bgKey) {
+                var bdc = (b as Graphics.BufferedBitmap).getDc();
+                bdc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+                bdc.clear();
+                bdc.setAntiAlias(face.aa());
+                var tr = System.getTimer();
+                face.bg(bdc, d);
+                _bgKey = key;
+                _bgMs = System.getTimer() - tr;
+                if (Registry.DEBUG) {
+                    System.println("bg draw " + _bgMs);
+                }
+            }
+            return true;
+        } catch (e) {
+            _bgFail = true;
+            return false;
         }
     }
 
@@ -140,24 +224,33 @@ class FaceView extends WatchUi.WatchFace {
     function onTick() as Void {
         // slow data reads run here, in their own callback, so a heavy frame and the
         // once-a-minute refresh never share one watchdog budget
-        d.refresh(false);
+        var slow = d.refresh(false);
+        // the static layer is rendered here, in a callback of its own: in onUpdate it would share
+        // one watchdog budget with the frame (heavy designs trip it). Not in the tick that already
+        // did the slow minute reads; until it is ready, onUpdate paints everything.
+        if (!slow && face.bgKey(d) >= 0) {
+            staticLayer(layerKey());
+        }
         var now = System.getTimer();
         var t = now - _wake;
         if (_tapAt >= 0 && now - _tapAt < TAP_MS) {
-            startTimer(50);
+            startTimer(period(20));
         } else if (t > INTRO_MS) {
             var fps = cfg.anim >= 2 ? face.fps() : 0;
             if (fps <= 0 || t > MAX_ANIM_MS) {
                 stopTimer();
             } else {
-                startTimer(1000 / fps);
+                startTimer(period(fps));
             }
+        } else {
+            startTimer(period(20));
         }
         WatchUi.requestUpdate();
     }
 
     // ------------------------------------------------------------ drawing
     function onUpdate(dc as Dc) as Void {
+        var t0 = System.getTimer();
         if (_timer != null) {
             d.clock();
         } else {
@@ -165,7 +258,7 @@ class FaceView extends WatchUi.WatchFace {
         }
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
-        dc.setAntiAlias(true);
+        dc.setAntiAlias(face.aa());
         if (_sleeping && _burnIn) {
             face.aod(dc, d);
             return;
@@ -184,13 +277,38 @@ class FaceView extends WatchUi.WatchFace {
         a.tap = _tapAt < 0 ? 999999 : now - _tapAt;
         a.live = !_sleeping && _timer != null;
         a.intro = (cfg.anim == 0 || _edit) ? 1.0 : G.clamp(t.toFloat() / INTRO_MS, 0.0, 1.0);
+        // static layer from the cache; during the intro it is revealed like an old CRT switching
+        // on (a band opening from the centre), which costs one partial blit per frame
+        a.bg = false;
+        var reveal = 1.0;
+        if (face.bgKey(d) >= 0) {
+            reveal = face.reveal() ? G.ease(G.clamp(a.intro / REVEAL, 0.0, 1.0)) : 1.0;
+            if (reveal < 1.0) {
+                // the moving layer is clipped to the band as well
+                dc.setClip(0, 227 - band(reveal), 454, 2 * band(reveal));
+            }
+            if (layerReady(layerKey())) {
+                dc.drawBitmap(0, 0, _bg as Graphics.BufferedBitmapReference);
+                a.bg = true;
+            }
+        }
         face.draw(dc, d, a);
+        if (reveal < 1.0) {
+            dc.clearClip();
+            var h = band(reveal);
+            dc.setColor(G.dim(G.mix(0xFFFFFF, cfg.accent, 0.35), 1.0 - reveal * 0.6), -1);
+            dc.fillRectangle(0, 226 - h, 454, 2);
+            dc.fillRectangle(0, 226 + h, 454, 2);
+        }
+        var dtNow = System.getTimer() - t0;
+        _dt = (_dt * 3 + dtNow) / 4;
         if (Registry.DEBUG) {
             var ss = System.getSystemStats();
-            var dt = System.getTimer() - _wake - t;
+            var dt = dtNow;
             System.println("mem " + ss.usedMemory + "/" + ss.totalMemory + " t=" + t + " dt=" + dt);
             dc.setColor(0x00FF00, 0x000000);
             F.px(dc, (ss.usedMemory / 1024) + "K/" + (ss.totalMemory / 1024) + "K " + dt + "MS", 227, 400, 2, 1, 0);
+            F.px(dc, "BG " + _bgMs + "MS " + (a.bg ? "CACHE" : "VOLL"), 227, 418, 2, 1, 0);
         }
     }
 
@@ -202,7 +320,7 @@ class FaceView extends WatchUi.WatchFace {
         if (face.tap(x, y, d)) {
             _tapAt = System.getTimer();
             _wake = _tapAt - INTRO_MS;
-            startTimer(50);
+            startTimer(period(20));
             WatchUi.requestUpdate();
             return true;
         }

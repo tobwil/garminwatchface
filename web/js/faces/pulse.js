@@ -40,6 +40,9 @@ function heart(dc, x, y, r) {
 export default {
   fps: 20,
 
+  // static layer: cached, redrawn when the minute changes
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const p = a.intro;
@@ -59,61 +62,64 @@ export default {
     const hi = Math.max(mx + 8, lo + 50);
     const main = st === 1 ? MONGREEN : st === 3 ? acc : (d.hr > 0 ? zcol(d.hr, d.hrMax) : 0x5a7090);
 
-    // ---- style 1: monitor grid & rings
-    if (st === 1) {
-      dc.setPenWidth(1);
-      dc.setColor(0x0b2614, -1);
-      for (let gx = 97; gx <= 357; gx += 20) dc.drawLine(gx, 230, gx, 302);
-      for (let gy = 230; gy <= 302; gy += 18) dc.drawLine(97, gy, 357, gy);
-      dc.setColor(0x0f3a1c, -1);
-      dc.drawCircle(cx, cy, 143);
-    } else {
-      dc.setPenWidth(1);
-      dc.setColor(0x262626, -1);
-      dc.drawCircle(cx, cy, 143);
-    }
-
-    // ---- radial spectrum: bar i at clock angle (i+1)*6, newest at 12
-    for (let i = 0; i < n && i < 60; i++) {
-      const v = hs[i];
-      const ang = (i + 1 + 60 - n) * 6;
-      const gp = G.stag(p, i, 0.0105, 0.34);
-      if (gp <= 0) continue;
-      if (v <= 0) {
-        dc.setColor(0x2a2a2a, -1);
-        dc.fillCircle(G.ptX(cx, 154, ang), G.ptY(cy, 154, ang), 2);
-        continue;
-      }
-      const q = G.clamp((v - lo) / (hi - lo), 0, 1);
-      const len = (6 + 50 * q) * G.spring(gp);
-      const age = i / 59.0;
-      let col;
-      if (st === 1) col = G.dim(MONGREEN, 0.3 + 0.7 * age);
-      else if (st === 2) col = G.dim(zcol(v, d.hrMax), 0.55 + 0.45 * age);
-      else col = G.dim(acc, 0.28 + 0.72 * q);
-      dc.setColor(col, -1);
-      const r0 = 150, r1 = 150 + len;
-      const s0 = Math.sin((ang - 1.8) * RAD), c0 = Math.cos((ang - 1.8) * RAD);
-      const s1 = Math.sin((ang + 1.8) * RAD), c1 = Math.cos((ang + 1.8) * RAD);
-      dc.fillPolygon([
-        [cx + r0 * s0, cy - r0 * c0], [cx + r1 * s0, cy - r1 * c0],
-        [cx + r1 * s1, cy - r1 * c1], [cx + r0 * s1, cy - r0 * c1],
-      ]);
-      if (i === n - 1) {
-        dc.setColor(0xffffff, -1);
-        dc.fillCircle(G.ptX(cx, r1 + 6, ang), G.ptY(cy, r1 + 6, ang), 3);
-      }
-    }
-    // 30-minute ticks inside the ring
-    dc.setPenWidth(2);
-    dc.setColor(st === 1 ? 0x1f6a34 : 0x4a4a4a, -1);
-    for (let k = 0; k < 4; k++) G.tick(dc, cx, cy, 136, 143, k * 90);
-
-    // ---- time (top)
     const tp = G.ease(p * 1.5 - 0.2);
-    dc.setColor(G.dim(0xffffff, tp), -1);
-    F.st(dc, G.timeStr(d), cx, 112, 30, 4, 1, G.easeInOut(p * 1.4 - 0.1), 0);
+    if (!a.bg) {
+      // ---- style 1: monitor grid & rings
+      if (st === 1) {
+        dc.setPenWidth(1);
+        dc.setColor(0x0b2614, -1);
+        for (let gx = 97; gx <= 357; gx += 20) dc.drawLine(gx, 230, gx, 302);
+        for (let gy = 230; gy <= 302; gy += 18) dc.drawLine(97, gy, 357, gy);
+        dc.setColor(0x0f3a1c, -1);
+        dc.drawCircle(cx, cy, 143);
+      } else {
+        dc.setPenWidth(1);
+        dc.setColor(0x262626, -1);
+        dc.drawCircle(cx, cy, 143);
+      }
 
+      // ---- radial spectrum: bar i at clock angle (i+1)*6, newest at 12
+      for (let i = 0; i < n && i < 60; i++) {
+        const v = hs[i];
+        const ang = (i + 1 + 60 - n) * 6;
+        const gp = G.stag(p, i, 0.0105, 0.34);
+        if (gp <= 0) continue;
+        if (v <= 0) {
+          dc.setColor(0x2a2a2a, -1);
+          dc.fillCircle(G.ptX(cx, 154, ang), G.ptY(cy, 154, ang), 2);
+          continue;
+        }
+        const q = G.clamp((v - lo) / (hi - lo), 0, 1);
+        const len = (6 + 50 * q) * G.spring(gp);
+        const age = i / 59.0;
+        let col;
+        if (st === 1) col = G.dim(MONGREEN, 0.3 + 0.7 * age);
+        else if (st === 2) col = G.dim(zcol(v, d.hrMax), 0.55 + 0.45 * age);
+        else col = G.dim(acc, 0.28 + 0.72 * q);
+        dc.setColor(col, -1);
+        const r0 = 150, r1 = 150 + len;
+        const s0 = Math.sin((ang - 1.8) * RAD), c0 = Math.cos((ang - 1.8) * RAD);
+        const s1 = Math.sin((ang + 1.8) * RAD), c1 = Math.cos((ang + 1.8) * RAD);
+        dc.fillPolygon([
+          [cx + r0 * s0, cy - r0 * c0], [cx + r1 * s0, cy - r1 * c0],
+          [cx + r1 * s1, cy - r1 * c1], [cx + r0 * s1, cy - r0 * c1],
+        ]);
+        if (i === n - 1) {
+          dc.setColor(0xffffff, -1);
+          dc.fillCircle(G.ptX(cx, r1 + 6, ang), G.ptY(cy, r1 + 6, ang), 3);
+        }
+      }
+      // 30-minute ticks inside the ring
+      dc.setPenWidth(2);
+      dc.setColor(st === 1 ? 0x1f6a34 : 0x4a4a4a, -1);
+      for (let k = 0; k < 4; k++) G.tick(dc, cx, cy, 136, 143, k * 90);
+
+      // ---- time (top)
+      dc.setColor(G.dim(0xffffff, tp), -1);
+      F.st(dc, G.timeStr(d), cx, 112, 30, 4, 1, G.easeInOut(p * 1.4 - 0.1), 0);
+
+    }
+    if (a.so) return;
     // ---- heart + HR
     const hr = d.hr;
     const per = 60000.0 / Math.max(hr > 0 ? hr : 60, 40);

@@ -50,6 +50,11 @@ class FacePulse extends Face {
         dc.fillPolygon([[x - r * 1.04, y - r * 0.12], [x + r * 1.04, y - r * 0.12], [x, y + r * 1.0]]);
     }
 
+    // static layer: cached, redrawn when the minute changes
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var p = a.intro;
@@ -74,72 +79,77 @@ class FacePulse extends Face {
         var hi = mx + 8 > lo + 50 ? mx + 8 : lo + 50;
         var main = st == 1 ? MONGREEN : (st == 3 ? acc : (d.hr > 0 ? zcol(d.hr, d.hrMax) : 0x5A7090));
 
-        // ---- style 1: monitor grid & rings
-        if (st == 1) {
-            dc.setPenWidth(1);
-            dc.setColor(0x0B2614, -1);
-            for (var gx = 97; gx <= 357; gx += 20) {
-                dc.drawLine(gx, 230, gx, 302);
-            }
-            for (var gy = 230; gy <= 302; gy += 18) {
-                dc.drawLine(97, gy, 357, gy);
-            }
-            dc.setColor(0x0F3A1C, -1);
-            dc.drawCircle(cx, cy, 143);
-        } else {
-            dc.setPenWidth(1);
-            dc.setColor(0x262626, -1);
-            dc.drawCircle(cx, cy, 143);
-        }
-
-        // ---- radial spectrum: bar i at clock angle (i+1)*6, newest at 12
-        for (var i = 0; i < n && i < 60; i++) {
-            var v = hs[i];
-            var ang = (i + 1 + 60 - n) * 6;
-            var gp = G.stag(p, i, 0.0105, 0.34);
-            if (gp <= 0) {
-                continue;
-            }
-            if (v <= 0) {
-                dc.setColor(0x2A2A2A, -1);
-                dc.fillCircle(G.ptX(cx, 154, ang), G.ptY(cy, 154, ang), 2);
-                continue;
-            }
-            var q = G.clamp((v - lo).toFloat() / (hi - lo), 0.0, 1.0);
-            var len = (6 + 50 * q) * G.spring(gp);
-            var age = i / 59.0;
-            var col;
-            if (st == 1) { col = G.dim(MONGREEN, 0.3 + 0.7 * age); }
-            else if (st == 2) { col = G.dim(zcol(v, d.hrMax), 0.55 + 0.45 * age); }
-            else { col = G.dim(acc, 0.28 + 0.72 * q); }
-            dc.setColor(col, -1);
-            var r0 = 150;
-            var r1 = 150 + len;
-            var s0 = Math.sin((ang - 1.8) * RAD);
-            var c0 = Math.cos((ang - 1.8) * RAD);
-            var s1 = Math.sin((ang + 1.8) * RAD);
-            var c1 = Math.cos((ang + 1.8) * RAD);
-            dc.fillPolygon([
-                [cx + r0 * s0, cy - r0 * c0], [cx + r1 * s0, cy - r1 * c0],
-                [cx + r1 * s1, cy - r1 * c1], [cx + r0 * s1, cy - r0 * c1]
-            ]);
-            if (i == n - 1) {
-                dc.setColor(0xFFFFFF, -1);
-                dc.fillCircle(G.ptX(cx, r1 + 6, ang), G.ptY(cy, r1 + 6, ang), 3);
-            }
-        }
-        // 30-minute ticks inside the ring
-        dc.setPenWidth(2);
-        dc.setColor(st == 1 ? 0x1F6A34 : 0x4A4A4A, -1);
-        for (var k = 0; k < 4; k++) {
-            G.tick(dc, cx, cy, 136, 143, k * 90);
-        }
-
-        // ---- time (top)
         var tp = G.ease(p * 1.5 - 0.2);
-        dc.setColor(G.dim(0xFFFFFF, tp), -1);
-        F.st(dc, G.timeStr(d), cx, 112, 30, 4, 1, G.easeInOut(p * 1.4 - 0.1), 0);
+        if (!a.bg) {
+            // ---- style 1: monitor grid & rings
+            if (st == 1) {
+                dc.setPenWidth(1);
+                dc.setColor(0x0B2614, -1);
+                for (var gx = 97; gx <= 357; gx += 20) {
+                    dc.drawLine(gx, 230, gx, 302);
+                }
+                for (var gy = 230; gy <= 302; gy += 18) {
+                    dc.drawLine(97, gy, 357, gy);
+                }
+                dc.setColor(0x0F3A1C, -1);
+                dc.drawCircle(cx, cy, 143);
+            } else {
+                dc.setPenWidth(1);
+                dc.setColor(0x262626, -1);
+                dc.drawCircle(cx, cy, 143);
+            }
 
+            // ---- radial spectrum: bar i at clock angle (i+1)*6, newest at 12
+            for (var i = 0; i < n && i < 60; i++) {
+                var v = hs[i];
+                var ang = (i + 1 + 60 - n) * 6;
+                var gp = G.stag(p, i, 0.0105, 0.34);
+                if (gp <= 0) {
+                    continue;
+                }
+                if (v <= 0) {
+                    dc.setColor(0x2A2A2A, -1);
+                    dc.fillCircle(G.ptX(cx, 154, ang), G.ptY(cy, 154, ang), 2);
+                    continue;
+                }
+                var q = G.clamp((v - lo).toFloat() / (hi - lo), 0.0, 1.0);
+                var len = (6 + 50 * q) * G.spring(gp);
+                var age = i / 59.0;
+                var col;
+                if (st == 1) { col = G.dim(MONGREEN, 0.3 + 0.7 * age); }
+                else if (st == 2) { col = G.dim(zcol(v, d.hrMax), 0.55 + 0.45 * age); }
+                else { col = G.dim(acc, 0.28 + 0.72 * q); }
+                dc.setColor(col, -1);
+                var r0 = 150;
+                var r1 = 150 + len;
+                var s0 = Math.sin((ang - 1.8) * RAD);
+                var c0 = Math.cos((ang - 1.8) * RAD);
+                var s1 = Math.sin((ang + 1.8) * RAD);
+                var c1 = Math.cos((ang + 1.8) * RAD);
+                dc.fillPolygon([
+                    [cx + r0 * s0, cy - r0 * c0], [cx + r1 * s0, cy - r1 * c0],
+                    [cx + r1 * s1, cy - r1 * c1], [cx + r0 * s1, cy - r0 * c1]
+                ]);
+                if (i == n - 1) {
+                    dc.setColor(0xFFFFFF, -1);
+                    dc.fillCircle(G.ptX(cx, r1 + 6, ang), G.ptY(cy, r1 + 6, ang), 3);
+                }
+            }
+            // 30-minute ticks inside the ring
+            dc.setPenWidth(2);
+            dc.setColor(st == 1 ? 0x1F6A34 : 0x4A4A4A, -1);
+            for (var k = 0; k < 4; k++) {
+                G.tick(dc, cx, cy, 136, 143, k * 90);
+            }
+
+            // ---- time (top)
+            dc.setColor(G.dim(0xFFFFFF, tp), -1);
+            F.st(dc, G.timeStr(d), cx, 112, 30, 4, 1, G.easeInOut(p * 1.4 - 0.1), 0);
+
+        }
+        if (a.so) {
+            return;
+        }
         // ---- heart + HR
         var hr = d.hr;
         var per = 60000.0 / (hr > 40 ? hr : (hr > 0 ? 40 : 60));

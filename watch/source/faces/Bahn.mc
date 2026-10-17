@@ -74,6 +74,11 @@ class FaceBahn extends Face {
         dc.fillCircle(x, y, w + 2.5);
     }
 
+    // static layer: cached, redrawn when the minute changes
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -81,83 +86,88 @@ class FaceBahn extends Face {
         var white = st == 1;
         var big = st == 3;
 
-        // ------------------------------------------------------------ dial
         var dialCol = white ? 0xF3F3EF : 0x000000;
         var markCol = white ? 0x141414 : 0xEFEFEF;
         var handCol = white ? 0x141414 : 0xF2F2F2;
-        var dq = G.ease(p * 4);
-        if (white) {
-            // brushed steel case ring, then the white dial
-            dc.setColor(G.dim(0x8D9095, dq), -1);
-            dc.fillCircle(CX, CY, 227);
-            dc.setColor(G.dim(0xC9CBCE, dq), -1);
-            dc.fillCircle(CX, CY, 222);
-            dc.setColor(G.dim(0x5E6166, dq), -1);
-            dc.fillCircle(CX, CY, 220);
-            dc.setColor(G.dim(dialCol, dq), -1);
-            dc.fillCircle(CX, CY, 218);
-        } else if (!big) {
-            dc.setColor(0x1C1C1C, -1);
-            dc.setPenWidth(2);
-            dc.drawCircle(CX, CY, 223);
-        }
-
-        // ------------------------------------------------------------ markers (fade in clockwise)
-        var rOut = white ? 208 : 216;
-        for (var i = 0; i < 60; i++) {
-            var q = G.stag(p, i, 0.0075, 0.12);
-            if (q <= 0) {
-                break;
+        if (!a.bg) {
+            // ------------------------------------------------------------ dial
+            var dq = G.ease(p * 4);
+            if (white) {
+                // brushed steel case ring, then the white dial
+                dc.setColor(G.dim(0x8D9095, dq), -1);
+                dc.fillCircle(CX, CY, 227);
+                dc.setColor(G.dim(0xC9CBCE, dq), -1);
+                dc.fillCircle(CX, CY, 222);
+                dc.setColor(G.dim(0x5E6166, dq), -1);
+                dc.fillCircle(CX, CY, 220);
+                dc.setColor(G.dim(dialCol, dq), -1);
+                dc.fillCircle(CX, CY, 218);
+            } else if (!big) {
+                dc.setColor(0x1C1C1C, -1);
+                dc.setPenWidth(2);
+                dc.drawCircle(CX, CY, 223);
             }
-            var hour = i % 5 == 0;
-            if (big) {
-                if (hour) {
-                    dc.setColor(G.mix(dialCol, acc, q), -1);
-                    bar(dc, CX, CY, i * 6, rOut - 34 - 10 * G.ease(q), rOut, 15);
-                } else {
-                    dc.setColor(G.mix(dialCol, 0x5A5A5A, q), -1);
-                    dc.fillCircle(G.ptX(CX, rOut - 5, i * 6), G.ptY(CY, rOut - 5, i * 6), 2.6);
+
+            // ------------------------------------------------------------ markers (fade in clockwise)
+            var rOut = white ? 208 : 216;
+            for (var i = 0; i < 60; i++) {
+                var q = G.stag(p, i, 0.0075, 0.12);
+                if (q <= 0) {
+                    break;
                 }
-            } else {
-                dc.setColor(G.mix(dialCol, markCol, q), -1);
-                if (hour) {
-                    bar(dc, CX, CY, i * 6, rOut - 34 - 12 * G.ease(q), rOut, 12);
+                var hour = i % 5 == 0;
+                if (big) {
+                    if (hour) {
+                        dc.setColor(G.mix(dialCol, acc, q), -1);
+                        bar(dc, CX, CY, i * 6, rOut - 34 - 10 * G.ease(q), rOut, 15);
+                    } else {
+                        dc.setColor(G.mix(dialCol, 0x5A5A5A, q), -1);
+                        dc.fillCircle(G.ptX(CX, rOut - 5, i * 6), G.ptY(CY, rOut - 5, i * 6), 2.6);
+                    }
                 } else {
-                    bar(dc, CX, CY, i * 6, rOut - 14, rOut, 4.4);
+                    dc.setColor(G.mix(dialCol, markCol, q), -1);
+                    if (hour) {
+                        bar(dc, CX, CY, i * 6, rOut - 34 - 12 * G.ease(q), rOut, 12);
+                    } else {
+                        bar(dc, CX, CY, i * 6, rOut - 14, rOut, 4.4);
+                    }
                 }
             }
-        }
 
-        // ------------------------------------------------------------ data
-        var lblCol = white ? 0x9A9A95 : 0x707070;
-        var valCol = white ? 0x2E2E2E : G.mix(0x000000, d.dcol, 0.85);
-        for (var k = 0; k < 3; k++) {
-            var qq = G.stag(p - 0.45, k, 0.06, 0.3);
-            if (qq <= 0) {
-                continue;
+            // ------------------------------------------------------------ data
+            var lblCol = white ? 0x9A9A95 : 0x707070;
+            var valCol = white ? 0x2E2E2E : G.mix(0x000000, d.dcol, 0.85);
+            for (var k = 0; k < 3; k++) {
+                var qq = G.stag(p - 0.45, k, 0.06, 0.3);
+                if (qq <= 0) {
+                    continue;
+                }
+                var sl = d.slots[k];
+                var x = k == 0 ? CX : CX + (k == 1 ? -96 : 96);
+                var y = k == 0 ? 128 : 214;
+                dc.setColor(G.mix(dialCol, lblCol, qq), -1);
+                F.px(dc, sl[:lbl] as String, x, y, 2, 1, 0);
+                dc.setColor(G.mix(dialCol, valCol, qq), -1);
+                F.st(dc, sl[:val] as String, x, y + 33, 20, 3, 1, 1.0, 0);
             }
-            var sl = d.slots[k];
-            var x = k == 0 ? CX : CX + (k == 1 ? -96 : 96);
-            var y = k == 0 ? 128 : 214;
-            dc.setColor(G.mix(dialCol, lblCol, qq), -1);
-            F.px(dc, sl[:lbl] as String, x, y, 2, 1, 0);
-            dc.setColor(G.mix(dialCol, valCol, qq), -1);
-            F.st(dc, sl[:val] as String, x, y + 33, 20, 3, 1, 1.0, 0);
-        }
-        // date window at 6
-        var wq = G.clamp((p - 0.6) / 0.3, 0.0, 1.0);
-        if (wq > 0) {
-            var ds = d.dowStr + " " + d.day;
-            var ww = F.stW(ds, 15) + 22;
-            var wy = big ? 312 : 306;
-            dc.setColor(G.mix(dialCol, white ? 0xB4B4AE : 0x3A3A3A, wq), -1);
-            dc.fillRoundedRectangle(CX - ww / 2 - 2, wy - 16, ww + 4, 32, 5);
-            dc.setColor(G.mix(dialCol, white ? 0xFFFFFF : 0x0D0D0D, wq), -1);
-            dc.fillRoundedRectangle(CX - ww / 2, wy - 14, ww, 28, 4);
-            dc.setColor(G.mix(dialCol, white ? 0x1A1A1A : valCol, wq), -1);
-            F.st(dc, ds, CX, wy, 15, 2.6, 1, 1.0, 0);
-        }
+            // date window at 6
+            var wq = G.clamp((p - 0.6) / 0.3, 0.0, 1.0);
+            if (wq > 0) {
+                var ds = d.dowStr + " " + d.day;
+                var ww = F.stW(ds, 15) + 22;
+                var wy = big ? 312 : 306;
+                dc.setColor(G.mix(dialCol, white ? 0xB4B4AE : 0x3A3A3A, wq), -1);
+                dc.fillRoundedRectangle(CX - ww / 2 - 2, wy - 16, ww + 4, 32, 5);
+                dc.setColor(G.mix(dialCol, white ? 0xFFFFFF : 0x0D0D0D, wq), -1);
+                dc.fillRoundedRectangle(CX - ww / 2, wy - 14, ww, 28, 4);
+                dc.setColor(G.mix(dialCol, white ? 0x1A1A1A : valCol, wq), -1);
+                F.st(dc, ds, CX, wy, 15, 2.6, 1, 1.0, 0);
+            }
 
+        }
+        if (a.so) {
+            return;
+        }
         // ------------------------------------------------------------ time
         // seconds since the minute began, sub-second phase locked to the second tick
         if (a.t < _lockT) {

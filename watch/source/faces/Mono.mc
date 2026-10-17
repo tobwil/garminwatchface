@@ -13,6 +13,11 @@ class FaceMono extends Face {
         return 10;
     }
 
+    // everything but the second marker is static for a minute
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -25,7 +30,7 @@ class FaceMono extends Face {
         var lit = (G.clamp(frac, 0.0, 1.0) * 60).toNumber();
         var shown = (G.ease(p) * 60).toNumber();
         dc.setPenWidth(3);
-        for (var i = 0; i < shown; i++) {
+        for (var i = 0; i < shown && !a.bg; i++) {
             var deg = i * 6;
             var big = i % 5 == 0;
             dc.setColor(i < lit ? acc : 0x333333, -1);
@@ -36,6 +41,9 @@ class FaceMono extends Face {
             dc.setColor(0xFFFFFF, -1);
             dc.setPenWidth(5);
             G.tick(dc, cx, cy, 196, 222, sd);
+        }
+        if (a.bg) {
+            return;
         }
 
         // date

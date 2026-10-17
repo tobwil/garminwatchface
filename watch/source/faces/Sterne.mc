@@ -611,6 +611,87 @@ class FaceSterne extends Face {
         }
     }
 
+    // shooting star: one per wrist raise (dark sky)
+    hidden function shoot(dc as Dc, d as D, a as A, st, bg, dark, t, rest) as Void {
+    if (a.live && rest && (st == 2 || dark > 0.5)) {
+        var s = G.rnd(d.wakeN * 7919 + 13);
+        var t0 = 1800 + (s % 4200);
+        var u = (t - t0) / 900.0;
+        if (u > 0 && u < 1) {
+            s = G.rnd(s);
+            var x0;
+            var y0;
+            var dir;
+            if (st == 3) {
+                x0 = 110 + (s % 234);
+                s = G.rnd(s);
+                y0 = 150 + (s % 60);
+                s = G.rnd(s);
+                dir = 200 + (s % 80) + (x0 > CX ? 0 : -60);
+            } else {
+                var ang = s % 360;
+                s = G.rnd(s);
+                var rr = 70 + (s % 90);
+                s = G.rnd(s);
+                dir = ang + 100 + (s % 40);
+                x0 = G.ptX(CX, rr, ang);
+                y0 = G.ptY(CX, rr, ang);
+            }
+            var hd = 150 * G.ease(u);
+            var fade = u < 0.7 ? 1.0 : (1 - u) / 0.3;
+            for (var k = 0; k < 3; k++) {
+                var a0 = G.clamp(hd - 22 - k * 22, 0, 999);
+                var a1 = G.clamp(hd - k * 22, 0, 999);
+                if (a1 <= a0) {
+                    continue;
+                }
+                dc.setColor(G.mix(bg, st == 2 ? INK : 0xFFFFFF, fade * (1 - k * 0.32)), -1);
+                dc.setPenWidth(k == 0 ? 2 : 1);
+                dc.drawLine(G.ptX(x0, a1, dir), G.ptY(y0, a1, dir), G.ptX(x0, a0, dir), G.ptY(y0, a0, dir));
+            }
+        }
+    }
+    }
+
+    // seconds pointer on the printed chart's cover (style 2)
+    hidden function secPtr(dc as Dc, d as D, a as A, R) as Void {
+        var sa = (d.s + a.ms / 1000.0) * 6;
+        dc.setColor(0xE2574A, -1);
+        dc.fillPolygon([[G.ptX(CX, R + 3, sa), G.ptY(CX, R + 3, sa)], [G.ptX(CX, R + 13, sa - 2.6), G.ptY(CX, R + 13, sa - 2.6)],
+            [G.ptX(CX, R + 13, sa + 2.6), G.ptY(CX, R + 13, sa + 2.6)]]);
+    }
+
+    // static layer (planetarium, chart): everything but twinkle, shooting star and seconds pointer.
+    // The polar-light panorama (aurora, lake) moves almost everywhere: no cache.
+    function bgKey(d as D) as Number {
+        return d.cfg.style == 3 ? -1 : minuteKey(d);
+    }
+
+    // moving parts on top of the cached layer: the bright stars twinkle (not those under the text),
+    // the shooting star, the seconds pointer of the chart
+    hidden function moving(dc as Dc, d as D, a as A, st, bg, dark, t, tw, R) as Void {
+        if (st != 2 && a.live) {
+            var ns = ST.size();
+            for (var i = 0; i < ns; i++) {
+                var mag = _mag[i];
+                if (mag >= 2 || _sci[i] < 0 || _su[i] <= 0 || under(st, _sx[i], _sy[i], tw)) {
+                    continue;
+                }
+                var pi = (ST[i] & 3) * 16 + (_sff[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)) * 15 + 0.5).toNumber();
+                if (mag < 1.6) {
+                    star(dc, _sx[i], _sy[i], mag, pi);
+                } else {
+                    dc.setColor(_spal[pi], -1);
+                    dc.fillRectangle(_sx[i] - 1, _sy[i] - 1, 3, 3);
+                }
+            }
+        }
+        shoot(dc, d, a, st, bg, dark, t, true);
+        if (st == 2 && a.live) {
+            secPtr(dc, d, a, R);
+        }
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -679,6 +760,10 @@ class FaceSterne extends Face {
         if (rest && _lk != _kd) {
             _lk = _kd;
             labels(st, R, tw);
+        }
+        if (a.bg) {
+            moving(dc, d, a, st, bg, dark, t, tw, R);
+            return;
         }
 
         // ---- intro: the dome turns into place (1, 2) / the sky rises (3)
@@ -924,44 +1009,7 @@ class FaceSterne extends Face {
         }
 
         // ---- shooting star: one per wrist raise (dark sky)
-        if (a.live && rest && (st == 2 || dark > 0.5)) {
-            var s = G.rnd(d.wakeN * 7919 + 13);
-            var t0 = 1800 + (s % 4200);
-            var u = (t - t0) / 900.0;
-            if (u > 0 && u < 1) {
-                s = G.rnd(s);
-                var x0;
-                var y0;
-                var dir;
-                if (st == 3) {
-                    x0 = 110 + (s % 234);
-                    s = G.rnd(s);
-                    y0 = 150 + (s % 60);
-                    s = G.rnd(s);
-                    dir = 200 + (s % 80) + (x0 > CX ? 0 : -60);
-                } else {
-                    var ang = s % 360;
-                    s = G.rnd(s);
-                    var rr = 70 + (s % 90);
-                    s = G.rnd(s);
-                    dir = ang + 100 + (s % 40);
-                    x0 = G.ptX(CX, rr, ang);
-                    y0 = G.ptY(CX, rr, ang);
-                }
-                var hd = 150 * G.ease(u);
-                var fade = u < 0.7 ? 1.0 : (1 - u) / 0.3;
-                for (var k = 0; k < 3; k++) {
-                    var a0 = G.clamp(hd - 22 - k * 22, 0, 999);
-                    var a1 = G.clamp(hd - k * 22, 0, 999);
-                    if (a1 <= a0) {
-                        continue;
-                    }
-                    dc.setColor(G.mix(bg, st == 2 ? INK : 0xFFFFFF, fade * (1 - k * 0.32)), -1);
-                    dc.setPenWidth(k == 0 ? 2 : 1);
-                    dc.drawLine(G.ptX(x0, a1, dir), G.ptY(y0, a1, dir), G.ptX(x0, a0, dir), G.ptY(y0, a0, dir));
-                }
-            }
-        }
+        shoot(dc, d, a, st, bg, dark, t, rest);
 
         // ---- landscape (3) / rim with compass (1, 2)
         var day = EL > 0;
@@ -1048,10 +1096,7 @@ class FaceSterne extends Face {
             }
             // seconds pointer on the printed chart's cover
             if (st == 2 && a.live && rest) {
-                var sa = (d.s + a.ms / 1000.0) * 6;
-                dc.setColor(0xE2574A, -1);
-                dc.fillPolygon([[G.ptX(CX, R + 3, sa), G.ptY(CX, R + 3, sa)], [G.ptX(CX, R + 13, sa - 2.6), G.ptY(CX, R + 13, sa - 2.6)],
-                    [G.ptX(CX, R + 13, sa + 2.6), G.ptY(CX, R + 13, sa + 2.6)]]);
+                secPtr(dc, d, a, R);
             }
             var lr = R + 19;
             dc.setColor(st == 2 ? 0xE2574A : acc, -1);

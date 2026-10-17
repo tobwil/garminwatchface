@@ -60,7 +60,14 @@ class FaceCore extends Face {
         return pts;
     }
 
+    // static layer: glass, liquid (its surface rests), scale, text; bubbles and splashes move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var p = a.intro;
         var t = a.t.toFloat();
@@ -77,108 +84,115 @@ class FaceCore extends Face {
         var lv = 454 + (target - 454) * G.spring(rp);
         amp += 26 * (1 - p) * (1 - p);
 
-        // ---- glass back
-        dc.setPenWidth(2);
-        dc.setColor(0x1C1C1C, -1);
-        dc.drawCircle(cx, 227, 224);
-
-        // ---- back wave
-        var back = G.dim(G.mix(c, 0x7A3CFF, 0.55), 0.42);
-        if (st == 2) { back = G.dim(G.mix(c, 0x0A1A5C, 0.5), 0.55); }
-        if (st == 3) { back = G.dim(G.mix(c, 0xFF1E00, 0.5), 0.42); }
-        dc.setColor(back, -1);
-        dc.fillPolygon(wavePoly(lv - 8, t, amp * 1.2, w * 0.8, 2.3));
-
-        // ---- front wave + depth gradient
-        var front = wavePoly(lv, t, amp, w, 0);
         var top = st == 3 ? G.dim(G.mix(c, 0xFF2000, 0.45), 0.42) : G.dim(c, 0.40);
-        dc.setColor(top, -1);
-        dc.fillPolygon(front);
-        var y0 = lv + amp * 1.25 + 10;
-        if (y0 < 454) {
-            var step = (454 - y0) / 8.0;
-            for (var k = 1; k <= 7; k++) {
-                var yb = y0 + step * k - step * 0.5;
-                dc.setColor(G.mix(top, deep(st), k / 7.5), -1);
-                dc.fillRectangle(0, yb, 454, k == 7 ? 455 - yb : step + 1);
+        if (S) {
+            // ---- glass back
+            dc.setPenWidth(2);
+            dc.setColor(0x1C1C1C, -1);
+            dc.drawCircle(cx, 227, 224);
+
+            // ---- back wave
+            var back = G.dim(G.mix(c, 0x7A3CFF, 0.55), 0.42);
+            if (st == 2) { back = G.dim(G.mix(c, 0x0A1A5C, 0.5), 0.55); }
+            if (st == 3) { back = G.dim(G.mix(c, 0xFF1E00, 0.5), 0.42); }
+            dc.setColor(back, -1);
+            dc.fillPolygon(wavePoly(lv - 8, t, amp * 1.2, w * 0.8, 2.3));
+
+            // ---- front wave + depth gradient
+            var front = wavePoly(lv, t, amp, w, 0);
+            dc.setColor(top, -1);
+            dc.fillPolygon(front);
+            var y0 = lv + amp * 1.25 + 10;
+            if (y0 < 454) {
+                var step = (454 - y0) / 8.0;
+                for (var k = 1; k <= 7; k++) {
+                    var yb = y0 + step * k - step * 0.5;
+                    dc.setColor(G.mix(top, deep(st), k / 7.5), -1);
+                    dc.fillRectangle(0, yb, 454, k == 7 ? 455 - yb : step + 1);
+                }
+            }
+
+            // ---- surface glow line
+            dc.setPenWidth(7);
+            dc.setColor(G.mix(top, c, 0.45), -1);
+            for (var i = 0; i < 31; i++) {
+                dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
+            }
+            dc.setPenWidth(3);
+            dc.setColor(G.mix(c, 0xFFFFFF, 0.25), -1);
+            for (var i = 0; i < 31; i++) {
+                dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
             }
         }
 
-        // ---- surface glow line
-        dc.setPenWidth(7);
-        dc.setColor(G.mix(top, c, 0.45), -1);
-        for (var i = 0; i < 31; i++) {
-            dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
-        }
-        dc.setPenWidth(3);
-        dc.setColor(G.mix(c, 0xFFFFFF, 0.25), -1);
-        for (var i = 0; i < 31; i++) {
-            dc.drawLine(front[i][0], front[i][1], front[i + 1][0], front[i + 1][1]);
-        }
+        if (M) {
+            // ---- bubbles / particles / blobs
+            var n = st == 3 ? 6 : 9;
+            var seed = 7919;
+            for (var i = 0; i < n; i++) {
+                seed = G.rnd(seed + i * 131);
+                var r1 = G.rf(seed);
+                seed = G.rnd(seed);
+                var r2 = G.rf(seed);
+                seed = G.rnd(seed);
+                var r3 = G.rf(seed);
+                var span = 470 - lv;
+                if (span < 30) {
+                    continue;
+                }
+                var v = st == 3 ? 9 + r2 * 9 : 22 + r2 * 34 + 30 * ch;
+                var q = t * v / 1000.0 + r3 * span;
+                var yy = 470 - (q - span * Math.floor(q / span));
+                var xx = 70 + r1 * 314 + Math.sin(t * 0.0017 + i * 1.9) * (st == 3 ? 10 : 7);
+                var surf = lv + wave(xx, a.bg ? 0 : t, amp, w, 0); // (the cached surface rests)
+                var fade = G.clamp((yy - surf) / 40.0, 0.0, 1.0);
+                if (fade < 0.05) {
+                    continue;
+                }
+                if (st == 3) {
+                    var rr = 7 + r1 * 10;
+                    var wob = Math.sin(t * 0.002 + i) * 0.18;
+                    dc.setColor(G.mix(top, c, 0.4 * fade), -1);
+                    dc.fillEllipse(xx, yy, rr * (1 + wob) + 5, rr * (1 - wob) + 5);
+                    dc.setColor(G.mix(top, G.mix(c, 0xFFD36A, 0.4), fade), -1);
+                    dc.fillEllipse(xx, yy, rr * (1 + wob), rr * (1 - wob));
+                } else if (st == 2) {
+                    var rr = 2.5 + r1 * 4;
+                    dc.setPenWidth(2);
+                    dc.setColor(G.dim(G.mix(c, 0xFFFFFF, 0.5), 0.75 * fade), -1);
+                    dc.drawCircle(xx, yy, rr);
+                    dc.fillCircle(xx - rr * 0.35, yy - rr * 0.35, 1);
+                } else {
+                    var rr = 1.6 + r1 * 1.6;
+                    dc.setColor(G.mix(top, 0xB48CFF, 0.35 * fade), -1);
+                    dc.fillCircle(xx, yy, rr + 4);
+                    dc.setColor(G.mix(c, 0xFFFFFF, 0.6 * fade), -1);
+                    dc.fillCircle(xx, yy, rr);
+                }
+            }
 
-        // ---- bubbles / particles / blobs
-        var n = st == 3 ? 6 : 9;
-        var seed = 7919;
-        for (var i = 0; i < n; i++) {
-            seed = G.rnd(seed + i * 131);
-            var r1 = G.rf(seed);
-            seed = G.rnd(seed);
-            var r2 = G.rf(seed);
-            seed = G.rnd(seed);
-            var r3 = G.rf(seed);
-            var span = 470 - lv;
-            if (span < 30) {
-                continue;
-            }
-            var v = st == 3 ? 9 + r2 * 9 : 22 + r2 * 34 + 30 * ch;
-            var q = t * v / 1000.0 + r3 * span;
-            var yy = 470 - (q - span * Math.floor(q / span));
-            var xx = 70 + r1 * 314 + Math.sin(t * 0.0017 + i * 1.9) * (st == 3 ? 10 : 7);
-            var surf = lv + wave(xx, t, amp, w, 0);
-            var fade = G.clamp((yy - surf) / 40.0, 0.0, 1.0);
-            if (fade < 0.05) {
-                continue;
-            }
-            if (st == 3) {
-                var rr = 7 + r1 * 10;
-                var wob = Math.sin(t * 0.002 + i) * 0.18;
-                dc.setColor(G.mix(top, c, 0.4 * fade), -1);
-                dc.fillEllipse(xx, yy, rr * (1 + wob) + 5, rr * (1 - wob) + 5);
-                dc.setColor(G.mix(top, G.mix(c, 0xFFD36A, 0.4), fade), -1);
-                dc.fillEllipse(xx, yy, rr * (1 + wob), rr * (1 - wob));
-            } else if (st == 2) {
-                var rr = 2.5 + r1 * 4;
-                dc.setPenWidth(2);
-                dc.setColor(G.dim(G.mix(c, 0xFFFFFF, 0.5), 0.75 * fade), -1);
-                dc.drawCircle(xx, yy, rr);
-                dc.fillCircle(xx - rr * 0.35, yy - rr * 0.35, 1);
-            } else {
-                var rr = 1.6 + r1 * 1.6;
-                dc.setColor(G.mix(top, 0xB48CFF, 0.35 * fade), -1);
-                dc.fillCircle(xx, yy, rr + 4);
-                dc.setColor(G.mix(c, 0xFFFFFF, 0.6 * fade), -1);
-                dc.fillCircle(xx, yy, rr);
-            }
-        }
-
-        // ---- splash droplets (intro)
-        if (p > 0.6 && p < 1) {
-            var tau = (p - 0.6) * 1.5;
-            var s2 = 4241;
-            for (var i = 0; i < 7; i++) {
-                s2 = G.rnd(s2 + i * 17);
-                var vx = (G.rf(s2) - 0.5) * 90;
-                s2 = G.rnd(s2);
-                var vy = -(150 + G.rf(s2) * 140);
-                var dx = 90 + i * 46 + vx * tau;
-                var dy = target + vy * tau + 450 * tau * tau;
-                if (dy < target - 4) {
-                    dc.setColor(G.mix(c, 0xFFFFFF, 0.3), -1);
-                    dc.fillCircle(dx, dy, 3.2 - (i % 3) * 0.6);
+            // ---- splash droplets (intro)
+            if (p > 0.6 && p < 1) {
+                var tau = (p - 0.6) * 1.5;
+                var s2 = 4241;
+                for (var i = 0; i < 7; i++) {
+                    s2 = G.rnd(s2 + i * 17);
+                    var vx = (G.rf(s2) - 0.5) * 90;
+                    s2 = G.rnd(s2);
+                    var vy = -(150 + G.rf(s2) * 140);
+                    var dx = 90 + i * 46 + vx * tau;
+                    var dy = target + vy * tau + 450 * tau * tau;
+                    if (dy < target - 4) {
+                        dc.setColor(G.mix(c, 0xFFFFFF, 0.3), -1);
+                        dc.fillCircle(dx, dy, 3.2 - (i % 3) * 0.6);
+                    }
                 }
             }
         }
 
+        if (!S) {
+            return;
+        }
         // ---- measuring scale on the right glass edge + level marker
         dc.setPenWidth(2);
         for (var v = 0; v <= 100; v += 10) {

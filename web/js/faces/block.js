@@ -269,6 +269,11 @@ let fpsNow = 20;
 export default {
   get fps() { return fpsNow; },
 
+  // drawn in full every frame (no static layer, see Block.mc)
+
+  // the pieces raining in are the reveal
+  reveal() { return false; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const p = a.intro;
@@ -301,6 +306,21 @@ export default {
     const dv = [Math.floor(hv / 10), hv % 10, Math.floor(d.m / 10), d.m % 10];
     const on0 = d.is24 || hv >= 10;
     const c0 = freeCol((k0 + ct) % 7, dv, ct, on0), cA = freeCol((ka + ct) % 7, dv, ct, on0);
+    if (a.bg && ph < 5) {
+      // intro and line-clear sequence repaint everything; afterwards only ghost and piece move
+      dc.setColor(0x000000, -1);
+      dc.fillRectangle(0, 0, 454, 454);
+      a = { ...a, bg: false };
+    }
+    if (a.bg) {
+      dc.setClip(X0, Y0, 200, NR * C);
+      ghost(dc, st, ka, st === 2 ? GB[1] : G.dim(pcol(st, cA), live ? 0.35 + 0.2 * Math.sin(t / 300.0) : 0.45));
+      const flat = live && (t - tl) % 2600 > 1900;
+      if (flat) piece(dc, st, SP, ka * 8, 4, 0, 3, cA, X0, Y0, C);
+      else piece(dc, st, SH, ka * 8, 4, ka === 0 ? 1 : 0, 4, cA, X0, Y0, C);
+      dc.clearClip();
+      return;
+    }
 
     // ---------------- background
     if (st === 2) {
@@ -375,7 +395,7 @@ export default {
       F.px(dc, CL[k0] === 7 ? "DREIFACH!" : "DOPPEL!", 227, Y0 + 12, 2, 1, 0);
     } else {
       floor(dc, st, ka, fseed, 0, fy);
-      if (ph !== 4) {
+      if (ph !== 4 && !a.so) {
         const pl = p >= 1 ? 1 : G.clamp((p - 0.85) / 0.1, 0, 1);
         ghost(dc, st, ka, st === 2 ? GB[1] : G.dim(pcol(st, cA), live && ph === 5 ? 0.35 + 0.2 * Math.sin(t / 300.0) : 0.45 * pl));
       }
@@ -384,7 +404,7 @@ export default {
     if (ph === 1) {
       const n = Math.floor((t - 1650) / g);
       piece(dc, st, SH, k0 * 8, 4, 13 - nf + Math.min(n, nf), 4, c0, X0, Y0, C);
-    } else if (ph !== 2 && ph !== 3 && p > 0.86) {
+    } else if (ph !== 2 && ph !== 3 && p > 0.86 && !a.so) {
       // waiting at the spawn: during idle it sometimes tries the flat orientation
       const flat = live && ph === 5 && (t - tl) % 2600 > 1900;
       if (flat) piece(dc, st, SP, ka * 8, 4, 0, 3, cA, X0, Y0, C);

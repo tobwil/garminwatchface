@@ -180,6 +180,11 @@ class FaceRider extends Face {
         return (d.is24 ? G.pad2(d.h) : "" + G.hour(d)) + ":" + G.pad2(d.m);
     }
 
+    // static layer: sky, sun/moon, stars, HUD panel, time; the landscape scrolls over the sky
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var acc = d.accent;
@@ -195,197 +200,210 @@ class FaceRider extends Face {
         }
         // distance travelled (px): steady ride + a decelerating fast-forward during the intro
         var dist = 72 * v * tt / 1000.0 + 640 * G.ease(tt / 1400.0);
+        var S = !a.bg; // draw the static parts (sky, HUD, time)
+        var M = !a.so; // draw the moving parts (landscape, rider)
 
-        // ---------------- sky
-        for (var i = 0; i < 5; i++) {
-            dc.setColor(pal[i], -1);
-            dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
-        }
-        // stars
-        var sf = st == 3 ? 0.8 : G.clamp((-2 - el) / 6.0, 0.0, 1.0);
-        if (sf > 0) {
-            var s = 7;
-            for (var i = 0; i < 20; i++) {
-                s = G.rnd(s);
-                var x = 24 + (s % 102) * P;
-                s = G.rnd(s);
-                var y = 8 + (s % 56) * P;
-                var tw = (a.live && (tt / 300 + i) % 7 == 0) ? 0.35 : 1.0;
-                var b = (0.35 + (i % 3) * 0.3) * sf * tw;
-                dc.setColor(st == 2 ? GB[2] : G.mix(pal[1], 0xFFFFFF, b), -1);
-                dc.fillRectangle(x, y, P, P);
+        if (S) {
+            // ---------------- sky
+            for (var i = 0; i < 5; i++) {
+                dc.setColor(pal[i], -1);
+                dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
             }
-        }
-        // sun / moon
-        var rise = d.sunrise;
-        var set = d.sunset;
-        if (st == 3 && el > -6) {
-            // synthwave sun behind the mountains
-            for (var r = 0; r < 26; r++) {
-                if (r > 12 && r % 3 == 0) {
-                    continue;
+            // stars
+            var sf = st == 3 ? 0.8 : G.clamp((-2 - el) / 6.0, 0.0, 1.0);
+            if (sf > 0) {
+                var s = 7;
+                for (var i = 0; i < 20; i++) {
+                    s = G.rnd(s);
+                    var x = 24 + (s % 102) * P;
+                    s = G.rnd(s);
+                    var y = 8 + (s % 56) * P;
+                    var tw = (a.live && (tt / 300 + i) % 7 == 0) ? 0.35 : 1.0;
+                    var b = (0.35 + (i % 3) * 0.3) * sf * tw;
+                    dc.setColor(st == 2 ? GB[2] : G.mix(pal[1], 0xFFFFFF, b), -1);
+                    dc.fillRectangle(x, y, P, P);
                 }
-                var dy = r - 12.5;
-                var hw = Math.floor(Math.sqrt(169 - dy * dy)).toNumber();
-                dc.setColor(G.mix(acc, MAG, r / 25.0), -1);
-                dc.fillRectangle(227 - hw * P, 184 + r * P, hw * 2 * P, P);
             }
-        } else if (el > -3) {
-            var f = 0.5;
-            if (rise >= 0 && set > rise) {
-                f = G.clamp((d.mins - rise) / (set - rise), 0.0, 1.0);
-            }
-            var sx = q4(72 + f * 310) - 16;
-            var sy = q4(G.clamp(268 - el * 4.5, 172, 300)) - 16;
-            var gf = G.clamp((10 - el) / 12.0, 0.0, 1.0);
-            var sp = st == 2 ? [GB[0], GB[2], GB[3]] : [G.mix(0xFFC83A, 0xFF5A28, gf), G.mix(0xFFF2A0, 0xFF9A3A, gf), G.mix(0xFFFFFF, 0xFFD080, gf)];
-            Spr.draw(dc, SprRider.SUN, sx, sy, P, sp, false);
-        } else if (d.moon > 0.05 && d.moon < 0.95) {
-            var f = 0.5;
-            if (rise >= 0 && set >= 0) {
-                var m = d.mins - set;
-                if (m < 0) {
-                    m += 1440;
+            // sun / moon
+            var rise = d.sunrise;
+            var set = d.sunset;
+            if (st == 3 && el > -6) {
+                // synthwave sun behind the mountains
+                for (var r = 0; r < 26; r++) {
+                    if (r > 12 && r % 3 == 0) {
+                        continue;
+                    }
+                    var dy = r - 12.5;
+                    var hw = Math.floor(Math.sqrt(169 - dy * dy)).toNumber();
+                    dc.setColor(G.mix(acc, MAG, r / 25.0), -1);
+                    dc.fillRectangle(227 - hw * P, 184 + r * P, hw * 2 * P, P);
                 }
-                f = G.clamp(m / (rise + 1440 - set), 0.0, 1.0);
-            }
-            var mx = q4(72 + f * 310) - 14;
-            var my = q4(160 + (1 - Math.sin(f * Math.PI)) * 70) - 14;
-            var lit = st == 2 ? GB[3] : (st == 3 ? CYA : 0xF4F1D0);
-            Spr.draw(dc, SprRider.MOON, mx, my, P, [lit, st == 2 ? GB[2] : (st == 3 ? CYA : 0xC8C3A0)], false);
-            if (d.moon < 0.35 || d.moon > 0.65) {
-                Spr.draw(dc, SprRider.MOON_C, mx, my, P, [pal[1]], d.moon > 0.5);
-            }
-        }
-        // clouds (drift with the wind, a little parallax)
-        if (st != 3) {
-            var co = q4((tt * 0.006 + dist * 0.05).toNumber() % 640);
-            var cp = [pal[16], pal[17]];
-            Spr.draw(dc, SprRider.CLOUD_A, ((560 - co + 640) % 640) - 80, 160, P, cp, false);
-            Spr.draw(dc, SprRider.CLOUD_B, ((300 - co + 640) % 640) - 80, 184, P, cp, false);
-            Spr.draw(dc, SprRider.CLOUD_A, ((90 - co + 640) % 640) - 80, 208, P, cp, true);
-        }
-
-        // ---------------- far mountains (period 512 px)
-        var fo = q4(dist * 0.12);
-        for (var i = 0; i < FAR.size(); i += 4) {
-            var sx = wrapX(FAR[i], fo, 512);
-            if (sx - 130 < 454) {
-                mountain(dc, sx, i, pal, st);
-            }
-            if (sx + 130 > 512) {
-                mountain(dc, sx - 512, i, pal, st);
-            }
-        }
-        // ---------------- hills strip + pine hills (period 384 px)
-        dc.setColor(pal[8], -1);
-        dc.fillRectangle(0, 284, 454, 16);
-        if (st == 3) {
-            dc.setColor(CYA, -1);
-            dc.fillRectangle(0, 284, 454, P);
-        }
-        var ho = q4(dist * 0.35);
-        for (var i = 0; i < HILL.size(); i += 4) {
-            var sx = wrapX(HILL[i], ho, 384);
-            if (sx - 48 < 454) {
-                hill(dc, sx, i, pal, st);
-            }
-            if (sx + 48 > 384) {
-                hill(dc, sx - 384, i, pal, st);
+            } else if (el > -3) {
+                var f = 0.5;
+                if (rise >= 0 && set > rise) {
+                    f = G.clamp((d.mins - rise) / (set - rise), 0.0, 1.0);
+                }
+                var sx = q4(72 + f * 310) - 16;
+                var sy = q4(G.clamp(268 - el * 4.5, 172, 300)) - 16;
+                var gf = G.clamp((10 - el) / 12.0, 0.0, 1.0);
+                var sp = st == 2 ? [GB[0], GB[2], GB[3]] : [G.mix(0xFFC83A, 0xFF5A28, gf), G.mix(0xFFF2A0, 0xFF9A3A, gf), G.mix(0xFFFFFF, 0xFFD080, gf)];
+                Spr.draw(dc, SprRider.SUN, sx, sy, P, sp, false);
+            } else if (d.moon > 0.05 && d.moon < 0.95) {
+                var f = 0.5;
+                if (rise >= 0 && set >= 0) {
+                    var m = d.mins - set;
+                    if (m < 0) {
+                        m += 1440;
+                    }
+                    f = G.clamp(m / (rise + 1440 - set), 0.0, 1.0);
+                }
+                var mx = q4(72 + f * 310) - 14;
+                var my = q4(160 + (1 - Math.sin(f * Math.PI)) * 70) - 14;
+                var lit = st == 2 ? GB[3] : (st == 3 ? CYA : 0xF4F1D0);
+                Spr.draw(dc, SprRider.MOON, mx, my, P, [lit, st == 2 ? GB[2] : (st == 3 ? CYA : 0xC8C3A0)], false);
+                if (d.moon < 0.35 || d.moon > 0.65) {
+                    Spr.draw(dc, SprRider.MOON_C, mx, my, P, [pal[1]], d.moon > 0.5);
+                }
             }
         }
 
-        // ---------------- road
-        var ro = q4(dist);
-        dc.setColor(pal[12], -1);
-        dc.fillRectangle(0, 300, 454, 44);
-        if (st == 3) {
-            dc.setColor(acc, -1);
-            dc.fillRectangle(0, 300, 454, P);
-            dc.setColor(CYA, -1);
-            dc.fillRectangle(0, 340, 454, P);
-        } else {
-            // red/white kerb along the far edge, plain line on the near edge
-            dc.setColor(pal[13], -1);
-            dc.fillRectangle(0, 300, 454, 8);
-            dc.setColor(pal[15], -1);
-            for (var x = -(ro % 32); x < 454; x += 32) {
-                dc.fillRectangle(x, 300, 16, 8);
+        if (M) {
+            // clouds (drift with the wind, a little parallax)
+            if (st != 3) {
+                var co = q4((tt * 0.006 + dist * 0.05).toNumber() % 640);
+                var cp = [pal[16], pal[17]];
+                Spr.draw(dc, SprRider.CLOUD_A, ((560 - co + 640) % 640) - 80, 160, P, cp, false);
+                Spr.draw(dc, SprRider.CLOUD_B, ((300 - co + 640) % 640) - 80, 184, P, cp, false);
+                Spr.draw(dc, SprRider.CLOUD_A, ((90 - co + 640) % 640) - 80, 208, P, cp, true);
             }
-            dc.setColor(st == 2 ? GB[2] : G.mix(pal[12], pal[13], 0.45), -1);
-            dc.fillRectangle(0, 340, 454, P);
+
+            // ---------------- far mountains (period 512 px)
+            var fo = q4(dist * 0.12);
+            for (var i = 0; i < FAR.size(); i += 4) {
+                var sx = wrapX(FAR[i], fo, 512);
+                if (sx - 130 < 454) {
+                    mountain(dc, sx, i, pal, st);
+                }
+                if (sx + 130 > 512) {
+                    mountain(dc, sx - 512, i, pal, st);
+                }
+            }
+            // ---------------- hills strip + pine hills (period 384 px)
+            dc.setColor(pal[8], -1);
+            dc.fillRectangle(0, 284, 454, 16);
+            if (st == 3) {
+                dc.setColor(CYA, -1);
+                dc.fillRectangle(0, 284, 454, P);
+            }
+            var ho = q4(dist * 0.35);
+            for (var i = 0; i < HILL.size(); i += 4) {
+                var sx = wrapX(HILL[i], ho, 384);
+                if (sx - 48 < 454) {
+                    hill(dc, sx, i, pal, st);
+                }
+                if (sx + 48 > 384) {
+                    hill(dc, sx - 384, i, pal, st);
+                }
+            }
+
+            // ---------------- road
+            var ro = q4(dist);
+            dc.setColor(pal[12], -1);
+            dc.fillRectangle(0, 300, 454, 44);
+            if (st == 3) {
+                dc.setColor(acc, -1);
+                dc.fillRectangle(0, 300, 454, P);
+                dc.setColor(CYA, -1);
+                dc.fillRectangle(0, 340, 454, P);
+            } else {
+                // red/white kerb along the far edge, plain line on the near edge
+                dc.setColor(pal[13], -1);
+                dc.fillRectangle(0, 300, 454, 8);
+                dc.setColor(pal[15], -1);
+                for (var x = -(ro % 32); x < 454; x += 32) {
+                    dc.fillRectangle(x, 300, 16, 8);
+                }
+                dc.setColor(st == 2 ? GB[2] : G.mix(pal[12], pal[13], 0.45), -1);
+                dc.fillRectangle(0, 340, 454, P);
+            }
+            dc.setColor(st == 3 ? MAG : pal[13], -1);
+            for (var x = -(ro % 64); x < 454; x += 64) {
+                dc.fillRectangle(x, 320, 28, P);
+            }
         }
-        dc.setColor(st == 3 ? MAG : pal[13], -1);
-        for (var x = -(ro % 64); x < 454; x += 64) {
-            dc.fillRectangle(x, 320, 28, P);
+
+        // panel (part of the static layer)
+        if (S) {
+            dc.setColor(pal[14], -1);
+            dc.fillRectangle(0, 344, 454, 110);
         }
-        // panel
-        dc.setColor(pal[14], -1);
-        dc.fillRectangle(0, 344, 454, 110);
 
         // ---------------- progress (stage)
         var sg = stage(d);
         var frac = G.clamp(sg[0].toFloat() / sg[1], 0.0, 1.0);
         var done = sg[0] >= sg[1];
         var rp = G.easeInOut(G.stag(p, 3, 0.1, 0.6));
+        var blink = done && a.live && p >= 1 && (tt / 400) % 2 == 1;
 
-        // finish banner (goal reached)
-        if (done) {
-            var bx = q4(RX - 30 - dist + 72 * v * 1400 / 1000.0 + 640);
-            if (bx > -140 && bx < 454) {
-                dc.setColor(st == 2 ? GB[0] : (st == 3 ? CYA : 0xD8D8D8), -1);
-                dc.fillRectangle(bx, 232, P, 72);
-                dc.fillRectangle(bx + 132, 232, P, 108);
-                // checkered banner
-                dc.setColor(st == 2 ? GB[3] : (st == 3 ? 0x000000 : 0xFFFFFF), -1);
-                dc.fillRectangle(bx - 4, 216, 144, 28);
-                dc.setColor(st == 2 ? GB[0] : (st == 3 ? MAG : 0x111111), -1);
-                for (var c = 0; c < 18; c += 2) {
-                    dc.fillRectangle(bx - 4 + c * 8, 216, 8, P);
-                    dc.fillRectangle(bx + 4 + c * 8, 220, 8, P);
-                    dc.fillRectangle(bx - 4 + c * 8, 236, 8, P);
-                    dc.fillRectangle(bx + 4 + c * 8, 240, 8, P);
+        if (M) {
+            // finish banner (goal reached)
+            if (done) {
+                var bx = q4(RX - 30 - dist + 72 * v * 1400 / 1000.0 + 640);
+                if (bx > -140 && bx < 454) {
+                    dc.setColor(st == 2 ? GB[0] : (st == 3 ? CYA : 0xD8D8D8), -1);
+                    dc.fillRectangle(bx, 232, P, 72);
+                    dc.fillRectangle(bx + 132, 232, P, 108);
+                    // checkered banner
+                    dc.setColor(st == 2 ? GB[3] : (st == 3 ? 0x000000 : 0xFFFFFF), -1);
+                    dc.fillRectangle(bx - 4, 216, 144, 28);
+                    dc.setColor(st == 2 ? GB[0] : (st == 3 ? MAG : 0x111111), -1);
+                    for (var c = 0; c < 18; c += 2) {
+                        dc.fillRectangle(bx - 4 + c * 8, 216, 8, P);
+                        dc.fillRectangle(bx + 4 + c * 8, 220, 8, P);
+                        dc.fillRectangle(bx - 4 + c * 8, 236, 8, P);
+                        dc.fillRectangle(bx + 4 + c * 8, 240, 8, P);
+                    }
+                    dc.setColor(st == 2 ? GB[0] : (st == 3 ? acc : 0xE03A3A), -1);
+                    F.px(dc, "ZIEL", bx + 68, 226, 2, 1, 0);
                 }
-                dc.setColor(st == 2 ? GB[0] : (st == 3 ? acc : 0xE03A3A), -1);
-                F.px(dc, "ZIEL", bx + 68, 226, 2, 1, 0);
             }
-        }
 
-        // night headlight
-        var rxp = q4(G.lerp(-96, RX, G.ease(G.stag(p, 0, 0, 0.75))));
-        if (night && st == 1) {
-            for (var k = 0; k < 3; k++) {
-                dc.setColor(G.mix(pal[12], 0xFFF0B0, 0.15 - k * 0.04), -1);
-                dc.fillRectangle(rxp + 80 + k * 40, 316 - k * 4, 40, 12 + k * 8);
+            // night headlight
+            var rxp = q4(G.lerp(-96, RX, G.ease(G.stag(p, 0, 0, 0.75))));
+            if (night && st == 1) {
+                for (var k = 0; k < 3; k++) {
+                    dc.setColor(G.mix(pal[12], 0xFFF0B0, 0.15 - k * 0.04), -1);
+                    dc.fillRectangle(rxp + 80 + k * 40, 316 - k * 4, 40, 12 + k * 8);
+                }
+                dc.setColor(0xFFF6C0, -1);
+                dc.fillRectangle(rxp + 64, RY + 32, P, P);
             }
-            dc.setColor(0xFFF6C0, -1);
-            dc.fillRectangle(rxp + 64, RY + 32, P, P);
-        }
 
-        // rider
-        var fr = (tt * v / 120).toNumber() % 4;
-        var rs = fr == 0 ? SprRider.RIDER_0 : (fr == 1 ? SprRider.RIDER_1 : (fr == 2 ? SprRider.RIDER_2 : SprRider.RIDER_3));
-        if (st >= 2) {
-            Spr.draw(dc, SprRider.RIDER_GLOW, rxp - P, RY - P, P, [st == 2 ? GB[0] : G.dim(acc, 0.28)], false);
-        }
-        Spr.draw(dc, rs, rxp, RY, P, riderPal(st, acc), false);
+            // rider
+            var fr = (tt * v / 120).toNumber() % 4;
+            var rs = fr == 0 ? SprRider.RIDER_0 : (fr == 1 ? SprRider.RIDER_1 : (fr == 2 ? SprRider.RIDER_2 : SprRider.RIDER_3));
+            if (st >= 2) {
+                Spr.draw(dc, SprRider.RIDER_GLOW, rxp - P, RY - P, P, [st == 2 ? GB[0] : G.dim(acc, 0.28)], false);
+            }
+            Spr.draw(dc, rs, rxp, RY, P, riderPal(st, acc), false);
 
-        // confetti burst at the finish line
-        if (done) {
-            var ct = (tt - 1000) / 1000.0;
-            if (ct > 0 && ct < 2.2) {
-                var cc = st == 2 ? [GB[3], GB[2], GB[0], GB[1]] : [acc, CYA, MAG, 0xFFFFFF, 0x5FE08A];
-                var s = 11;
-                for (var i = 0; i < 26; i++) {
-                    s = G.rnd(s);
-                    var vx = (s % 400) - 200;
-                    s = G.rnd(s);
-                    var vy = -120 - (s % 260);
-                    var x = q4(RX + 40 + vx * ct);
-                    var y = q4(230 + vy * ct + 260 * ct * ct);
-                    if (y < 340) {
-                        dc.setColor(cc[i % cc.size()], -1);
-                        dc.fillRectangle(x, y, P, (i + tt / 90) % 3 == 0 ? P / 2 : P);
+            // confetti burst at the finish line
+            if (done) {
+                var ct = (tt - 1000) / 1000.0;
+                if (ct > 0 && ct < 2.2) {
+                    var cc = st == 2 ? [GB[3], GB[2], GB[0], GB[1]] : [acc, CYA, MAG, 0xFFFFFF, 0x5FE08A];
+                    var s = 11;
+                    for (var i = 0; i < 26; i++) {
+                        s = G.rnd(s);
+                        var vx = (s % 400) - 200;
+                        s = G.rnd(s);
+                        var vy = -120 - (s % 260);
+                        var x = q4(RX + 40 + vx * ct);
+                        var y = q4(230 + vy * ct + 260 * ct * ct);
+                        if (y < 340) {
+                            dc.setColor(cc[i % cc.size()], -1);
+                            dc.fillRectangle(x, y, P, (i + tt / 90) % 3 == 0 ? P / 2 : P);
+                        }
                     }
                 }
             }
@@ -398,7 +416,14 @@ class FaceRider extends Face {
         var lbl = sg[2] as String;
         var lw = F.pxW(pre + lbl, 2);
         var lx = 227 - lw / 2.0;
-        var blink = done && a.live && p >= 1 && (tt / 400) % 2 == 1;
+        if (!S) {
+            // only the blinking "ZIEL!" changes in the cached HUD
+            if (done && a.live && p >= 1) {
+                dc.setColor(blink ? hiT : (st == 2 ? GB[3] : acc), -1);
+                F.px(dc, pre, lx, 352, 2, 0, 0);
+            }
+            return;
+        }
         dc.setColor(done ? (blink ? hiT : (st == 2 ? GB[3] : acc)) : dimT, -1);
         F.px(dc, pre, lx, 352, 2, 0, 0);
         dc.setColor(hiT, -1);

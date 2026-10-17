@@ -241,7 +241,111 @@ class FaceOrbit extends Face {
         lens(dc, x, y, r + 0.5, sd + 180, 0.3);
     }
 
+    // minute earth with its moon (e2: intro progress of the planet)
+    hidden function earthMoon(dc as Dc, d as D, a as A, st, acc, e2, ma) as Void {
+        var ang = ma - (1 - e2) * 270;
+        var r = RM * e2;
+        var x = G.ptX(CX, r, ang);
+        var y = G.ptY(CX, r, ang);
+        var mo = ang + 180 - d.moon * 360 - (a.live ? a.t * 0.003 : 0.0);
+        var mx = G.ptX(x, 27 * e2, mo);
+        var my = G.ptY(y, 27 * e2, mo);
+        dc.setColor(st == 1 ? 0x1C2638 : (st == 2 ? G.dim(acc, 0.3) : 0x2A2A2A), -1);
+        dc.setPenWidth(1);
+        dc.drawCircle(x, y, 27 * e2);
+        earth(dc, x, y, st, acc, ang + 180);
+        if (st == 2) {
+            moonDisc(dc, mx, my, 7, d.moon, acc, -1);
+            dc.setColor(acc, -1);
+            F.px(dc, "M", G.ptX(CX, r, ang - 21), G.ptY(CX, r, ang - 21) - 7, 2, 1, 0);
+        } else {
+            moonDisc(dc, mx, my, 7, d.moon, st == 1 ? 0xF0EAD6 : 0xFFFFFF, st == 1 ? 0x2C3040 : 0x262626);
+        }
+    }
+
+    // seconds comet
+    hidden function comet(dc as Dc, d as D, a as A, st, acc, e3, s) as Void {
+        var sec = s + (a.live ? a.ms / 1000.0 : 0.0);
+        var ang = sec * 6 - (1 - e3) * 270;
+        var r = RS * e3;
+        var cc = st == 3 ? 0xFFFFFF : acc;
+        if (a.live) {
+            for (var i = 9; i >= 1; i--) {
+                var ta = ang - i * 3.2;
+                var tr = r + i * 1.3 * e3;
+                dc.setColor(G.dim(cc, (1 - i / 10.0) * 0.8), -1);
+                dc.fillCircle(G.ptX(CX, tr, ta), G.ptY(CX, tr, ta), 3.4 - i * 0.28);
+            }
+            dc.setColor(G.dim(cc, 0.35), -1);
+            dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 7);
+            dc.setColor(G.mix(cc, 0xFFFFFF, 0.6), -1);
+            dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 4);
+        } else {
+            dc.setColor(cc, -1);
+            dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 3);
+        }
+        if (st == 2) {
+            dc.setColor(acc, -1);
+            F.px(dc, "S", G.ptX(CX, r, ang + 19), G.ptY(CX, r, ang + 19) - 7, 2, 1, 0);
+        }
+    }
+
+    // date + time (black halo keeps them readable over the orbits)
+    hidden function text(dc as Dc, d as D, p) as Void {
+        var st = d.cfg.style;
+        var acc = d.accent;
+        var top = flip(d);
+        var ty = top ? 454 - TY : TY;
+        var dy = top ? 440 - DY : DY;
+        var dp = G.ease(G.stag(p, 1, 0.2, 0.6));
+        var ds = d.dowStr + " " + d.day + ". " + d.monStr;
+        if (dp > 0) {
+            var w = F.pxW(ds, 2);
+            dc.setColor(0, -1);
+            dc.fillRoundedRectangle(CX - w / 2.0 - 6, dy - 4, w + 12, 22, 6);
+            dc.setColor(G.dim(st == 2 ? acc : 0xA8A8A8, dp), -1);
+            F.px(dc, ds, CX, dy, 2, 1, 0);
+        }
+        var tp = G.easeInOut(p * 1.2 - 0.1);
+        var ts = G.timeStr(d);
+        dc.setColor(0, -1);
+        F.st(dc, ts, CX, ty, 52, 13, 1, tp, 0);
+        dc.setColor(st == 2 ? acc : 0xFFFFFF, -1);
+        F.st(dc, ts, CX, ty, 52, st == 2 ? 3 : 5, 1, tp, 0);
+    }
+
+    // the earth or the comet crosses the date/time: the text has to be redrawn on top
+    hidden function nearText(d as D, x, y) as Boolean {
+        var top = flip(d);
+        var ty = top ? 454 - TY : TY;
+        var dy = top ? 440 - DY : DY;
+        return (x - CX).abs() < 125 && ((y - ty).abs() < 50 || (y - dy - 8).abs() < 26);
+    }
+
+    // static layer: stars (resting), belt, orbits, hour giant, date/time
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
+    // moving parts on top of the cached layer: sun corona, earth + moon, comet
+    hidden function moving(dc as Dc, d as D, a as A) as Void {
+        var st = d.cfg.style;
+        var acc = d.accent;
+        sun(dc, a, st, acc, 1.0);
+        var ma = d.m * 6 + d.s * 0.1;
+        earthMoon(dc, d, a, st, acc, 1.0, ma);
+        comet(dc, d, a, st, acc, 1.0, d.s);
+        var sec = d.s + (a.live ? a.ms / 1000.0 : 0.0);
+        if (nearText(d, G.ptX(CX, RM, ma), G.ptY(CX, RM, ma)) || nearText(d, G.ptX(CX, RS, sec * 6), G.ptY(CX, RS, sec * 6))) {
+            text(dc, d, 1.0);
+        }
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        if (a.bg) {
+            moving(dc, d, a);
+            return;
+        }
         var st = d.cfg.style;
         var acc = d.accent;
         var p = a.intro;
@@ -292,7 +396,9 @@ class FaceOrbit extends Face {
         }
 
         // ---- sun
-        sun(dc, a, st, acc, p);
+        if (!a.so) {
+            sun(dc, a, st, acc, p);
+        }
 
         // ---- planets (spiral out from the sun)
         var s = d.s;
@@ -316,73 +422,16 @@ class FaceOrbit extends Face {
         }
 
         // minute earth + moon
-        if (e2 > 0) {
-            var ang = ma - (1 - e2) * 270;
-            var r = RM * e2;
-            var x = G.ptX(CX, r, ang);
-            var y = G.ptY(CX, r, ang);
-            var mo = ang + 180 - d.moon * 360 - (a.live ? a.t * 0.003 : 0.0);
-            var mx = G.ptX(x, 27 * e2, mo);
-            var my = G.ptY(y, 27 * e2, mo);
-            dc.setColor(st == 1 ? 0x1C2638 : (st == 2 ? G.dim(acc, 0.3) : 0x2A2A2A), -1);
-            dc.setPenWidth(1);
-            dc.drawCircle(x, y, 27 * e2);
-            earth(dc, x, y, st, acc, ang + 180);
-            if (st == 2) {
-                moonDisc(dc, mx, my, 7, d.moon, acc, -1);
-                dc.setColor(acc, -1);
-                F.px(dc, "M", G.ptX(CX, r, ang - 21), G.ptY(CX, r, ang - 21) - 7, 2, 1, 0);
-            } else {
-                moonDisc(dc, mx, my, 7, d.moon, st == 1 ? 0xF0EAD6 : 0xFFFFFF, st == 1 ? 0x2C3040 : 0x262626);
-            }
+        if (e2 > 0 && !a.so) {
+            earthMoon(dc, d, a, st, acc, e2, ma);
         }
 
         // seconds comet
-        if (e3 > 0) {
-            var sec = s + (a.live ? a.ms / 1000.0 : 0.0);
-            var ang = sec * 6 - (1 - e3) * 270;
-            var r = RS * e3;
-            var cc = st == 3 ? 0xFFFFFF : acc;
-            if (a.live) {
-                for (var i = 9; i >= 1; i--) {
-                    var ta = ang - i * 3.2;
-                    var tr = r + i * 1.3 * e3;
-                    dc.setColor(G.dim(cc, (1 - i / 10.0) * 0.8), -1);
-                    dc.fillCircle(G.ptX(CX, tr, ta), G.ptY(CX, tr, ta), 3.4 - i * 0.28);
-                }
-                dc.setColor(G.dim(cc, 0.35), -1);
-                dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 7);
-                dc.setColor(G.mix(cc, 0xFFFFFF, 0.6), -1);
-                dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 4);
-            } else {
-                dc.setColor(cc, -1);
-                dc.fillCircle(G.ptX(CX, r, ang), G.ptY(CX, r, ang), 3);
-            }
-            if (st == 2) {
-                dc.setColor(acc, -1);
-                F.px(dc, "S", G.ptX(CX, r, ang + 19), G.ptY(CX, r, ang + 19) - 7, 2, 1, 0);
-            }
+        if (e3 > 0 && !a.so) {
+            comet(dc, d, a, st, acc, e3, s);
         }
 
-        // ---- date + time (black halo keeps them readable over the orbits)
-        var top = flip(d);
-        var ty = top ? 454 - TY : TY;
-        var dy = top ? 440 - DY : DY;
-        var dp = G.ease(G.stag(p, 1, 0.2, 0.6));
-        var ds = d.dowStr + " " + d.day + ". " + d.monStr;
-        if (dp > 0) {
-            var w = F.pxW(ds, 2);
-            dc.setColor(0, -1);
-            dc.fillRoundedRectangle(CX - w / 2.0 - 6, dy - 4, w + 12, 22, 6);
-            dc.setColor(G.dim(st == 2 ? acc : 0xA8A8A8, dp), -1);
-            F.px(dc, ds, CX, dy, 2, 1, 0);
-        }
-        var tp = G.easeInOut(p * 1.2 - 0.1);
-        var ts = G.timeStr(d);
-        dc.setColor(0, -1);
-        F.st(dc, ts, CX, ty, 52, 13, 1, tp, 0);
-        dc.setColor(st == 2 ? acc : 0xFFFFFF, -1);
-        F.st(dc, ts, CX, ty, 52, st == 2 ? 3 : 5, 1, tp, 0);
+        text(dc, d, p);
     }
 
     function aod(dc as Dc, d as D) as Void {

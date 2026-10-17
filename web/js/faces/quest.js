@@ -135,8 +135,48 @@ function val(d, k, im) {
 }
 
 
+// streak flame (fl: flicker -1..1)
+function flame(dc, fx, ty, sk, fl) {
+  const sh = fl > 0.35 ? 1 : fl < -0.35 ? -1 : 0;
+  const fc = sk > 0 ? 0xff6a1a : 0x4a4a4a;
+  dc.setColor(fc, -1);
+  for (let r = 0; r < 9; r++) {
+    const b = FLO[r];
+    const o = r < 3 ? sh * 3 : 0;
+    for (let c = 0; c < 7; c++) if (b & (64 >> c)) dc.fillRectangle(fx + c * 3 + o, 48 + ty + r * 3, 3, 3);
+  }
+  if (sk > 0) {
+    dc.setColor(fl > 0.1 ? 0xfff0a0 : 0xffd23d, -1);
+    const lift = fl > 0.6 ? 1 : 0;
+    for (let r = 4 - lift; r < 9; r++) {
+      const b = FLI[r + lift];
+      for (let c = 0; c < 7; c++) if (b & (64 >> c)) dc.fillRectangle(fx + c * 3, 48 + ty + r * 3, 3, 3);
+    }
+  }
+}
+
+// celebration burst on top of the time (b: intro progress)
+function burst(dc, st, acc, b, celeb, cx) {
+  const e = G.ease(b / 0.8);
+  const fade = G.clamp((1 - b) / 0.35, 0, 1);
+  dc.setColor(G.mix(0x000000, acc, fade), -1);
+  dc.setPenWidth(3);
+  for (let i = 0; i < 12; i++) {
+    const ang = i * 30 + 15;
+    const r0 = 60 + 40 * e, r1 = 72 + 56 * e;
+    dc.drawLine(G.ptX(cx, r0, ang), G.ptY(152, r0 * 0.4, ang), G.ptX(cx, r1, ang), G.ptY(152, r1 * 0.4, ang));
+  }
+  dc.setColor(G.mix(0x000000, 0xffffff, fade), -1);
+  const bs = G.spring(b / 0.5);
+  if (st === 1) F.px(dc, "+" + celeb + " XP", cx, 152 - 17 * bs, Math.round(1 + 4 * bs), 1, 0);
+  else F.st(dc, "+" + celeb + " XP", cx, 152, 18 + 22 * bs, 4, 1, 1.0, 0);
+}
+
 export default {
   fps: 8,
+
+  // static layer: everything but the flame flicker and the celebration burst
+  bgKey(d) { return d.doy * 1440 + d.mins; },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -149,6 +189,20 @@ export default {
     const boss = d.dow === 0;
     const red = 0xff4a3d;
     const good = st === 1 ? 0x3cd070 : 0x5fe08a;
+    if (a.bg) {
+      // moving parts on the cached layer: the flickering streak flame, the celebration burst
+      const lv0 = "LVL " + (levelOf(xp) + 1);
+      const lw0 = F.pxW(lv0, 3);
+      const fx0 = cx - (lw0 + 26 + 27 + F.pxW("" + sk, 3)) / 2 + lw0 + 26;
+      if (a.live && p >= 1) {
+        dc.setColor(0x000000, -1);
+        dc.fillRectangle(fx0 - 3, 48, 27, 27);
+        flame(dc, fx0, 0, sk, G.noise(a.t / 140.0));
+      }
+      if (celeb > 0 && p < 1) burst(dc, st, acc, p, celeb, cx);
+      if (celeb > 0 && p >= 1) { St.set("celebrate", 0); St.set("celebQ", 0); }
+      return;
+    }
 
     // ---------------- XP ring
     const L = levelOf(xp);
@@ -187,23 +241,7 @@ export default {
     else F.st(dc, lv, x0 + lw / 2, 62 + ty, 20, 3, 1, 1.0, 0);
     // flame (flickers in ambient)
     const fx = x0 + lw + 26;
-    const fl = a.live && p >= 1 ? G.noise(a.t / 140.0) : 0;
-    const sh = fl > 0.35 ? 1 : fl < -0.35 ? -1 : 0;
-    const fc = sk > 0 ? 0xff6a1a : 0x4a4a4a;
-    dc.setColor(fc, -1);
-    for (let r = 0; r < 9; r++) {
-      const b = FLO[r];
-      const o = r < 3 ? sh * 3 : 0;
-      for (let c = 0; c < 7; c++) if (b & (64 >> c)) dc.fillRectangle(fx + c * 3 + o, 48 + ty + r * 3, 3, 3);
-    }
-    if (sk > 0) {
-      dc.setColor(fl > 0.1 ? 0xfff0a0 : 0xffd23d, -1);
-      const lift = fl > 0.6 ? 1 : 0;
-      for (let r = 4 - lift; r < 9; r++) {
-        const b = FLI[r + lift];
-        for (let c = 0; c < 7; c++) if (b & (64 >> c)) dc.fillRectangle(fx + c * 3, 48 + ty + r * 3, 3, 3);
-      }
-    }
+    flame(dc, fx, ty, sk, a.live && p >= 1 ? G.noise(a.t / 140.0) : 0);
     dc.setColor(sk > 0 ? 0xffffff : 0x777777, -1);
     F.px(dc, sks, fx + 27, 52 + ty, 3, 0, 0);
     // xp text
@@ -226,22 +264,7 @@ export default {
       F.st(dc, ts, cx, 152, 76, st === 3 ? 5 : 6, 1, 1.0, 0);
     }
     // celebration burst (on top of the dimmed time)
-    if (celeb > 0 && p < 1) {
-      const b = p;
-      const e = G.ease(b / 0.8);
-      const fade = G.clamp((1 - b) / 0.35, 0, 1);
-      dc.setColor(G.mix(0x000000, acc, fade), -1);
-      dc.setPenWidth(3);
-      for (let i = 0; i < 12; i++) {
-        const ang = i * 30 + 15;
-        const r0 = 60 + 40 * e, r1 = 72 + 56 * e;
-        dc.drawLine(G.ptX(cx, r0, ang), G.ptY(152, r0 * 0.4, ang), G.ptX(cx, r1, ang), G.ptY(152, r1 * 0.4, ang));
-      }
-      dc.setColor(G.mix(0x000000, 0xffffff, fade), -1);
-      const bs = G.spring(b / 0.5);
-      if (st === 1) F.px(dc, "+" + celeb + " XP", cx, 152 - 17 * bs, Math.round(1 + 4 * bs), 1, 0);
-      else F.st(dc, "+" + celeb + " XP", cx, 152, 18 + 22 * bs, 4, 1, 1.0, 0);
-    }
+    if (celeb > 0 && p < 1) burst(dc, st, acc, p, celeb, cx);
     dc.setColor(boss ? red : 0x8a8a8a, -1);
     F.px(dc, boss ? "SONNTAG: BOSS-QUEST!" : d.dowStr + " " + d.day + ". " + d.monStr, cx, 200, 2, 1, 0);
 
@@ -328,7 +351,7 @@ export default {
     }
 
     // celebration shown -> clear
-    if (celeb > 0 && p >= 1) { St.set("celebrate", 0); St.set("celebQ", 0); }
+    if (celeb > 0 && p >= 1 && !a.so) { St.set("celebrate", 0); St.set("celebQ", 0); }
   },
 
   aod(dc, d) {

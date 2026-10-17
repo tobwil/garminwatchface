@@ -105,7 +105,11 @@ function cols(d) {
 export default {
   fps: 0,
 
+  // static layer: the whole design (nothing moves once it is revealed)
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    if (a.bg) return;
     const p = a.intro;
     const c = cols(d);
     const lit = litMap(d);

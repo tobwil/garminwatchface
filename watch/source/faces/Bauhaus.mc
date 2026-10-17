@@ -406,6 +406,27 @@ class FaceBauhaus extends Face {
         arr[11] = 0;
     }
 
+    // Boogie-Woogie (Mondrian): small coloured squares travel along the horizontal bars
+    hidden function boogie(dc as Dc, d as D, a as A, c as Array<Number>) as Void {
+        var tt = a.t / 1000.0;
+        var b = 10;
+        for (var j = 0; j < 4; j++) {
+            var yb = j < 2 ? 166 : 288;
+            var sp = 18 + j * 7;
+            var v = tt * sp + j * 131 + (d.wakeN % 50) * 9;
+            var x = v - Math.floor(v / 474) * 474 - 10;
+            dc.setColor(c[2 + (j % 3)], -1);
+            dc.fillRectangle(x, yb - b / 2, b, b);
+            dc.setColor(c[0], -1);
+            dc.fillRectangle(x + b + 3, yb - b / 2 + 3, 4, 4);
+        }
+    }
+
+    // static layer: the whole composition; only the seconds dot / the travelling squares move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var c = PAL[st - 1];
@@ -415,6 +436,20 @@ class FaceBauhaus extends Face {
         var k = 1.0;
         if (a.live && d.s == 0 && a.ms < 900 && p >= 1) {
             k = G.spring(a.ms / 900.0);
+        }
+        if (a.bg && k < 1) {
+            a.bg = false; // the minute turn repaints everything
+        }
+        if (a.bg) {
+            // over the cached composition: the travelling squares (Mondrian) / the seconds dot
+            if (st == 2) {
+                boogie(dc, d, a, c);
+            } else if (a.live) {
+                var sd = (d.s + a.ms / 1000.0) * 6;
+                dc.setColor(st == 1 ? c[2] : c[1], -1);
+                dc.fillCircle(G.ptX(CX, 214, sd), G.ptY(CY, 214, sd), 6);
+            }
+            return;
         }
         var paper = c[0];
         var ink = c[1];
@@ -620,17 +655,8 @@ class FaceBauhaus extends Face {
         dc.fillRectangle(410 - b / 2, y2 - (y2 - y1) * g1, b, (y2 - y1) * g1);
 
         // Boogie-Woogie: small coloured squares travel along the horizontal bars
-        if (p >= 1) {
-            for (var j = 0; j < 4; j++) {
-                var yb = j < 2 ? y1 : y2;
-                var sp = 18 + j * 7;
-                var v = tt * sp + j * 131 + (d.wakeN % 50) * 9;
-                var x = v - Math.floor(v / 474) * 474 - 10;
-                dc.setColor(c[2 + (j % 3)], -1);
-                dc.fillRectangle(x, yb - b / 2, b, b);
-                dc.setColor(c[0], -1);
-                dc.fillRectangle(x + b + 3, yb - b / 2 + 3, 4, 4);
-            }
+        if (p >= 1 && !a.so) {
+            boogie(dc, d, a, c);
         }
 
         // slots centred in their cells (visible part), date in the larger top cell

@@ -137,7 +137,15 @@ class FaceWort extends Face {
         return d.cfg.style == 3 ? G.mix(0x1C1C1C, d.accent, 0.12) : 0x262626;
     }
 
+    // static layer: the whole design (nothing moves once it is revealed)
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        if (a.bg) {
+            return;
+        }
         var p = a.intro;
         var on = onCol(d);
         var off = offCol(d);

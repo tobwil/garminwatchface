@@ -201,6 +201,15 @@ export default {
     const scr = Math.floor(ms / 70);
     busy = live && ms < DEC0 + DECL + 200;
     lamp = st === 2 && live;
+    // the decryption episode repaints everything; afterwards only the lamp, the cursor and the
+    // seconds LEDs change over the cached plain text (S is the strings here)
+    if (a.bg && busy) {
+      dc.setColor(0x000000, -1);
+      dc.fillRectangle(0, 0, 454, 454);
+    } else if (a.bg) {
+      this.after(dc, d, a, st, acc, dg, ms);
+      return;
+    }
 
     // ---- header (typed in)
     const key = 1000 + (G.rnd(d.wakeN * 7 + 3) % 9000);
@@ -376,6 +385,54 @@ export default {
   },
 
   tap(x, y, d) { return true; },
+
+  // static layer: the decrypted code and plain text
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
+  // the decryption is the reveal
+  reveal() { return false; },
+
+  // moving parts over the cached plain text
+  after(dc, d, a, st, acc, dg, ms) {
+    const live = a.live;
+    if (st === 2 && live) {
+      const hiS = lampSym(dg, ms - (DEC0 + DECL));
+      const glow = G.dim(acc, 0.2);
+      for (let i = 2; i < 4; i++) {
+        const code = MB[dg[i]];
+        for (let k = 0; k < 5; k++) {
+          const h = hiS >= 0 && (i - 2) * 5 + k === hiS;
+          sym(dc, (code & (16 >> k)) !== 0, MX + k * 54 + 22, MY[i], 1, h ? G.mix(acc, 0xffffff, 0.75) : acc, h ? G.dim(acc, 0.45) : glow);
+        }
+      }
+      // the signal lamp takes the place of the progress bar
+      dc.setColor(0x000000, -1);
+      dc.fillRectangle(137, 386, 180, 8);
+      const on = hiS >= 0;
+      dc.setColor(on ? G.dim(acc, 0.3) : 0x101010, -1);
+      dc.fillCircle(227, 400, 15);
+      dc.setColor(on ? acc : 0x2a2a2a, -1);
+      dc.fillCircle(227, 400, 9);
+      if (on) {
+        dc.setColor(G.mix(acc, 0xffffff, 0.7), -1);
+        dc.fillCircle(227, 400, 4);
+      }
+    }
+    // blinking cursor after KLARTEXT
+    const tw = F.pxW("KLARTEXT", 2);
+    dc.setColor(live && Math.floor(a.t / 500) % 2 !== 0 ? 0x000000 : G.dim(acc, 0.8), -1);
+    dc.fillRectangle(227 + (tw + 14) / 2 - 10, 361, 10, 16);
+    // Binär: live seconds as six small LEDs under the bar
+    if (st === 1 && live) {
+      for (let k = 0; k < 6; k++) {
+        const on = (d.s & (32 >> k)) !== 0;
+        dc.setColor(0x000000, -1);
+        dc.fillCircle(227 - 50 + k * 20, 410, 5);
+        dc.setColor(on ? acc : 0x222222, -1);
+        dc.fillCircle(227 - 50 + k * 20, 410, on ? 4 : 3);
+      }
+    }
+  },
 
   aod(dc, d) {
     const o = St.shift(d);

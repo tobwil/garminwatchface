@@ -487,16 +487,27 @@ class FaceWetter extends Face {
     }
 
     // ---- style 1: the window
+    // clearClip, but over the cached layer the repaint stays inside the glass / the picture
+    hidden function unclip(dc as Dc, a as A, x, y, w, h) as Void {
+        if (a.bg) {
+            dc.setClip(x, y, w, h);
+        } else {
+            dc.clearClip();
+        }
+    }
+
     hidden function styleWindow(dc as Dc, d as D, a as A, t, p) as Void {
         var acc = d.accent;
         var wake = d.wakeN;
         var night = _night;
         // wall: striped wallpaper, darker at night (lamp light)
-        dc.setColor(night ? 0x2A2A33 : 0x34514E, -1);
-        dc.fillRectangle(0, 0, 454, 454);
-        dc.setColor(night ? 0x24242C : 0x2D4744, -1);
-        for (var x = 8; x < 454; x += 24) {
-            dc.fillRectangle(x, 0, 8, 454);
+        if (!a.bg) {
+            dc.setColor(night ? 0x2A2A33 : 0x34514E, -1);
+            dc.fillRectangle(0, 0, 454, 454);
+            dc.setColor(night ? 0x24242C : 0x2D4744, -1);
+            for (var x = 8; x < 454; x += 24) {
+                dc.fillRectangle(x, 0, 8, 454);
+            }
         }
         // outside
         var fl = flash(t, wake);
@@ -555,7 +566,7 @@ class FaceWetter extends Face {
         for (var k = 0; k < 5; k++) {
             dc.fillRectangle(GX + 20 + k * P, GY + 132 - k * 2 * P, P, 2 * P);
         }
-        dc.clearClip();
+        unclip(dc, a, GX, GY, GW, GH);
 
         // window frame (painted wood) + cross bars
         var fw = 0xEEE8DA;
@@ -634,6 +645,11 @@ class FaceWetter extends Face {
             }
         }
 
+        // over the cached room only the glass is repainted (weather, tree, bars, curtains, cat)
+        if (a.bg) {
+            dc.clearClip();
+            return;
+        }
         // wall calendar (date) left, weather note right: high / low / rain chance
         calendar(dc, d, 24, 148, night);
         note(dc, d, 372, 152, night);
@@ -794,6 +810,7 @@ class FaceWetter extends Face {
         var night = _night;
         var card = 0xF3EAD6;
         var ink = 0x2C3448;
+        if (!a.bg) {
         dc.setColor(card, -1);
         dc.fillRectangle(0, 0, 454, 454);
         // airmail border
@@ -807,6 +824,7 @@ class FaceWetter extends Face {
         dc.fillRectangle(PX0 - 4, PY0 - 4, PW + 12, PH + 12);
         dc.setColor(0xFFFFFF, -1);
         dc.fillRectangle(PX0 - 8, PY0 - 8, PW + 16, PH + 16);
+        }
         // the picture is printed top -> bottom during the intro
         var rv = q4(G.ease(p * 1.3) * PH);
         if (rv < 4) {
@@ -857,7 +875,7 @@ class FaceWetter extends Face {
         }
         precip(dc, PX0, PY0, PW, PH, t, wake * 7 + 3);
         fogBands(dc, PX0, PY0 + 60, PW, PH - 60, t);
-        dc.clearClip();
+        unclip(dc, a, PX0, PY0, PW, PH);
 
         // stamp (weather icon + temperature) and postmark (date) over the picture's corner
         var sp = G.spring(G.stag(p, 0, 0.55, 0.4));
@@ -893,6 +911,11 @@ class FaceWetter extends Face {
             }
         }
 
+        // over the cached card only the picture is repainted (weather, smoke, stamp corner)
+        if (a.bg) {
+            dc.clearClip();
+            return;
+        }
         // time printed on the card, greeting + high / low / rain handwritten below the picture
         dc.setColor(ink, -1);
         F.px(dc, G.timeStr(d), CX, 48, 6, 1, 0);
@@ -964,9 +987,23 @@ class FaceWetter extends Face {
         slots(dc, d, p, 372, night ? 0xA8B0C8 : 0xE8F0FF, 0xFFFFFF);
     }
 
+    // static layer: room / card; the weather in the glass / picture is repainted. The diorama's sky
+    // moves everywhere: no cache
+    function bgKey(d as D) as Number {
+        return d.cfg.style == 3 ? -1 : minuteKey(d);
+    }
+
+    // the curtains opening / the card being printed are the reveal
+    function reveal() as Boolean {
+        return false;
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var p = a.intro;
+        if (a.bg && p < 1) {
+            a.bg = false; // the intro repaints everything
+        }
         var t = a.live ? a.t : 0;
         _live = a.live;
         var key = ((st * 64 + d.cond + 2) * 1440 + d.mins) * 16 + d.mon;

@@ -383,7 +383,14 @@ class FaceNeuro extends Face {
         return s;
     }
 
+    // static layer: background, network, labels, time, forecast; signals and flashes move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var C = pal(st, d.accent);
         var p = a.intro;
@@ -397,28 +404,30 @@ class FaceNeuro extends Face {
         }
         var win = _win;
 
-        // ---- background
-        // (big fills are expensive on the watch: few, cheap layers)
-        if (st == 2) {
-            dc.setColor(C[0], -1);
-            dc.fillCircle(227, 227, 227);
-            for (var g = 3; g < 454; g += 32) {
-                dc.setColor((g - 3) % 128 == 64 ? 0x173A68 : 0x10294D, -1);
-                dc.drawLine(g, 0, g, 454);
-                dc.drawLine(0, g, 454, g);
+        if (S) {
+            // ---- background
+            // (big fills are expensive on the watch: few, cheap layers)
+            if (st == 2) {
+                dc.setColor(C[0], -1);
+                dc.fillCircle(227, 227, 227);
+                for (var g = 3; g < 454; g += 32) {
+                    dc.setColor((g - 3) % 128 == 64 ? 0x173A68 : 0x10294D, -1);
+                    dc.drawLine(g, 0, g, 454);
+                    dc.drawLine(0, g, 454, g);
+                }
+            } else if (st == 3) {
+                // drifting soft cells
+                dc.setPenWidth(2);
+                for (var c = 0; c < 4; c++) {
+                    var x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000.0);
+                    var y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000.0);
+                    dc.setColor(0x21100A, -1);
+                    dc.drawCircle(x, y, 40 + c * 8);
+                }
+            } else {
+                dc.setColor(0x0C0819, -1);
+                dc.fillCircle(227, 252, 170);
             }
-        } else if (st == 3) {
-            // drifting soft cells
-            dc.setPenWidth(2);
-            for (var c = 0; c < 4; c++) {
-                var x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000.0);
-                var y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000.0);
-                dc.setColor(0x21100A, -1);
-                dc.drawCircle(x, y, 40 + c * 8);
-            }
-        } else {
-            dc.setColor(0x0C0819, -1);
-            dc.fillCircle(227, 252, 170);
         }
 
         // ---- intro schedule: layer reveal (nodes) and edge growth
@@ -444,7 +453,9 @@ class FaceNeuro extends Face {
             dc.setColor(_ec[e], -1);
             var n = 2;
             if ((st == 1 || (st == 3 && s < 0.3)) && ep >= 1) {
-                dc.drawLine(_nx[_ea[e]], _ny[_ea[e]], _nx[_eb[e]], _ny[_eb[e]]);
+                if (S) {
+                    dc.drawLine(_nx[_ea[e]], _ny[_ea[e]], _nx[_eb[e]], _ny[_eb[e]]);
+                }
             } else if (st == 3 && ep >= 1) {
                 // (s >= 0.3 here)
                 // inlined wavy path (same points as path())
@@ -452,16 +463,19 @@ class FaceNeuro extends Face {
                 var y1 = _ny[_ea[e]];
                 var dx = _nx[_eb[e]] - x1;
                 var dy = _ny[_eb[e]] - y1;
-                var o = Math.cos(tt / 900.0 + e * 0.7);
+                // (over the cached layer the dendrites rest, so the signals stay on the drawn curves)
+                var o = Math.cos((a.bg ? 900 : tt) / 900.0 + e * 0.7);
                 var nx = _bx[e] * o;
                 var nyy = _by[e] * o;
                 var ax = x1 + dx / 3.0 + nx;
                 var ay = y1 + dy / 3.0 + nyy;
                 var bx = x1 + (2 * dx) / 3.0 - nx;
                 var by = y1 + (2 * dy) / 3.0 - nyy;
-                dc.drawLine(x1, y1, ax, ay);
-                dc.drawLine(ax, ay, bx, by);
-                dc.drawLine(bx, by, x1 + dx, y1 + dy);
+                if (S) {
+                    dc.drawLine(x1, y1, ax, ay);
+                    dc.drawLine(ax, ay, bx, by);
+                    dc.drawLine(bx, by, x1 + dx, y1 + dy);
+                }
                 n = 4;
                 _px[0] = x1;
                 _py[0] = y1;
@@ -472,11 +486,13 @@ class FaceNeuro extends Face {
                 _px[3] = x1 + dx;
                 _py[3] = y1 + dy;
             } else {
-                n = path(st, e, tt, s);
-                drawPath(dc, n, ep);
+                n = path(st, e, a.bg ? 900 : tt, s);
+                if (S) {
+                    drawPath(dc, n, ep);
+                }
             }
             // signal pulse on strong edges
-            if (p >= 1 && s > 0.3) {
+            if (M && p >= 1 && s > 0.3) {
                 var f = ph - L + (((e * 37) % 11) - 5) * 0.03;
                 if (f >= 0 && f <= 1) {
                     if (n == 2) {
@@ -526,7 +542,9 @@ class FaceNeuro extends Face {
                 }
                 var r = _tR;
                 var col = _tC;
-                if (st == 2) {
+                if (!S) {
+                    // node bodies are cached
+                } else if (st == 2) {
                     var h = Math.round(r).toNumber() + 1;
                     dc.setColor(C[0], -1);
                     dc.fillRectangle(x - h, y - h, 2 * h + 1, 2 * h + 1);
@@ -552,7 +570,7 @@ class FaceNeuro extends Face {
                         }
                     }
                 }
-                if (fl > 0 && np >= 1) {
+                if (M && fl > 0 && np >= 1) {
                     // arrival flash ring
                     dc.setColor(G.mix(C[0], col, fl), -1);
                     if (st == 2) {
@@ -561,7 +579,7 @@ class FaceNeuro extends Face {
                         dc.drawCircle(x, y, r + 3);
                     }
                 }
-                if (L == 3 && i == win && np >= 1) {
+                if (L == 3 && i == win && np >= 1 && (st == 2 ? S : M)) {
                     dc.setColor(C[6], -1);
                     if (st == 2) {
                         dc.drawRectangle(x - r - 5, y - r - 5, 2 * r + 11, 2 * r + 11);
@@ -572,6 +590,9 @@ class FaceNeuro extends Face {
             }
         }
 
+        if (!S) {
+            return;
+        }
         // ---- labels
         if (nP[0] > 0) {
             for (var i = 0; i < 6; i++) {

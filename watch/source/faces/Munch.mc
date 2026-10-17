@@ -210,7 +210,14 @@ class FaceMunch extends Face {
         }
     }
 
+    // static layer: maze, dots, time, score; chomper, ghosts, pellets and 1UP move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var P = pal(st, d.accent);
         var p = a.intro;
@@ -224,13 +231,13 @@ class FaceMunch extends Face {
         var wE = nEat > 0 ? _first[nEat - 1] : 0;
         var nw = _walk.size();
 
-        if (st == 2) {
+        if (st == 2 && S) {
             dc.setColor(P[0], -1);
             dc.fillRectangle(0, 0, 454, 454);
         }
 
         // ---------------- maze walls (draw themselves during the intro)
-        for (var i = 0; i < 11; i++) {
+        for (var i = 0; i < 11 && S; i++) {
             var f = p >= 1 ? 1.0 : G.ease(G.stag(p, i < 3 ? i : 3 + (i - 3) * 0.4, 0.05, 0.25));
             if (f <= 0) {
                 continue;
@@ -246,7 +253,7 @@ class FaceMunch extends Face {
             dc.setColor(P[1], -1);
             boxP(dc, x, y, w, h, 3, f);
         }
-        if (p >= 0.3) {
+        if (p >= 0.3 && S) {
             dc.setColor(P[3], -1);
             dc.fillRectangle(212, 183, 30, 3);
         }
@@ -277,21 +284,22 @@ class FaceMunch extends Face {
             var x = X0 + (tc % 15) * C;
             var y = Y0 + (tc / 15) * C;
             if (tc == 16 || tc == 28 || tc == 166 || tc == 178) {
-                if (blink) {
+                // the power pellets blink over the cached maze
+                if (blink || !M) {
                     continue;
                 }
                 dc.setColor(P[5], -1);
                 dc.fillRectangle(x + 6, y + 9, 9, 3);
                 dc.fillRectangle(x + 9, y + 6, 3, 9);
                 dc.fillRectangle(x + 7, y + 7, 7, 7);
-            } else {
+            } else if (S) {
                 dc.setColor(P[4], -1);
                 dc.fillRectangle(x + 9, y + 9, 3, 3);
             }
         }
 
         // ---------------- time in the ghost house
-        if (p >= 0.2) {
+        if (p >= 0.2 && S) {
             var ts = G.timeStr(d);
             if (st == 3) {
                 dc.setColor(P[24], -1);
@@ -348,7 +356,7 @@ class FaceMunch extends Face {
             cy = q[1];
             cd = q[2];
         }
-        if (p >= 0.6 && (p >= 0.8 || (a.t / 90) % 2 == 0)) {
+        if (M && p >= 0.6 && (p >= 0.8 || (a.t / 90) % 2 == 0)) {
             for (var i = 0; i < ng; i++) {
                 var g;
                 if (power && i == 0) {
@@ -375,7 +383,7 @@ class FaceMunch extends Face {
         }
 
         // ---------------- chomper
-        if (p >= 0.55) {
+        if (M && p >= 0.55) {
             var fr = live ? MF[(t / 83) % 4] : 1;
             chomp(dc, P, cx, cy, cd, fr);
             if (pop >= 0) {
@@ -393,8 +401,11 @@ class FaceMunch extends Face {
             }
         }
         dc.setColor(P[st == 1 ? 20 : 7], -1);
-        if (!blinkUp) {
+        if (!blinkUp && M) {
             F.px(dc, "1UP", 160, 40, 2, 1, 0);
+        }
+        if (!S) {
+            return;
         }
         F.px(dc, "HI", 294, 40, 2, 1, 0);
         dc.setColor(P[6], -1);

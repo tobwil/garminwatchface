@@ -288,7 +288,11 @@ export default {
     return true;
   },
 
+  // static layer: stars and time; question, orb and answer are the episode
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const acc = d.accent;
     const p = a.intro;
@@ -308,20 +312,23 @@ export default {
     if (live && a.tap < 700) cx = CX + Math.sin(a.tap * 0.06) * 12 * (1 - a.tap / 700);
 
     const pale = G.mix(acc, 0xffffff, 0.6);
-    stars(dc, t, st === 3, st === 3 ? 0xcdb8ff : 0xdcd4ff);
+    if (S) {
+      stars(dc, t, st === 3, st === 3 ? 0xcdb8ff : 0xdcd4ff);
 
-    // ---- time (always legible)
-    const ts = G.timeStr(d);
-    if (st === 3) {
-      dc.setColor(0x3a2470, -1);
-      F.px(dc, ts, 230, 37, 5, 1, 0);
-      dc.setColor(0xf2eaff, -1);
-      F.px(dc, ts, 227, 34, 5, 1, 0);
-    } else {
-      dc.setColor(0xf2eeff, -1);
-      F.st(dc, ts, 227, 56, 40, 3, 1, G.ease(p * 1.4), 0);
+      // ---- time (always legible)
+      const ts = G.timeStr(d);
+      if (st === 3) {
+        dc.setColor(0x3a2470, -1);
+        F.px(dc, ts, 230, 37, 5, 1, 0);
+        dc.setColor(0xf2eaff, -1);
+        F.px(dc, ts, 227, 34, 5, 1, 0);
+      } else {
+        dc.setColor(0xf2eeff, -1);
+        F.st(dc, ts, 227, 56, 40, 3, 1, G.ease(p * 1.4), 0);
+      }
     }
 
+    if (!M) return;
     // ---- question
     const qa = G.clamp((ms - 80) / 400, 0, 1);
     if (qa > 0) {

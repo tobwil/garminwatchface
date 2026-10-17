@@ -128,7 +128,14 @@ class FaceSynth extends Face {
         }
     }
 
+    // static layer: sky, sun, mountains, date, time; the floor grid, road, palms and readouts move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var c = PAL[G.clamp(st, 1, 3) - 1];
         var acc = d.accent;
@@ -149,223 +156,230 @@ class FaceSynth extends Face {
         var elev = _elev;
         var night = G.clamp((2 - elev) / 10.0, 0.0, 1.0);
 
-        // ---- sky bands
-        for (var y = 0; y < HZ; y += 8) {
-            var dy = y + 8 < 227 ? 227 - y - 8 : 0;
-            var hw = Math.sqrt(227 * 227 - dy * dy) + 1;
-            dc.setColor(sky(c, y + 4, night), -1);
-            dc.fillRectangle(CX - hw, y, hw * 2, 8);
-        }
-
-        // ---- stars (always a few up high; many at night)
-        var sv = 0.3 + 0.7 * night;
-        var seed = 7;
-        var lim = 0.25 + 0.75 * night;
-        var fade = G.ease(p * 2);
-        for (var i = 0; i < 30; i++) {
-            seed = G.rnd(seed);
-            var x = 60 + (seed % 335);
-            seed = G.rnd(seed);
-            var y = 22 + (seed % 170);
-            if (y > 22 + 170 * lim) {
-                continue;
+        if (S) {
+            // ---- sky bands
+            for (var y = 0; y < HZ; y += 8) {
+                var dy = y + 8 < 227 ? 227 - y - 8 : 0;
+                var hw = Math.sqrt(227 * 227 - dy * dy) + 1;
+                dc.setColor(sky(c, y + 4, night), -1);
+                dc.fillRectangle(CX - hw, y, hw * 2, 8);
             }
-            var tw = live ? 0.6 + 0.4 * Math.sin(sec * 2.3 + i * 1.7) : 0.8;
-            var b = sv * tw * (1 - y / 260.0) * fade;
-            dc.setColor(G.mix(sky(c, y, night), 0xFFFFFF, b), -1);
-            if (i % 7 == 0) {
-                dc.fillRectangle(x - 1, y - 3, 2, 8);
-                dc.fillRectangle(x - 4, y, 8, 2);
+
+            // ---- stars (always a few up high; many at night)
+            var sv = 0.3 + 0.7 * night;
+            var seed = 7;
+            var lim = 0.25 + 0.75 * night;
+            var fade = G.ease(p * 2);
+            for (var i = 0; i < 30; i++) {
+                seed = G.rnd(seed);
+                var x = 60 + (seed % 335);
+                seed = G.rnd(seed);
+                var y = 22 + (seed % 170);
+                if (y > 22 + 170 * lim) {
+                    continue;
+                }
+                var tw = live ? 0.6 + 0.4 * Math.sin(sec * 2.3 + i * 1.7) : 0.8;
+                var b = sv * tw * (1 - y / 260.0) * fade;
+                dc.setColor(G.mix(sky(c, y, night), 0xFFFFFF, b), -1);
+                if (i % 7 == 0) {
+                    dc.fillRectangle(x - 1, y - 3, 2, 8);
+                    dc.fillRectangle(x - 4, y, 8, 2);
+                } else {
+                    dc.fillRectangle(x, y, 2, 2);
+                }
+            }
+
+            // ---- sun (rises during the intro) or ringed planet at night
+            var rise = G.ease(G.clamp(p / 0.6, 0.0, 1.0));
+            var drift = live ? sec * 4 : 0.0;
+            if (elev >= -6) {
+                var ty = HZ + 18 - G.clamp(elev, -12.0, 50.0) * 2.0;
+                var cy = G.lerp(HZ + SR + 4, ty, rise);
+                dc.setColor(G.mix(c[2], c[5], 0.35), -1);
+                dc.fillCircle(CX, cy, SR + 7);
+                disc(dc, CX, cy, SR, c[3], c[4], c[5], drift, true);
             } else {
-                dc.fillRectangle(x, y, 2, 2);
-            }
-        }
-
-        // ---- sun (rises during the intro) or ringed planet at night
-        var rise = G.ease(G.clamp(p / 0.6, 0.0, 1.0));
-        var drift = live ? sec * 4 : 0.0;
-        if (elev >= -6) {
-            var ty = HZ + 18 - G.clamp(elev, -12.0, 50.0) * 2.0;
-            var cy = G.lerp(HZ + SR + 4, ty, rise);
-            dc.setColor(G.mix(c[2], c[5], 0.35), -1);
-            dc.fillCircle(CX, cy, SR + 7);
-            disc(dc, CX, cy, SR, c[3], c[4], c[5], drift, true);
-        } else {
-            var pr = 54;
-            var cy = G.lerp(HZ + pr + 30, HZ - 36, rise);
-            var p0 = vapor ? 0x9FE9FF : 0xFF6AD5;
-            var p1 = vapor ? 0xC79BFF : 0xC02A9E;
-            var p2 = vapor ? 0x6A4FC0 : 0x4D1478;
-            dc.setColor(G.mix(p1, 0xFFFFFF, 0.15), -1);
-            dc.setPenWidth(3);
-            dc.drawEllipse(CX, cy, pr * 1.75, pr * 0.3);
-            disc(dc, CX, cy, pr, p0, p1, p2, drift, false);
-            // front half of the ring
-            dc.setColor(G.mix(p1, 0xFFFFFF, 0.35), -1);
-            var lx = CX + pr * 1.75;
-            var ly = cy;
-            for (var k = 1; k <= 12; k++) {
-                var an = k * Math.PI / 12;
-                var x = CX + pr * 1.75 * Math.cos(an);
-                var y = cy + pr * 0.3 * Math.sin(an);
-                dc.drawLine(lx, ly, x, y);
-                lx = x;
-                ly = y;
-            }
-        }
-
-        // ---- low-poly mountains
-        var mL = night > 0.5 ? G.dim(c[9], 0.7) : c[9];
-        var mD = night > 0.5 ? G.dim(c[10], 0.7) : c[10];
-        dc.setPenWidth(2);
-        for (var i = 0; i < MT.size(); i += 4) {
-            var x = MT[i];
-            var h = MT[i + 1] * (vapor ? 0.7 : 1.0);
-            var wl = MT[i + 2];
-            var wr = MT[i + 3];
-            var yb = HZ + 1;
-            var yp = HZ - h;
-            var xm = x + wr * 0.22;
-            dc.setColor(mL, -1);
-            dc.fillPolygon([[x - wl, yb], [x, yp], [xm, yb]]);
-            dc.setColor(mD, -1);
-            dc.fillPolygon([[xm, yb], [x, yp], [x + wr, yb]]);
-            dc.setColor(G.mix(mD, c[11], 0.75), -1);
-            dc.drawLine(x - wl, yb, x, yp);
-            dc.drawLine(x, yp, x + wr, yb);
-        }
-
-        // ---- floor
-        dc.setColor(c[6], -1);
-        dc.fillRectangle(0, HZ, 454, 454 - HZ);
-        dc.setColor(G.mix(c[6], c[2], 0.3), -1);
-        dc.fillRectangle(0, HZ, 454, 10);
-
-        // scroll: heart rate -> speed (rows per second); the intro flies rows in from the horizon
-        var hr = d.hr > 0 ? d.hr : 70;
-        var spd = G.clamp(0.4 + (hr - 60) * 2.1 / 90.0, 0.4, 2.5);
-        var sc = live ? sec * spd : 0.35;
-        var ph = sc - Math.floor(sc);
-        var gq = G.ease(G.clamp((p - 0.15) / 0.6, 0.0, 1.0));
-        var fly = 1 + (1 - gq) * 7;
-        var rw = CW * 1.5; // road half-width at the bottom edge
-
-        if (vapor) {
-            // checkerboard
-            var base = Math.floor(sc).toNumber();
-            var y2 = 454.0;
-            for (var k = 0; k < 12; k++) {
-                var z = (4 + (k + 1 - ph) * 2.4) * fly;
-                var y1 = HZ + PC / z;
-                if (y1 >= 454) {
-                    continue;
+                var pr = 54;
+                var cy = G.lerp(HZ + pr + 30, HZ - 36, rise);
+                var p0 = vapor ? 0x9FE9FF : 0xFF6AD5;
+                var p1 = vapor ? 0xC79BFF : 0xC02A9E;
+                var p2 = vapor ? 0x6A4FC0 : 0x4D1478;
+                dc.setColor(G.mix(p1, 0xFFFFFF, 0.15), -1);
+                dc.setPenWidth(3);
+                dc.drawEllipse(CX, cy, pr * 1.75, pr * 0.3);
+                disc(dc, CX, cy, pr, p0, p1, p2, drift, false);
+                // front half of the ring
+                dc.setColor(G.mix(p1, 0xFFFFFF, 0.35), -1);
+                var lx = CX + pr * 1.75;
+                var ly = cy;
+                for (var k = 1; k <= 12; k++) {
+                    var an = k * Math.PI / 12;
+                    var x = CX + pr * 1.75 * Math.cos(an);
+                    var y = cy + pr * 0.3 * Math.sin(an);
+                    dc.drawLine(lx, ly, x, y);
+                    lx = x;
+                    ly = y;
                 }
-                if (y1 - HZ < 9) {
-                    break;
-                }
-                var f1 = (y1 - HZ) / FD;
-                var f2 = (y2 - HZ) / FD;
-                dc.setColor(G.mix(c[6], grid, G.clamp((y1 - HZ) / 70.0, 0.2, 1.0) * 0.55), -1);
-                for (var j = -8; j < 8; j++) {
-                    if (((k + j + base) & 1) == 0 || j == -1 || j == 0) {
-                        continue;
-                    }
-                    var xa = j * CW;
-                    var xb = (j + 1) * CW;
-                    if (xa * f2 > 230 || xb * f2 < -230) {
-                        continue;
-                    }
-                    dc.fillPolygon([[CX + xa * f1, y1], [CX + xb * f1, y1], [CX + xb * f2, y2], [CX + xa * f2, y2]]);
-                }
-                y2 = y1;
             }
-        } else {
-            // horizontal grid lines (split at the road)
+
+            // ---- low-poly mountains
+            var mL = night > 0.5 ? G.dim(c[9], 0.7) : c[9];
+            var mD = night > 0.5 ? G.dim(c[10], 0.7) : c[10];
             dc.setPenWidth(2);
-            for (var k = 0; k < 22; k++) {
-                var z = (4 + (k + 1 - ph) * 2.2) * fly;
-                var y = HZ + PC / z;
-                if (y >= 454) {
+            for (var i = 0; i < MT.size(); i += 4) {
+                var x = MT[i];
+                var h = MT[i + 1] * (vapor ? 0.7 : 1.0);
+                var wl = MT[i + 2];
+                var wr = MT[i + 3];
+                var yb = HZ + 1;
+                var yp = HZ - h;
+                var xm = x + wr * 0.22;
+                dc.setColor(mL, -1);
+                dc.fillPolygon([[x - wl, yb], [x, yp], [xm, yb]]);
+                dc.setColor(mD, -1);
+                dc.fillPolygon([[xm, yb], [x, yp], [x + wr, yb]]);
+                dc.setColor(G.mix(mD, c[11], 0.75), -1);
+                dc.drawLine(x - wl, yb, x, yp);
+                dc.drawLine(x, yp, x + wr, yb);
+            }
+        }
+
+        if (M) {
+            // ---- floor
+            dc.setColor(c[6], -1);
+            dc.fillRectangle(0, HZ, 454, 454 - HZ);
+            dc.setColor(G.mix(c[6], c[2], 0.3), -1);
+            dc.fillRectangle(0, HZ, 454, 10);
+
+            // scroll: heart rate -> speed (rows per second); the intro flies rows in from the horizon
+            var hr = d.hr > 0 ? d.hr : 70;
+            var spd = G.clamp(0.4 + (hr - 60) * 2.1 / 90.0, 0.4, 2.5);
+            var sc = live ? sec * spd : 0.35;
+            var ph = sc - Math.floor(sc);
+            var gq = G.ease(G.clamp((p - 0.15) / 0.6, 0.0, 1.0));
+            var fly = 1 + (1 - gq) * 7;
+            var rw = CW * 1.5; // road half-width at the bottom edge
+
+            if (vapor) {
+                // checkerboard
+                var base = Math.floor(sc).toNumber();
+                var y2 = 454.0;
+                for (var k = 0; k < 12; k++) {
+                    var z = (4 + (k + 1 - ph) * 2.4) * fly;
+                    var y1 = HZ + PC / z;
+                    if (y1 >= 454) {
+                        continue;
+                    }
+                    if (y1 - HZ < 9) {
+                        break;
+                    }
+                    var f1 = (y1 - HZ) / FD;
+                    var f2 = (y2 - HZ) / FD;
+                    dc.setColor(G.mix(c[6], grid, G.clamp((y1 - HZ) / 70.0, 0.2, 1.0) * 0.55), -1);
+                    for (var j = -8; j < 8; j++) {
+                        if (((k + j + base) & 1) == 0 || j == -1 || j == 0) {
+                            continue;
+                        }
+                        var xa = j * CW;
+                        var xb = (j + 1) * CW;
+                        if (xa * f2 > 230 || xb * f2 < -230) {
+                            continue;
+                        }
+                        dc.fillPolygon([[CX + xa * f1, y1], [CX + xb * f1, y1], [CX + xb * f2, y2], [CX + xa * f2, y2]]);
+                    }
+                    y2 = y1;
+                }
+            } else {
+                // horizontal grid lines (split at the road)
+                dc.setPenWidth(2);
+                for (var k = 0; k < 22; k++) {
+                    var z = (4 + (k + 1 - ph) * 2.2) * fly;
+                    var y = HZ + PC / z;
+                    if (y >= 454) {
+                        continue;
+                    }
+                    if (y - HZ < 3) {
+                        break;
+                    }
+                    var f = (y - HZ) / FD;
+                    dc.setColor(G.mix(c[6], grid, G.clamp((y - HZ) / 90.0, 0.15, 1.0)), -1);
+                    dc.drawLine(0, y, CX - rw * f, y);
+                    dc.drawLine(CX + rw * f, y, 454, y);
+                }
+                // converging verticals
+                var yb = HZ + FD * gq;
+                dc.setColor(G.mix(c[6], grid, 0.85), -1);
+                for (var j = -9; j <= 9; j++) {
+                    if (j >= -1 && j <= 1) {
+                        continue;
+                    }
+                    dc.drawLine(CX + j * CW * 0.02, HZ + 4, CX + j * CW * (yb - HZ) / FD, yb);
+                }
+            }
+
+            // road + dashed centre line
+            dc.setColor(G.mix(c[6], 0x000000, 0.45), -1);
+            dc.fillPolygon([[CX - 3, HZ], [CX + 3, HZ], [CX + rw, 454], [CX - rw, 454]]);
+            dc.setColor(c[8], -1);
+            dc.setPenWidth(2);
+            dc.drawLine(CX - 3, HZ + 1, CX - rw * gq - 3 * (1 - gq), HZ + FD * gq);
+            dc.drawLine(CX + 3, HZ + 1, CX + rw * gq + 3 * (1 - gq), HZ + FD * gq);
+            dc.setColor(G.mix(c[8], 0xFFFFFF, 0.3), -1);
+            for (var k = 0; k < 10; k++) {
+                var z1 = (4 + (k + 1 - ph) * 2.2) * fly;
+                var z2 = z1 + 1.1 * fly;
+                var y1 = HZ + PC / z1;
+                var y2 = HZ + PC / z2;
+                if (y2 >= 454) {
                     continue;
                 }
-                if (y - HZ < 3) {
+                if (y1 - HZ < 4) {
                     break;
                 }
-                var f = (y - HZ) / FD;
-                dc.setColor(G.mix(c[6], grid, G.clamp((y - HZ) / 90.0, 0.15, 1.0)), -1);
-                dc.drawLine(0, y, CX - rw * f, y);
-                dc.drawLine(CX + rw * f, y, 454, y);
+                var w1 = 4 * (y1 - HZ) / FD;
+                var w2 = 4 * (y2 - HZ) / FD;
+                var yc = y1 < 454 ? y1 : 454;
+                dc.fillPolygon([[CX - w2, y2], [CX + w2, y2], [CX + w1, yc], [CX - w1, yc]]);
             }
-            // converging verticals
-            var yb = HZ + FD * gq;
-            dc.setColor(G.mix(c[6], grid, 0.85), -1);
-            for (var j = -9; j <= 9; j++) {
-                if (j >= -1 && j <= 1) {
-                    continue;
-                }
-                dc.drawLine(CX + j * CW * 0.02, HZ + 4, CX + j * CW * (yb - HZ) / FD, yb);
+
+            if (vapor) {
+                palm(dc, 70, HZ + 70, 150, 0.22, 0x120A26);
+                palm(dc, 392, HZ + 60, 128, -0.26, 0x120A26);
             }
         }
 
-        // road + dashed centre line
-        dc.setColor(G.mix(c[6], 0x000000, 0.45), -1);
-        dc.fillPolygon([[CX - 3, HZ], [CX + 3, HZ], [CX + rw, 454], [CX - rw, 454]]);
-        dc.setColor(c[8], -1);
-        dc.setPenWidth(2);
-        dc.drawLine(CX - 3, HZ + 1, CX - rw * gq - 3 * (1 - gq), HZ + FD * gq);
-        dc.drawLine(CX + 3, HZ + 1, CX + rw * gq + 3 * (1 - gq), HZ + FD * gq);
-        dc.setColor(G.mix(c[8], 0xFFFFFF, 0.3), -1);
-        for (var k = 0; k < 10; k++) {
-            var z1 = (4 + (k + 1 - ph) * 2.2) * fly;
-            var z2 = z1 + 1.1 * fly;
-            var y1 = HZ + PC / z1;
-            var y2 = HZ + PC / z2;
-            if (y2 >= 454) {
-                continue;
-            }
-            if (y1 - HZ < 4) {
-                break;
-            }
-            var w1 = 4 * (y1 - HZ) / FD;
-            var w2 = 4 * (y2 - HZ) / FD;
-            var yc = y1 < 454 ? y1 : 454;
-            dc.fillPolygon([[CX - w2, y2], [CX + w2, y2], [CX + w1, yc], [CX - w1, yc]]);
-        }
-
-        if (vapor) {
-            palm(dc, 70, HZ + 70, 150, 0.22, 0x120A26);
-            palm(dc, 392, HZ + 60, 128, -0.26, 0x120A26);
-        }
         // horizon glow line
         dc.setColor(G.mix(c[2], 0xFFFFFF, 0.45), -1);
         dc.fillRectangle(0, HZ - 1, 454, 2);
 
-        // ---- date (pixel font)
-        var dq = G.ease(G.clamp((p - 0.35) / 0.4, 0.0, 1.0));
-        if (dq > 0) {
-            dc.setColor(G.mix(sky(c, 50, night), G.mix(c[13], 0xFFFFFF, 0.35), dq), -1);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, CX, 50, 3, 1, 0);
-        }
+        if (S) {
+            // ---- date (pixel font)
+            var dq = G.ease(G.clamp((p - 0.35) / 0.4, 0.0, 1.0));
+            if (dq > 0) {
+                dc.setColor(G.mix(sky(c, 50, night), G.mix(c[13], 0xFFFFFF, 0.35), dq), -1);
+                F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, CX, 50, 3, 1, 0);
+            }
 
-        // ---- time: chrome-neon, powers on with a flicker
-        var tq = G.clamp((p - 0.45) / 0.45, 0.0, 1.0);
-        var on = tq >= 1;
-        if (!on && tq > 0.05) {
-            var fl = G.rnd(a.t / 45 + 11) % 10;
-            on = fl < 3 + tq * 7;
-        }
-        if (on) {
-            var hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
-            var mm = G.pad2(d.m);
-            time(dc, hh, mm, CX + 3, TY + 4, 13, tUnder);
-            time(dc, hh, mm, CX, TY, 7, tq < 1 ? G.dim(c[13], 0.6) : c[13]);
-            if (tq > 0.5) {
-                time(dc, hh, mm, CX - 1, TY - 1, 2.5, c[14]);
+            // ---- time: chrome-neon, powers on with a flicker
+            var tq = G.clamp((p - 0.45) / 0.45, 0.0, 1.0);
+            var on = tq >= 1;
+            if (!on && tq > 0.05) {
+                var fl = G.rnd(a.t / 45 + 11) % 10;
+                on = fl < 3 + tq * 7;
+            }
+            if (on) {
+                var hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
+                var mm = G.pad2(d.m);
+                time(dc, hh, mm, CX + 3, TY + 4, 13, tUnder);
+                time(dc, hh, mm, CX, TY, 7, tq < 1 ? G.dim(c[13], 0.6) : c[13]);
+                if (tq > 0.5) {
+                    time(dc, hh, mm, CX - 1, TY - 1, 2.5, c[14]);
+                }
             }
         }
 
         // ---- slots: three neon readouts
-        for (var k = 0; k < 3; k++) {
+        for (var k = 0; k < 3 && M; k++) {
             var q = G.stag(p - 0.55, k, 0.08, 0.3);
             if (q <= 0) {
                 continue;

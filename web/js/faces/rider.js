@@ -146,6 +146,9 @@ function timeStr(d) {
 export default {
   fps: 12,
 
+  // static layer: sky, sun/moon, stars, HUD panel, time; the landscape scrolls over the sky
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const acc = d.accent;
@@ -159,186 +162,202 @@ export default {
     if (d.hr > 0 && d.rhr > 0) v = 1 + G.clamp((d.hr - d.rhr) / 45.0, 0, 2);
     // distance travelled (px): steady ride + a decelerating fast-forward during the intro
     const dist = (72 * v * tt) / 1000.0 + 640 * G.ease(tt / 1400.0);
+    const S = !a.bg, M = !a.so; // draw the static (sky, HUD, time) / the moving parts (landscape, rider)
 
-    // ---------------- sky
-    for (let i = 0; i < 5; i++) {
-      dc.setColor(pal[i], -1);
-      dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
-    }
-    // stars
-    const sf = st === 3 ? 0.8 : G.clamp((-2 - el) / 6.0, 0, 1);
-    if (sf > 0) {
-      let s = 7;
-      for (let i = 0; i < 20; i++) {
-        s = G.rnd(s);
-        const x = 24 + (s % 102) * P;
-        s = G.rnd(s);
-        const y = 8 + (s % 56) * P;
-        const tw = a.live && (Math.floor(tt / 300) + i) % 7 === 0 ? 0.35 : 1;
-        const b = (0.35 + (i % 3) * 0.3) * sf * tw;
-        dc.setColor(st === 2 ? GB[2] : G.mix(pal[1], 0xffffff, b), -1);
-        dc.fillRectangle(x, y, P, P);
+    if (S) {
+      // ---------------- sky
+      for (let i = 0; i < 5; i++) {
+        dc.setColor(pal[i], -1);
+        dc.fillRectangle(0, BAND[i], 454, BAND[i + 1] - BAND[i]);
+      }
+      // stars
+      const sf = st === 3 ? 0.8 : G.clamp((-2 - el) / 6.0, 0, 1);
+      if (sf > 0) {
+        let s = 7;
+        for (let i = 0; i < 20; i++) {
+          s = G.rnd(s);
+          const x = 24 + (s % 102) * P;
+          s = G.rnd(s);
+          const y = 8 + (s % 56) * P;
+          const tw = a.live && (Math.floor(tt / 300) + i) % 7 === 0 ? 0.35 : 1;
+          const b = (0.35 + (i % 3) * 0.3) * sf * tw;
+          dc.setColor(st === 2 ? GB[2] : G.mix(pal[1], 0xffffff, b), -1);
+          dc.fillRectangle(x, y, P, P);
+        }
+      }
+      // sun / moon
+      const rise = d.sunrise, set = d.sunset;
+      if (st === 3 && el > -6) {
+        // synthwave sun behind the mountains
+        for (let r = 0; r < 26; r++) {
+          if (r > 12 && r % 3 === 0) continue;
+          const dy = r - 12.5;
+          const hw = Math.floor(Math.sqrt(169 - dy * dy));
+          dc.setColor(G.mix(acc, MAG, r / 25.0), -1);
+          dc.fillRectangle(227 - hw * P, 184 + r * P, hw * 2 * P, P);
+        }
+      } else if (el > -3) {
+        let f = 0.5;
+        if (rise >= 0 && set > rise) f = G.clamp((d.mins - rise) / (set - rise), 0, 1);
+        const sx = q4(72 + f * 310) - 16;
+        const sy = q4(G.clamp(268 - el * 4.5, 172, 300)) - 16;
+        const gf = G.clamp((10 - el) / 12.0, 0, 1);
+        const sp = st === 2 ? [GB[0], GB[2], GB[3]] : [G.mix(0xffc83a, 0xff5a28, gf), G.mix(0xfff2a0, 0xff9a3a, gf), G.mix(0xffffff, 0xffd080, gf)];
+        SPR.draw(dc, SP.SUN, sx, sy, P, sp, false);
+      } else if (d.moon > 0.05 && d.moon < 0.95) {
+        let f = 0.5;
+        if (rise >= 0 && set >= 0) {
+          let m = d.mins - set;
+          if (m < 0) m += 1440;
+          f = G.clamp(m / (rise + 1440 - set), 0, 1);
+        }
+        const mx = q4(72 + f * 310) - 14;
+        const my = q4(160 + (1 - Math.sin(f * Math.PI)) * 70) - 14;
+        const lit = st === 2 ? GB[3] : st === 3 ? CYA : 0xf4f1d0;
+        SPR.draw(dc, SP.MOON, mx, my, P, [lit, st === 2 ? GB[2] : st === 3 ? CYA : 0xc8c3a0], false);
+        if (d.moon < 0.35 || d.moon > 0.65) SPR.draw(dc, SP.MOON_C, mx, my, P, [pal[1]], d.moon > 0.5);
       }
     }
-    // sun / moon
-    const rise = d.sunrise, set = d.sunset;
-    if (st === 3 && el > -6) {
-      // synthwave sun behind the mountains
-      for (let r = 0; r < 26; r++) {
-        if (r > 12 && r % 3 === 0) continue;
-        const dy = r - 12.5;
-        const hw = Math.floor(Math.sqrt(169 - dy * dy));
-        dc.setColor(G.mix(acc, MAG, r / 25.0), -1);
-        dc.fillRectangle(227 - hw * P, 184 + r * P, hw * 2 * P, P);
+    if (M) {
+      // clouds (drift with the wind, a little parallax)
+      if (st !== 3) {
+        const co = q4((tt * 0.006 + dist * 0.05) % 640);
+        const cp = [pal[16], pal[17]];
+        SPR.draw(dc, SP.CLOUD_A, ((560 - co + 640) % 640) - 80, 160, P, cp, false);
+        SPR.draw(dc, SP.CLOUD_B, ((300 - co + 640) % 640) - 80, 184, P, cp, false);
+        SPR.draw(dc, SP.CLOUD_A, ((90 - co + 640) % 640) - 80, 208, P, cp, true);
       }
-    } else if (el > -3) {
-      let f = 0.5;
-      if (rise >= 0 && set > rise) f = G.clamp((d.mins - rise) / (set - rise), 0, 1);
-      const sx = q4(72 + f * 310) - 16;
-      const sy = q4(G.clamp(268 - el * 4.5, 172, 300)) - 16;
-      const gf = G.clamp((10 - el) / 12.0, 0, 1);
-      const sp = st === 2 ? [GB[0], GB[2], GB[3]] : [G.mix(0xffc83a, 0xff5a28, gf), G.mix(0xfff2a0, 0xff9a3a, gf), G.mix(0xffffff, 0xffd080, gf)];
-      SPR.draw(dc, SP.SUN, sx, sy, P, sp, false);
-    } else if (d.moon > 0.05 && d.moon < 0.95) {
-      let f = 0.5;
-      if (rise >= 0 && set >= 0) {
-        let m = d.mins - set;
-        if (m < 0) m += 1440;
-        f = G.clamp(m / (rise + 1440 - set), 0, 1);
+
+      // ---------------- far mountains (period 512 px)
+      const fo = q4(dist * 0.12);
+      for (let i = 0; i < FAR.length; i += 4) {
+        const sx = wrapX(FAR[i], fo, 512);
+        if (sx - 130 < 454) mountain(dc, sx, i, pal, st);
+        if (sx + 130 > 512) mountain(dc, sx - 512, i, pal, st);
       }
-      const mx = q4(72 + f * 310) - 14;
-      const my = q4(160 + (1 - Math.sin(f * Math.PI)) * 70) - 14;
-      const lit = st === 2 ? GB[3] : st === 3 ? CYA : 0xf4f1d0;
-      SPR.draw(dc, SP.MOON, mx, my, P, [lit, st === 2 ? GB[2] : st === 3 ? CYA : 0xc8c3a0], false);
-      if (d.moon < 0.35 || d.moon > 0.65) SPR.draw(dc, SP.MOON_C, mx, my, P, [pal[1]], d.moon > 0.5);
-    }
-    // clouds (drift with the wind, a little parallax)
-    if (st !== 3) {
-      const co = q4((tt * 0.006 + dist * 0.05) % 640);
-      const cp = [pal[16], pal[17]];
-      SPR.draw(dc, SP.CLOUD_A, ((560 - co + 640) % 640) - 80, 160, P, cp, false);
-      SPR.draw(dc, SP.CLOUD_B, ((300 - co + 640) % 640) - 80, 184, P, cp, false);
-      SPR.draw(dc, SP.CLOUD_A, ((90 - co + 640) % 640) - 80, 208, P, cp, true);
-    }
+      // ---------------- hills strip + pine hills (period 384 px)
+      dc.setColor(pal[8], -1);
+      dc.fillRectangle(0, 284, 454, 16);
+      if (st === 3) {
+        dc.setColor(CYA, -1);
+        dc.fillRectangle(0, 284, 454, P);
+      }
+      const ho = q4(dist * 0.35);
+      for (let i = 0; i < HILL.length; i += 4) {
+        const sx = wrapX(HILL[i], ho, 384);
+        if (sx - 48 < 454) hill(dc, sx, i, pal, st);
+        if (sx + 48 > 384) hill(dc, sx - 384, i, pal, st);
+      }
 
-    // ---------------- far mountains (period 512 px)
-    const fo = q4(dist * 0.12);
-    for (let i = 0; i < FAR.length; i += 4) {
-      const sx = wrapX(FAR[i], fo, 512);
-      if (sx - 130 < 454) mountain(dc, sx, i, pal, st);
-      if (sx + 130 > 512) mountain(dc, sx - 512, i, pal, st);
+      // ---------------- road
+      const ro = q4(dist);
+      dc.setColor(pal[12], -1);
+      dc.fillRectangle(0, 300, 454, 44);
+      if (st === 3) {
+        dc.setColor(acc, -1);
+        dc.fillRectangle(0, 300, 454, P);
+        dc.setColor(CYA, -1);
+        dc.fillRectangle(0, 340, 454, P);
+      } else {
+        // red/white kerb along the far edge, plain line on the near edge
+        dc.setColor(pal[13], -1);
+        dc.fillRectangle(0, 300, 454, 8);
+        dc.setColor(pal[15], -1);
+        for (let x = -(ro % 32); x < 454; x += 32) dc.fillRectangle(x, 300, 16, 8);
+        dc.setColor(st === 2 ? GB[2] : G.mix(pal[12], pal[13], 0.45), -1);
+        dc.fillRectangle(0, 340, 454, P);
+      }
+      dc.setColor(st === 3 ? MAG : pal[13], -1);
+      for (let x = -(ro % 64); x < 454; x += 64) dc.fillRectangle(x, 320, 28, P);
     }
-    // ---------------- hills strip + pine hills (period 384 px)
-    dc.setColor(pal[8], -1);
-    dc.fillRectangle(0, 284, 454, 16);
-    if (st === 3) {
-      dc.setColor(CYA, -1);
-      dc.fillRectangle(0, 284, 454, P);
+    // panel (part of the static layer)
+    if (S) {
+      dc.setColor(pal[14], -1);
+      dc.fillRectangle(0, 344, 454, 110);
     }
-    const ho = q4(dist * 0.35);
-    for (let i = 0; i < HILL.length; i += 4) {
-      const sx = wrapX(HILL[i], ho, 384);
-      if (sx - 48 < 454) hill(dc, sx, i, pal, st);
-      if (sx + 48 > 384) hill(dc, sx - 384, i, pal, st);
-    }
-
-    // ---------------- road
-    const ro = q4(dist);
-    dc.setColor(pal[12], -1);
-    dc.fillRectangle(0, 300, 454, 44);
-    if (st === 3) {
-      dc.setColor(acc, -1);
-      dc.fillRectangle(0, 300, 454, P);
-      dc.setColor(CYA, -1);
-      dc.fillRectangle(0, 340, 454, P);
-    } else {
-      // red/white kerb along the far edge, plain line on the near edge
-      dc.setColor(pal[13], -1);
-      dc.fillRectangle(0, 300, 454, 8);
-      dc.setColor(pal[15], -1);
-      for (let x = -(ro % 32); x < 454; x += 32) dc.fillRectangle(x, 300, 16, 8);
-      dc.setColor(st === 2 ? GB[2] : G.mix(pal[12], pal[13], 0.45), -1);
-      dc.fillRectangle(0, 340, 454, P);
-    }
-    dc.setColor(st === 3 ? MAG : pal[13], -1);
-    for (let x = -(ro % 64); x < 454; x += 64) dc.fillRectangle(x, 320, 28, P);
-    // panel
-    dc.setColor(pal[14], -1);
-    dc.fillRectangle(0, 344, 454, 110);
 
     // ---------------- progress (stage)
     const sg = stage(d);
     const frac = G.clamp(sg[0] / sg[1], 0, 1);
     const done = sg[0] >= sg[1];
     const rp = G.easeInOut(G.stag(p, 3, 0.1, 0.6));
+    const blink = done && a.live && p >= 1 && Math.floor(tt / 400) % 2 === 1;
 
-    // finish banner + confetti (goal reached)
-    if (done) {
-      const bx = q4(RX - 30 - dist + (72 * v * 1400) / 1000.0 + 640);
-      if (bx > -140 && bx < 454) {
-        dc.setColor(st === 2 ? GB[0] : st === 3 ? CYA : 0xd8d8d8, -1);
-        dc.fillRectangle(bx, 232, P, 72);
-        dc.fillRectangle(bx + 132, 232, P, 108);
-        // checkered banner
-        dc.setColor(st === 2 ? GB[3] : st === 3 ? 0x000000 : 0xffffff, -1);
-        dc.fillRectangle(bx - 4, 216, 144, 28);
-        dc.setColor(st === 2 ? GB[0] : st === 3 ? MAG : 0x111111, -1);
-        for (let c = 0; c < 18; c += 2) {
-          dc.fillRectangle(bx - 4 + c * 8, 216, 8, P);
-          dc.fillRectangle(bx + 4 + c * 8, 220, 8, P);
-          dc.fillRectangle(bx - 4 + c * 8, 236, 8, P);
-          dc.fillRectangle(bx + 4 + c * 8, 240, 8, P);
+    if (M) {
+      // finish banner + confetti (goal reached)
+      if (done) {
+        const bx = q4(RX - 30 - dist + (72 * v * 1400) / 1000.0 + 640);
+        if (bx > -140 && bx < 454) {
+          dc.setColor(st === 2 ? GB[0] : st === 3 ? CYA : 0xd8d8d8, -1);
+          dc.fillRectangle(bx, 232, P, 72);
+          dc.fillRectangle(bx + 132, 232, P, 108);
+          // checkered banner
+          dc.setColor(st === 2 ? GB[3] : st === 3 ? 0x000000 : 0xffffff, -1);
+          dc.fillRectangle(bx - 4, 216, 144, 28);
+          dc.setColor(st === 2 ? GB[0] : st === 3 ? MAG : 0x111111, -1);
+          for (let c = 0; c < 18; c += 2) {
+            dc.fillRectangle(bx - 4 + c * 8, 216, 8, P);
+            dc.fillRectangle(bx + 4 + c * 8, 220, 8, P);
+            dc.fillRectangle(bx - 4 + c * 8, 236, 8, P);
+            dc.fillRectangle(bx + 4 + c * 8, 240, 8, P);
+          }
+          dc.setColor(st === 2 ? GB[0] : st === 3 ? acc : 0xe03a3a, -1);
+          F.px(dc, "ZIEL", bx + 68, 226, 2, 1, 0);
         }
-        dc.setColor(st === 2 ? GB[0] : st === 3 ? acc : 0xe03a3a, -1);
-        F.px(dc, "ZIEL", bx + 68, 226, 2, 1, 0);
       }
-    }
 
-    // night headlight
-    const rxp = q4(G.lerp(-96, RX, G.ease(G.stag(p, 0, 0, 0.75))));
-    if (night && st === 1) {
-      for (let k = 0; k < 3; k++) {
-        dc.setColor(G.mix(pal[12], 0xfff0b0, 0.15 - k * 0.04), -1);
-        dc.fillRectangle(rxp + 80 + k * 40, 316 - k * 4, 40, 12 + k * 8);
+      // night headlight
+      const rxp = q4(G.lerp(-96, RX, G.ease(G.stag(p, 0, 0, 0.75))));
+      if (night && st === 1) {
+        for (let k = 0; k < 3; k++) {
+          dc.setColor(G.mix(pal[12], 0xfff0b0, 0.15 - k * 0.04), -1);
+          dc.fillRectangle(rxp + 80 + k * 40, 316 - k * 4, 40, 12 + k * 8);
+        }
+        dc.setColor(0xfff6c0, -1);
+        dc.fillRectangle(rxp + 64, RY + 32, P, P);
       }
-      dc.setColor(0xfff6c0, -1);
-      dc.fillRectangle(rxp + 64, RY + 32, P, P);
-    }
 
-    // rider
-    const fr = Math.floor((tt * v) / 120) % 4;
-    const rs = fr === 0 ? SP.RIDER_0 : fr === 1 ? SP.RIDER_1 : fr === 2 ? SP.RIDER_2 : SP.RIDER_3;
-    if (st >= 2) SPR.draw(dc, SP.RIDER_GLOW, rxp - P, RY - P, P, [st === 2 ? GB[0] : G.dim(acc, 0.28)], false);
-    SPR.draw(dc, rs, rxp, RY, P, riderPal(st, acc), false);
+      // rider
+      const fr = Math.floor((tt * v) / 120) % 4;
+      const rs = fr === 0 ? SP.RIDER_0 : fr === 1 ? SP.RIDER_1 : fr === 2 ? SP.RIDER_2 : SP.RIDER_3;
+      if (st >= 2) SPR.draw(dc, SP.RIDER_GLOW, rxp - P, RY - P, P, [st === 2 ? GB[0] : G.dim(acc, 0.28)], false);
+      SPR.draw(dc, rs, rxp, RY, P, riderPal(st, acc), false);
 
-    // confetti burst at the finish line
-    if (done) {
-      const ct = (tt - 1000) / 1000.0;
-      if (ct > 0 && ct < 2.2) {
-        const cc = st === 2 ? [GB[3], GB[2], GB[0], GB[1]] : [acc, CYA, MAG, 0xffffff, 0x5fe08a];
-        let s = 11;
-        for (let i = 0; i < 26; i++) {
-          s = G.rnd(s);
-          const vx = (s % 400) - 200;
-          s = G.rnd(s);
-          const vy = -120 - (s % 260);
-          const x = q4(RX + 40 + vx * ct);
-          const y = q4(230 + vy * ct + 260 * ct * ct);
-          if (y < 340) {
-            dc.setColor(cc[i % cc.length], -1);
-            dc.fillRectangle(x, y, P, (i + Math.floor(tt / 90)) % 3 === 0 ? P / 2 : P);
+      // confetti burst at the finish line
+      if (done) {
+        const ct = (tt - 1000) / 1000.0;
+        if (ct > 0 && ct < 2.2) {
+          const cc = st === 2 ? [GB[3], GB[2], GB[0], GB[1]] : [acc, CYA, MAG, 0xffffff, 0x5fe08a];
+          let s = 11;
+          for (let i = 0; i < 26; i++) {
+            s = G.rnd(s);
+            const vx = (s % 400) - 200;
+            s = G.rnd(s);
+            const vy = -120 - (s % 260);
+            const x = q4(RX + 40 + vx * ct);
+            const y = q4(230 + vy * ct + 260 * ct * ct);
+            if (y < 340) {
+              dc.setColor(cc[i % cc.length], -1);
+              dc.fillRectangle(x, y, P, (i + Math.floor(tt / 90)) % 3 === 0 ? P / 2 : P);
+            }
           }
         }
       }
     }
-
     // ---------------- HUD in the panel
     const dimT = st === 2 ? GB[2] : st === 3 ? G.dim(CYA, 0.7) : G.mix(pal[14], 0xffffff, 0.5);
     const hiT = st === 2 ? GB[3] : 0xffffff;
     const pre = done ? "ZIEL! " : "ETAPPE ";
     const lw = F.pxW(pre + sg[2], 2);
     const lx = 227 - lw / 2;
-    const blink = done && a.live && p >= 1 && Math.floor(tt / 400) % 2 === 1;
+    if (!S) {
+      // only the blinking "ZIEL!" changes in the cached HUD
+      if (done && a.live && p >= 1) {
+        dc.setColor(blink ? hiT : st === 2 ? GB[3] : acc, -1);
+        F.px(dc, pre, lx, 352, 2, 0, 0);
+      }
+      return;
+    }
     dc.setColor(done ? (blink ? hiT : st === 2 ? GB[3] : acc) : dimT, -1);
     F.px(dc, pre, lx, 352, 2, 0, 0);
     dc.setColor(hiT, -1);

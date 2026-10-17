@@ -440,7 +440,14 @@ class FaceBlick extends Face {
         }
     }
 
+    // static layer: ring, time, stats, badges; the counter, the eye and its moods move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var SL = !a.bg; // draw the static parts (S is the stats here)
+        var ML = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var acc = d.accent;
         var live = a.live;
@@ -468,29 +475,31 @@ class FaceBlick extends Face {
 
         if (st == 3) {
             // ---- Minimal: ring of glance dots (60 per ring, 3 rings)
-            var shown = (G.clamp(ms / 900.0, 0.0, 1.0) * cnt).toNumber();
-            dc.setColor(0x262626, -1);
-            for (var i = 0; i < 60; i++) {
-                if (i < shown) {
-                    continue;
+            if (SL) {
+                var shown = (G.clamp(ms / 900.0, 0.0, 1.0) * cnt).toNumber();
+                dc.setColor(0x262626, -1);
+                for (var i = 0; i < 60; i++) {
+                    if (i < shown) {
+                        continue;
+                    }
+                    dc.fillRectangle(G.ptX(227, 213, i * 6) - 1, G.ptY(227, 213, i * 6) - 1, 2, 2);
                 }
-                dc.fillRectangle(G.ptX(227, 213, i * 6) - 1, G.ptY(227, 213, i * 6) - 1, 2, 2);
-            }
-            dc.setColor(G.dim(acc, 0.6), -1);
-            for (var i = 0; i < shown && i < 180; i++) {
-                var r = 213 - (i / 60) * 10;
-                dc.fillCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 3);
-            }
-            // next badge target on the ring
-            if (t < 4 && TH[t + 1] <= 180) {
-                var i = TH[t + 1] - 1;
-                var r = 213 - (i / 60) * 10;
-                dc.setColor(TC[t + 1], -1);
-                dc.setPenWidth(2);
-                dc.drawCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 6);
+                dc.setColor(G.dim(acc, 0.6), -1);
+                for (var i = 0; i < shown && i < 180; i++) {
+                    var r = 213 - (i / 60) * 10;
+                    dc.fillCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 3);
+                }
+                // next badge target on the ring
+                if (t < 4 && TH[t + 1] <= 180) {
+                    var i = TH[t + 1] - 1;
+                    var r = 213 - (i / 60) * 10;
+                    dc.setColor(TC[t + 1], -1);
+                    dc.setPenWidth(2);
+                    dc.drawCircle(G.ptX(227, r, (i % 60) * 6), G.ptY(227, r, (i % 60) * 6), 6);
+                }
             }
             // the current look glows
-            if (n > 0 && ms >= 950) {
+            if (ML && n > 0 && ms >= 950) {
                 var i = n - 1 < 179 ? n - 1 : 179;
                 var r = 213 - (i / 60) * 10;
                 var x = G.ptX(227, r, (i % 60) * 6);
@@ -504,15 +513,24 @@ class FaceBlick extends Face {
                 dc.setColor(G.mix(acc, 0xFFFFFF, 0.7), -1);
                 dc.fillCircle(x, y, 2.5 * g);
             }
-            eye3(dc, 227, 112, op, lk[0], nt ? G.dim(acc, 0.7) : 0x9A9A9A);
+            if (ML) {
+                eye3(dc, 227, 112, op, lk[0], nt ? G.dim(acc, 0.7) : 0x9A9A9A);
+            }
             dc.setColor(d.dcol, -1);
-            F.st(dc, ts, 227, 188, 78, 8, 1, G.easeInOut(ms / 900.0), 0);
+            if (SL) {
+                F.st(dc, ts, 227, 188, 78, 8, 1, G.easeInOut(ms / 900.0), 0);
+            }
             var ch = pop >= 0 ? 48 * (1 + 0.3 * (1 - G.ease(pop * 2.5))) : 48;
             dc.setColor(acc, -1);
-            F.st(dc, "" + cnt, 227, 270, ch, 6, 1, 1.0, 0);
-            if (pop >= 0) {
+            if (ML) {
+                F.st(dc, "" + cnt, 227, 270, ch, 6, 1, 1.0, 0);
+            }
+            if (pop >= 0 && ML) {
                 dc.setColor(G.dim(acc, 1 - pop), -1);
                 F.st(dc, "+1", 227 + F.stW("" + n, 48) / 2 + 28, 260 - pop * 30, 20, 3, 1, 1.0, 0);
+            }
+            if (!SL) {
+                return;
             }
             dc.setColor(0x777777, -1);
             F.px(dc, "BLICKE HEUTE", 227, 302, 2, 1, 0);
@@ -525,73 +543,84 @@ class FaceBlick extends Face {
             return;
         }
 
-        // ---- progress ring to the next badge
-        if (st == 1) {
-            G.ring(dc, 227, 227, 221, 3, fr * sp, G.dim(t < 4 ? TC[t + 1] : TC[4], 0.75), 0x161616);
-        } else {
-            var lit = (fr * sp * 60).toNumber();
-            var cr = G.dim(t < 4 ? TC[t + 1] : TC[4], 0.8);
-            for (var i = 0; i < 60; i++) {
-                dc.setColor(i < lit ? cr : 0x1C1C1C, -1);
-                dc.fillRectangle(Math.round(G.ptX(227, 217, i * 6)) - 2, Math.round(G.ptY(227, 217, i * 6)) - 2, 5, 5);
+        if (SL) {
+            // ---- progress ring to the next badge
+            if (st == 1) {
+                G.ring(dc, 227, 227, 221, 3, fr * sp, G.dim(t < 4 ? TC[t + 1] : TC[4], 0.75), 0x161616);
+            } else {
+                var lit = (fr * sp * 60).toNumber();
+                var cr = G.dim(t < 4 ? TC[t + 1] : TC[4], 0.8);
+                for (var i = 0; i < 60; i++) {
+                    dc.setColor(i < lit ? cr : 0x1C1C1C, -1);
+                    dc.fillRectangle(Math.round(G.ptX(227, 217, i * 6)) - 2, Math.round(G.ptY(227, 217, i * 6)) - 2, 5, 5);
+                }
             }
         }
-
-        // ---- headline: BLICK #24 (+1 pop)
-        var num = "#" + cnt;
-        var ns = pop >= 0 ? 1 + 0.35 * (1 - G.ease(pop * 2.5)) : 1.0;
-        if (st == 1) {
-            var h = 26;
-            var w1 = F.stW("BLICK ", h);
-            var w2 = F.stW(num, h);
-            var x0 = 227 - (w1 + w2 + 22.0 * h / 80) / 2;
-            dc.setColor(0xD0D0D0, -1);
-            F.st(dc, "BLICK", x0, 58, h, 4, 0, 1.0, 0);
-            dc.setColor(acc, -1);
-            F.st(dc, num, x0 + w1 + 22.0 * h / 80 + w2 / 2, 58, h * ns, 4, 1, 1.0, 0);
-            if (pop >= 0) {
-                dc.setColor(G.dim(acc, 1 - pop), -1);
-                F.st(dc, "+1", x0 + w1 + w2 + 34, 54 - pop * 22, 16, 3, 1, 1.0, 0);
+        if (ML) {
+            // ---- headline: BLICK #24 (+1 pop)
+            var num = "#" + cnt;
+            var ns = pop >= 0 ? 1 + 0.35 * (1 - G.ease(pop * 2.5)) : 1.0;
+            if (st == 1) {
+                var h = 26;
+                var w1 = F.stW("BLICK ", h);
+                var w2 = F.stW(num, h);
+                var x0 = 227 - (w1 + w2 + 22.0 * h / 80) / 2;
+                dc.setColor(0xD0D0D0, -1);
+                F.st(dc, "BLICK", x0, 58, h, 4, 0, 1.0, 0);
+                dc.setColor(acc, -1);
+                F.st(dc, num, x0 + w1 + 22.0 * h / 80 + w2 / 2, 58, h * ns, 4, 1, 1.0, 0);
+                if (pop >= 0) {
+                    dc.setColor(G.dim(acc, 1 - pop), -1);
+                    F.st(dc, "+1", x0 + w1 + w2 + 34, 54 - pop * 22, 16, 3, 1, 1.0, 0);
+                }
+            } else {
+                var sc = 4;
+                var w = F.pxW("BLICK " + num, sc);
+                var x0 = 227 - w / 2;
+                dc.setColor(0xE8E8E8, -1);
+                F.px(dc, "BLICK", x0, 34, sc, 0, 0);
+                dc.setColor(acc, -1);
+                F.px(dc, num, x0 + 6 * 6 * sc, 34 - (ns > 1 ? Math.round((ns - 1) * 20).toNumber() : 0), sc, 0, 0);
+                if (pop >= 0) {
+                    dc.setColor(G.dim(acc, 1 - pop), -1);
+                    F.px(dc, "+1", 227 - 17, 72 - Math.round(pop * 10).toNumber(), 3, 0, 0);
+                }
             }
-        } else {
-            var sc = 4;
-            var w = F.pxW("BLICK " + num, sc);
-            var x0 = 227 - w / 2;
-            dc.setColor(0xE8E8E8, -1);
-            F.px(dc, "BLICK", x0, 34, sc, 0, 0);
-            dc.setColor(acc, -1);
-            F.px(dc, num, x0 + 6 * 6 * sc, 34 - (ns > 1 ? Math.round((ns - 1) * 20).toNumber() : 0), sc, 0, 0);
-            if (pop >= 0) {
-                dc.setColor(G.dim(acc, 1 - pop), -1);
-                F.px(dc, "+1", 227 - 17, 72 - Math.round(pop * 10).toNumber(), 3, 0, 0);
+            // remark
+            dc.setColor((nt || wink) ? acc : 0x8A8A8A, -1);
+            if (!(st == 2 && pop >= 0)) {
+                F.px(dc, rem, 227, st == 1 ? 76 : 72, 2, 1, 0);
+            }
+
+            // ---- the eye (over the cached time it must stay above the digits)
+            if (!SL) {
+                dc.setClip(0, 0, 454, st == 1 ? 234 : 212);
+            }
+            if (st == 1) {
+                eye1(dc, 227, 170, op, lk[0], lk[1], nt ? 22 : (ms < 1400 ? 21 : 21 - 4 * G.ease((ms - 1400) / 300.0)), acc);
+            } else {
+                eye2(dc, 227, 150, op, lk[0], lk[1], acc);
+            }
+            if (!SL) {
+                dc.clearClip();
+            }
+            // sleepy Zzz / wink sparkle
+            if (nt) {
+                var z = live ? (a.t % 2400) / 2400.0 : 0.5;
+                dc.setColor(G.dim(acc, 1 - z * 0.7), -1);
+                F.px(dc, "z", 330 + Math.round(z * 18).toNumber(), 118 - Math.round(z * 30).toNumber(), 2, 0, 0);
+                F.px(dc, "Z", 346 + Math.round(z * 14).toNumber(), 100 - Math.round(z * 24).toNumber(), 3, 0, 0);
+            }
+            if (wink && ms >= 2000 && ms < 3200) {
+                var k = (ms - 2000) / 1200.0;
+                var r = 14 * Math.sin(k * 3.1416);
+                dc.setColor(acc, -1);
+                dc.fillPolygon([[350, 104 - r], [353, 101], [350 + r, 104], [353, 107], [350, 104 + r], [347, 107], [350 - r, 104], [347, 101]]);
             }
         }
-        // remark
-        dc.setColor((nt || wink) ? acc : 0x8A8A8A, -1);
-        if (!(st == 2 && pop >= 0)) {
-            F.px(dc, rem, 227, st == 1 ? 76 : 72, 2, 1, 0);
+        if (!SL) {
+            return;
         }
-
-        // ---- the eye
-        if (st == 1) {
-            eye1(dc, 227, 170, op, lk[0], lk[1], nt ? 22 : (ms < 1400 ? 21 : 21 - 4 * G.ease((ms - 1400) / 300.0)), acc);
-        } else {
-            eye2(dc, 227, 150, op, lk[0], lk[1], acc);
-        }
-        // sleepy Zzz / wink sparkle
-        if (nt) {
-            var z = live ? (a.t % 2400) / 2400.0 : 0.5;
-            dc.setColor(G.dim(acc, 1 - z * 0.7), -1);
-            F.px(dc, "z", 330 + Math.round(z * 18).toNumber(), 118 - Math.round(z * 30).toNumber(), 2, 0, 0);
-            F.px(dc, "Z", 346 + Math.round(z * 14).toNumber(), 100 - Math.round(z * 24).toNumber(), 3, 0, 0);
-        }
-        if (wink && ms >= 2000 && ms < 3200) {
-            var k = (ms - 2000) / 1200.0;
-            var r = 14 * Math.sin(k * 3.1416);
-            dc.setColor(acc, -1);
-            dc.fillPolygon([[350, 104 - r], [353, 101], [350 + r, 104], [353, 107], [350, 104 + r], [347, 107], [350 - r, 104], [347, 101]]);
-        }
-
         // ---- time
         if (st == 1) {
             dc.setColor(d.dcol, -1);

@@ -14,6 +14,8 @@ class FaceTerm extends Face {
     // rain trail colours (head, then fading)
     const RC = [0x2A9A4C, 0x145D2A, 0x125325, 0x104820, 0x0D3E1C, 0x0B3417, 0x092912, 0x061F0E, 0x041409, 0x020A04];
     const PROMPT = "fr970:~$ ";
+    // commands typed at the prompt on each wrist raise
+    const CMDS = ["uptime", "cat /schlaf", "ls ~/ziele", "top -b -n1", "ping coach", "./motivation", "sudo laufen", "git push --force"];
     const NCH = 22; // session width in characters
     const LY = 152; // first session line (top)
     const LP = 21; // line pitch
@@ -123,44 +125,86 @@ class FaceTerm extends Face {
         return v < 0 ? "--" : v + suf;
     }
 
+    // matrix rain columns (style 3); skipTime keeps them off the big time (drawn over a cached layer)
+    hidden function rain(dc as Dc, ms, skipTime as Boolean) as Void {
+        for (var c = 0; c < 24; c++) {
+            var sd = G.rnd(c * 7919 + 13);
+            var x = 24 + (c % 15) * 28 + (sd % 9);
+            sd = G.rnd(sd);
+            var v = 70 + (sd % 90); // px/s
+            sd = G.rnd(sd);
+            var span = 454 + 10 * 16;
+            var head = (ms * v / 1000 + (sd % span)) % span;
+            var hy = (head / 16) * 16;
+            for (var j = 0; j < 10; j++) {
+                var yy = hy - j * 16;
+                // inside the circle, and never behind the session text (legibility + watchdog budget)
+                var dx = x + 5 - 227;
+                var dy = yy + 7 - 227;
+                if (dx * dx + dy * dy > 42000) {
+                    continue;
+                }
+                if (yy > LY - 16 && yy < LY + 11 * LP && x > 84 && x < 370) {
+                    continue;
+                }
+                // over the cached layer it also keeps clear of the big time
+                if (skipTime && yy > 44 && yy < 136 && x > 70 && x < 384) {
+                    continue;
+                }
+                var ci = ((c * 31 + (yy / 16) * 7 + (ms / 220) * (j == 0 ? 3 : 0)) % 10) * 16;
+                dc.setColor(RC[j], -1);
+                for (var q = ci; q < ci + 16; q += 4) {
+                    if (RG[q + 2] > 0) {
+                        dc.fillRectangle(x + RG[q], yy + RG[q + 1], RG[q + 2], RG[q + 3]);
+                    }
+                }
+            }
+        }
+    }
+
+    // static layer: the finished session; every wrist raise types a new command at the prompt
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
+    hidden function moving(dc as Dc, d as D, a as A, st, fg) as Void {
+        var ms = a.live ? a.t : 99999;
+        if (st == 3) {
+            rain(dc, ms, true);
+        }
+        var y = LY + 10 * LP;
+        var lx = 227 - (NCH * 12 - 2) / 2.0;
+        var c2 = 227 - chord(y, 14);
+        if (c2 > lx) {
+            lx = c2;
+        }
+        var cx = lx + F.pxW(PROMPT, 2) + 2;
+        var cmd = CMDS[d.wakeN % CMDS.size()] as String;
+        var n = G.clamp((ms - 600) / 70, 0, cmd.length());
+        dc.setColor(fg, -1);
+        if (n > 0) {
+            pxt(dc, cmd.substring(0, n), cx, y, 2, 0);
+        }
+        _busy = n < cmd.length();
+        if (_busy || !a.live || (a.t / 500) % 2 == 0) {
+            dc.fillRectangle(cx + n * 12, y - 1, 10, 16);
+        }
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var fg = st == 2 ? 0xFFB000 : (st == 3 ? 0x3BFF6A : d.accent);
         var live = a.live;
         var ms = live ? a.t : 99999;
         _rain = st == 3;
+        if (a.bg) {
+            moving(dc, d, a, st, fg);
+            return;
+        }
 
         // ---- matrix rain (behind everything)
-        if (st == 3) {
-            for (var c = 0; c < 24; c++) {
-                var sd = G.rnd(c * 7919 + 13);
-                var x = 24 + (c % 15) * 28 + (sd % 9);
-                sd = G.rnd(sd);
-                var v = 70 + (sd % 90); // px/s
-                sd = G.rnd(sd);
-                var span = 454 + 10 * 16;
-                var head = (ms * v / 1000 + (sd % span)) % span;
-                var hy = (head / 16) * 16;
-                for (var j = 0; j < 10; j++) {
-                    var yy = hy - j * 16;
-                    // inside the circle, and never behind the session text (legibility + watchdog budget)
-                    var dx = x + 5 - 227;
-                    var dy = yy + 7 - 227;
-                    if (dx * dx + dy * dy > 42000) {
-                        continue;
-                    }
-                    if (yy > LY - 16 && yy < LY + 11 * LP && x > 84 && x < 370) {
-                        continue;
-                    }
-                    var ci = ((c * 31 + (yy / 16) * 7 + (ms / 220) * (j == 0 ? 3 : 0)) % 10) * 16;
-                    dc.setColor(RC[j], -1);
-                    for (var q = ci; q < ci + 16; q += 4) {
-                        if (RG[q + 2] > 0) {
-                            dc.fillRectangle(x + RG[q], yy + RG[q + 1], RG[q + 2], RG[q + 3]);
-                        }
-                    }
-                }
-            }
+        if (st == 3 && !a.so) {
+            rain(dc, ms, false);
         }
 
         // ---- big time with phosphor glow + scanlines
@@ -272,9 +316,11 @@ class FaceTerm extends Face {
                 pxt(dc, s, lx, y, 2, 0);
             }
         }
-        _busy = ms < tc + 60;
+        if (!a.so) {
+            _busy = ms < tc + 60;
+        }
         // block cursor (blinks when idle)
-        if (cy >= 0 && (_busy || !live || (a.t / 500) % 2 == 0)) {
+        if (cy >= 0 && !a.so && (_busy || !live || (a.t / 500) % 2 == 0)) {
             dc.setColor(fg, -1);
             dc.fillRectangle(cx, cy - 1, 10, 16);
         }

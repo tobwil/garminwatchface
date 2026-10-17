@@ -136,6 +136,34 @@ function blk(dc, x, yb, w, h, col, xEnd) {
   dc.fillRectangle(x, yb - h, ww, 2);
 }
 
+// ambient shimmer across the power zone bar (after the intro, while live)
+function shimmer(dc, a) {
+  if (!a.live) return;
+  const bx = 52, bw = 350, by = 218, bh = 18;
+  const sw = bw / 6.0;
+  const ph = (a.t % 2600) / 2600.0;
+  const sx = bx - 30 + (bw + 60) * ph;
+  dc.setClip(bx, by, bw, bh);
+  dc.setPenWidth(5);
+  for (let k = -4; k <= 4; k += 2) {
+    const xx = sx + k * 3;
+    const z = G.clamp(Math.floor((xx - bx) / sw), 0, 5);
+    dc.setColor(G.mix(ZC[z], 0xffffff, 0.55 * (1 - Math.abs(k) / 5.0)), -1);
+    dc.drawLine(xx + 4, by, xx - 4, by + bh);
+  }
+  dc.clearClip();
+}
+
+// blinking "you are here" marker on the workout chart (never part of the static layer)
+function marker(dc, a) {
+  if (a.so || (a.live && a.t % 1000 >= 600)) return;
+  const chx = 80, chb = 376;
+  dc.setColor(0xffffff, -1);
+  dc.setPenWidth(2);
+  dc.drawLine(chx, chb + 1, chx, chb - 36);
+  dc.fillPolygon([[chx - 5, chb - 42], [chx + 5, chb - 42], [chx, chb - 36]]);
+}
+
 export default {
   fps: 10,
 
@@ -145,8 +173,23 @@ export default {
     return true;
   },
 
+  // static layer: everything but the shimmer and the blinking marker (per minute and page)
+  bgKey(d) { return (d.doy * 1440 + d.mins) * 3 + St.get("hudPage", 0); },
+
+  // moving parts on top of the cached layer
+  overlay(dc, d, a, pg) {
+    if (pg === 0) {
+      shimmer(dc, a);
+      marker(dc, a);
+    }
+  },
+
   draw(dc, d, a) {
     const pg = St.get("hudPage", 0);
+    if (a.bg) {
+      this.overlay(dc, d, a, pg);
+      return;
+    }
     const st = d.cfg.style;
     const acc = d.accent;
     const P = pal(st);
@@ -282,19 +325,7 @@ export default {
       }
     }
     // ambient shimmer across the bar
-    if (a.live && p >= 1) {
-      const ph = (a.t % 2600) / 2600.0;
-      const sx = bx - 30 + (bw + 60) * ph;
-      dc.setClip(bx, by, bw, bh);
-      dc.setPenWidth(5);
-      for (let k = -4; k <= 4; k += 2) {
-        const xx = sx + k * 3;
-        const z = G.clamp(Math.floor((xx - bx) / sw), 0, 5);
-        dc.setColor(G.mix(ZC[z], 0xffffff, 0.55 * (1 - Math.abs(k) / 5.0)), -1);
-        dc.drawLine(xx + 4, by, xx - 4, by + bh);
-      }
-      dc.clearClip();
-    }
+    if (p >= 1) shimmer(dc, a);
     // boundary watts
     dc.setColor(0xb8b8b8, -1);
     for (let z = 1; z < 6; z++) {
@@ -332,12 +363,7 @@ export default {
     const chx = 80 + ox, chw = 214, chb = 376;
     chart(dc, chx, chb, chw, 34, wi, cp);
     // "you are here" marker
-    if (cp >= 1 && (!a.live || a.t % 1000 < 600)) {
-      dc.setColor(0xffffff, -1);
-      dc.setPenWidth(2);
-      dc.drawLine(chx, chb + 1, chx, chb - 36);
-      dc.fillPolygon([[chx - 5, chb - 42], [chx + 5, chb - 42], [chx, chb - 36]]);
-    }
+    if (cp >= 1 && ox === 0) marker(dc, a);
   },
 
   pageZones(dc, d, p, st, acc, P, ftp) {

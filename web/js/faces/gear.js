@@ -77,6 +77,9 @@ function hour12(d) { return d.h % 12 === 0 ? 12 : d.h % 12; }
 export default {
   fps: 15,
 
+  // static layer: cached, redrawn when the minute changes
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const acc = d.accent;
@@ -95,34 +98,37 @@ export default {
     const cCog = neon ? G.dim(acc, 0.45) : chrom ? 0x80858c : 0x3a3c40;
     const cHi = chrom ? 0xf2f4f7 : 0x55585e;
 
-    // ---- time + date
-    dc.setColor(0x8a8a8a, -1);
-    F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 20, 2, 1, 0);
-    dc.setColor(0xffffff, -1);
-    F.st(dc, G.timeStr(d), 227, 76, 62, 7, 1, G.easeInOut(p * 1.3), 0);
+    if (!a.bg) {
+      // ---- time + date
+      dc.setColor(0x8a8a8a, -1);
+      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 20, 2, 1, 0);
+      dc.setColor(0xffffff, -1);
+      F.st(dc, G.timeStr(d), 227, 76, 62, 7, 1, G.easeInOut(p * 1.3), 0);
 
-    // ---- minute index ring around the chainring
-    const ip = G.ease(p * 1.6);
-    dc.setPenWidth(2);
-    for (let i = 0; i < 12; i++) {
-      if (i / 12 > ip) break;
-      dc.setColor(i === 0 ? 0x9a9a9a : 0x4a4a4a, -1);
-      G.tick(dc, RX, RY, RR + 13, RR + (i % 3 === 0 ? 21 : 17), i * 30);
-    }
+      // ---- minute index ring around the chainring
+      const ip = G.ease(p * 1.6);
+      dc.setPenWidth(2);
+      for (let i = 0; i < 12; i++) {
+        if (i / 12 > ip) break;
+        dc.setColor(i === 0 ? 0x9a9a9a : 0x4a4a4a, -1);
+        G.tick(dc, RX, RY, RR + 13, RR + (i % 3 === 0 ? 21 : 17), i * 30);
+      }
 
-    // ---- cassette
-    if (!neon) {
-      dc.setColor(chrom ? 0x1a1b1d : 0x0f1012, -1);
-      dc.fillCircle(KX, KY, cogR(11) + 3);
+      // ---- cassette
+      if (!neon) {
+        dc.setColor(chrom ? 0x1a1b1d : 0x0f1012, -1);
+        dc.fillCircle(KX, KY, cogR(11) + 3);
+      }
+      for (let i = 0; i < 12; i++) {
+        const r = cogR(i);
+        const on = i === cog;
+        if (on) continue;
+        dc.setPenWidth(neon ? 1 : 2);
+        dc.setColor(G.dim(cCog, (i % 2 === 0 ? 0.6 : 0.85) + 0.15 * i / 11), -1);
+        dc.drawCircle(KX, KY, r);
+      }
     }
-    for (let i = 0; i < 12; i++) {
-      const r = cogR(i);
-      const on = i === cog;
-      if (on) continue;
-      dc.setPenWidth(neon ? 1 : 2);
-      dc.setColor(G.dim(cCog, (i % 2 === 0 ? 0.6 : 0.85) + 0.15 * i / 11), -1);
-      dc.drawCircle(KX, KY, r);
-    }
+    if (a.so) return;
     // highlighted cog with its real teeth
     {
       const r = cogR(cog), n = CASS[cog];

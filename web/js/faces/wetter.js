@@ -320,6 +320,12 @@ function tStr(v, d) {
 function rainStr(d) { return d.rain < 0 ? "--" : d.rain + "%"; }
 
 // ---- style 1: the window
+// clearClip, but over the cached layer the repaint stays inside the glass / the picture
+function unclip(dc, a, x, y, w, h) {
+  if (a.bg) dc.setClip(x, y, w, h);
+  else dc.clearClip();
+}
+
 function styleWindow(dc, d, a, t, p) {
   const acc = d.accent;
   const wake = d.wakeN;
@@ -327,10 +333,12 @@ function styleWindow(dc, d, a, t, p) {
   // wall: striped wallpaper, warmer and darker at night (lamp light)
   const wall = night ? 0x2a2a33 : 0x34514e;
   const wall2 = night ? 0x24242c : 0x2d4744;
-  dc.setColor(wall, -1);
-  dc.fillRectangle(0, 0, 454, 454);
-  dc.setColor(wall2, -1);
-  for (let x = 8; x < 454; x += 24) dc.fillRectangle(x, 0, 8, 454);
+  if (!a.bg) {
+    dc.setColor(wall, -1);
+    dc.fillRectangle(0, 0, 454, 454);
+    dc.setColor(wall2, -1);
+    for (let x = 8; x < 454; x += 24) dc.fillRectangle(x, 0, 8, 454);
+  }
   // lamp glow at night: warm circle behind the window top-left
   // outside
   const fl = flash(t, wake);
@@ -384,7 +392,7 @@ function styleWindow(dc, d, a, t, p) {
   // glass sheen
   dc.setColor(G.mix(skyCol(1), 0xffffff, 0.16), -1);
   for (let k = 0; k < 5; k++) dc.fillRectangle(GX + 20 + k * P, GY + 132 - k * 2 * P, P, 2 * P);
-  dc.clearClip();
+  unclip(dc, a, GX, GY, GW, GH);
 
   // window frame (painted wood) + cross bars
   const fw = 0xeee8da, fs = 0xc6bca8, fd = 0x8c826e;
@@ -461,6 +469,11 @@ function styleWindow(dc, d, a, t, p) {
     }
   }
 
+  // over the cached room only the glass is repainted (weather, tree, bars, curtains, cat)
+  if (a.bg) {
+    dc.clearClip();
+    return;
+  }
   // wall calendar (date) left
   calendar(dc, d, 24, 148, night);
   // weather note right: high / low / rain chance
@@ -617,6 +630,7 @@ function stylePostcard(dc, d, a, t, p) {
   const wake = d.wakeN;
   const night = NIGHT;
   const card = 0xf3ead6, ink = 0x2c3448;
+  if (!a.bg) {
   dc.setColor(card, -1);
   dc.fillRectangle(0, 0, 454, 454);
   // airmail border
@@ -630,6 +644,7 @@ function stylePostcard(dc, d, a, t, p) {
   dc.fillRectangle(PX0 - 4, PY0 - 4, PW + 12, PH + 12);
   dc.setColor(0xffffff, -1);
   dc.fillRectangle(PX0 - 8, PY0 - 8, PW + 16, PH + 16);
+  }
   // the picture is printed top -> bottom during the intro
   const rv = Math.max(4, q4(G.ease(p * 1.3) * PH));
   dc.setClip(PX0, PY0, PW, rv);
@@ -668,7 +683,7 @@ function stylePostcard(dc, d, a, t, p) {
   for (let k = 0; k < 6; k++) dc.fillRectangle(PX0 + 208 + k * 8, hz + 12 + k * 8, 24, 8);
   precip(dc, PX0, PY0, PW, PH, t, wake * 7 + 3);
   fogBands(dc, PX0, PY0 + 60, PW, PH - 60, t);
-  dc.clearClip();
+  unclip(dc, a, PX0, PY0, PW, PH);
 
   // stamp (weather icon + temperature) and postmark (date) over the picture's corner
   const sp = G.spring(G.stag(p, 0, 0.55, 0.4));
@@ -695,6 +710,11 @@ function stylePostcard(dc, d, a, t, p) {
     }
   }
 
+  // over the cached card only the picture is repainted (weather, smoke, stamp corner)
+  if (a.bg) {
+    dc.clearClip();
+    return;
+  }
   // time printed on the card, greeting + high / low / rain handwritten below the picture
   dc.setColor(ink, -1);
   F.px(dc, G.timeStr(d), CX, 48, 6, 1, 0);
@@ -764,9 +784,17 @@ function styleDiorama(dc, d, a, t, p) {
 export default {
   get fps() { return FPS; },
 
+  // static layer: room / card; the weather in the glass / picture is repainted. The diorama's sky
+  // moves everywhere: no cache
+  bgKey(d) { return d.cfg.style === 3 ? -1 : d.doy * 1440 + d.mins; },
+
+  // the curtains opening / the card being printed are the reveal
+  reveal() { return false; },
+
   draw(dc, d, a) {
     const st = d.cfg.style;
     const p = a.intro;
+    if (a.bg && p < 1) a = { ...a, bg: false }; // the intro repaints everything
     const t = a.live ? a.t : 0;
     a_live = a.live;
     const key = ((st * 64 + d.cond + 2) * 1440 + d.mins) * 16 + d.mon;

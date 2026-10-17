@@ -170,7 +170,11 @@ function quip(d, win) {
 export default {
   get fps() { return 15; },
 
+  // static layer: background, network, labels, time, forecast; signals and flashes move
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
   draw(dc, d, a) {
+    const S = !a.bg, M = !a.so; // draw the static / the moving parts
     const st = d.cfg.style;
     const C = pal(st, d.accent);
     const p = a.intro;
@@ -178,28 +182,30 @@ export default {
     const tt = live ? a.t : 900; // frozen pulse phase when static
     const win = forward(d);
 
-    // ---- background
-    // (big fills are expensive on the watch: few, cheap layers)
-    if (st === 2) {
-      dc.setColor(C[0], -1);
-      dc.fillCircle(227, 227, 227);
-      for (let g = 3; g < 454; g += 32) {
-        dc.setColor((g - 3) % 128 === 64 ? 0x173a68 : 0x10294d, -1);
-        dc.drawLine(g, 0, g, 454);
-        dc.drawLine(0, g, 454, g);
+    if (S) {
+      // ---- background
+      // (big fills are expensive on the watch: few, cheap layers)
+      if (st === 2) {
+        dc.setColor(C[0], -1);
+        dc.fillCircle(227, 227, 227);
+        for (let g = 3; g < 454; g += 32) {
+          dc.setColor((g - 3) % 128 === 64 ? 0x173a68 : 0x10294d, -1);
+          dc.drawLine(g, 0, g, 454);
+          dc.drawLine(0, g, 454, g);
+        }
+      } else if (st === 3) {
+        // drifting soft cells
+        for (let c = 0; c < 4; c++) {
+          const x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000);
+          const y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000);
+          dc.setColor(0x21100a, -1);
+          dc.setPenWidth(2);
+          dc.drawCircle(x, y, 40 + c * 8);
+        }
+      } else {
+        dc.setColor(0x0c0819, -1);
+        dc.fillCircle(227, 252, 170);
       }
-    } else if (st === 3) {
-      // drifting soft cells
-      for (let c = 0; c < 4; c++) {
-        const x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000);
-        const y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000);
-        dc.setColor(0x21100a, -1);
-        dc.setPenWidth(2);
-        dc.drawCircle(x, y, 40 + c * 8);
-      }
-    } else {
-      dc.setColor(0x0c0819, -1);
-      dc.fillCircle(227, 252, 170);
     }
 
     // ---- intro schedule: layer reveal (nodes) and edge growth
@@ -218,12 +224,15 @@ export default {
             const w = edgeW(L, i, j);
             const s = G.clamp(Math.abs(w * edgeA(L, i)) / (L === 2 ? 1.6 : 1.0), 0, 1);
             const col = w >= 0 ? C[1] : C[2];
-            const n = path(st, L, i, j, e, tt, s);
-            dc.setColor(G.mix(C[0], col, 0.16 + 0.7 * s), -1);
-            dc.setPenWidth(s > 0.62 ? 2 : 1);
-            drawPath(dc, n, ep);
+            // (over the cached layer the dendrites rest, so the signals stay on the drawn curves)
+            const n = path(st, L, i, j, e, a.bg ? 900 : tt, s);
+            if (S) {
+              dc.setColor(G.mix(C[0], col, 0.16 + 0.7 * s), -1);
+              dc.setPenWidth(s > 0.62 ? 2 : 1);
+              drawPath(dc, n, ep);
+            }
             // signal pulse on strong edges
-            if (p >= 1 && s > 0.3) {
+            if (M && p >= 1 && s > 0.3) {
               const f = ph - L + (((e * 37) % 11) - 5) * 0.03;
               if (f >= 0 && f <= 1) {
                 const q = along(n, f);
@@ -262,7 +271,9 @@ export default {
         const br = G.clamp((0.3 + 0.7 * v) * np, 0, 1);
         let r = L === 0 ? 5 + 4 * v : L === 3 ? 6 + 5 * v : 6;
         r = r * G.spring(np);
-        if (st === 2) {
+        if (!S) {
+          // node bodies are cached
+        } else if (st === 2) {
           const h = Math.round(r) + 1;
           dc.setColor(C[0], -1);
           dc.fillRectangle(x - h, y - h, 2 * h + 1, 2 * h + 1);
@@ -290,14 +301,14 @@ export default {
             }
           }
         }
-        if (fl > 0 && np >= 1) {
+        if (M && fl > 0 && np >= 1) {
           // arrival flash ring
           dc.setColor(G.mix(C[0], col, fl), -1);
           dc.setPenWidth(2);
           if (st === 2) dc.drawRectangle(x - r - 3, y - r - 3, 2 * r + 7, 2 * r + 7);
           else dc.drawCircle(x, y, r + 3);
         }
-        if (isWin && np >= 1) {
+        if (isWin && np >= 1 && (st === 2 ? S : M)) {
           dc.setColor(C[6], -1);
           dc.setPenWidth(2);
           if (st === 2) dc.drawRectangle(x - r - 5, y - r - 5, 2 * r + 11, 2 * r + 11);
@@ -306,6 +317,7 @@ export default {
       }
     }
 
+    if (!S) return;
     // ---- labels
     if (nP[0] > 0) {
       for (let i = 0; i < 6; i++) {

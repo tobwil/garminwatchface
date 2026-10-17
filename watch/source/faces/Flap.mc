@@ -215,6 +215,11 @@ class FaceFlap extends Face {
         return [seqCh(drum, target, k - 1, n, blank), seqCh(drum, target, k, n, blank), (lt - (k - 1) * fd) / fd.toFloat()];
     }
 
+    // static layer: cached, redrawn when the minute changes
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
         var st = d.cfg.style;
         var col;
@@ -234,42 +239,49 @@ class FaceFlap extends Face {
 
         // timeline: intro rattle (ms of the 1.4 s intro) or a single flip on minute change
         var key = d.h * 60 + d.m;
-        if (a.t < _mT0) {
-            _mT0 = -1;
+        // (the static layer render must not touch the flip state)
+        if (!a.so) {
+            if (a.t < _mT0) {
+                _mT0 = -1;
+            }
+            if (_lastKey >= 0 && key != _lastKey && a.live && a.intro >= 1) {
+                _mT0 = a.t;
+            }
+            _lastKey = key;
         }
-        if (_lastKey >= 0 && key != _lastKey && a.live && a.intro >= 1) {
-            _mT0 = a.t;
-        }
-        _lastKey = key;
         var intro = a.intro < 1;
         var ms = intro ? a.intro * 1400 : 99999.0;
-        var mm = _mT0 >= 0 ? a.t - _mT0 : 99999;
-        _busy = intro || mm < 900;
-
-        // ---- date row: mini flaps "FR" "16" "OKT"
-        var dl = [d.dowStr, "" + d.day, d.monStr];
-        var cw = 22;
-        var chh = 30;
-        var gp = 3;
-        var gg = 12;
-        var tw = -gg;
-        for (var g = 0; g < 3; g++) {
-            tw += (dl[g] as String).length() * (cw + gp) - gp + gg;
+        var mm = _mT0 >= 0 && !a.so ? a.t - _mT0 : 99999;
+        if (!a.so) {
+            _busy = intro || mm < 900;
         }
-        var x = 227 - tw / 2.0;
-        var ci = 0;
-        for (var g = 0; g < 3; g++) {
-            var s = dl[g] as String;
-            for (var k = 0; k < s.length(); k++) {
-                var ch = s.substring(k, k + 1) as String;
-                var f = flipAt(DRUM, ch, ms - 60 - ci * 45, 4, 70, true);
-                cell(dc, x, 60, cw, chh, 3, f[0], f[1], f[2], false, lab, tT, tB);
-                x += cw + gp;
-                ci++;
+
+        if (!a.bg) {
+            // ---- date row: mini flaps "FR" "16" "OKT"
+            var dl = [d.dowStr, "" + d.day, d.monStr];
+            var cw = 22;
+            var chh = 30;
+            var gp = 3;
+            var gg = 12;
+            var tw = -gg;
+            for (var g = 0; g < 3; g++) {
+                tw += (dl[g] as String).length() * (cw + gp) - gp + gg;
             }
-            x += gg - gp;
-        }
+            var x = 227 - tw / 2.0;
+            var ci = 0;
+            for (var g = 0; g < 3; g++) {
+                var s = dl[g] as String;
+                for (var k = 0; k < s.length(); k++) {
+                    var ch = s.substring(k, k + 1) as String;
+                    var f = flipAt(DRUM, ch, ms - 60 - ci * 45, 4, 70, true);
+                    cell(dc, x, 60, cw, chh, 3, f[0], f[1], f[2], false, lab, tT, tB);
+                    x += cw + gp;
+                    ci++;
+                }
+                x += gg - gp;
+            }
 
+        }
         // ---- big HH MM tiles
         var tm = hhStr(d.h, d.is24) + G.pad2(d.m);
         // previous minute (for the minute-change flip)
@@ -279,6 +291,10 @@ class FaceFlap extends Face {
         var bw = 78;
         var bh = 122;
         var by = 110;
+        // on the cached board only the big tiles flip (wrist raise, minute change)
+        if (a.bg && !_busy) {
+            return;
+        }
         for (var i = 0; i < 4; i++) {
             var bx = 227 - 177 + i * (bw + 6) + (i >= 2 ? 24 : 0);
             var tch = tm.substring(i, i + 1) as String;
@@ -302,6 +318,9 @@ class FaceFlap extends Face {
         dc.setColor(G.dim(col, 0.75), -1);
         dc.fillRoundedRectangle(222, by + 38, 10, 10, 3);
         dc.fillRoundedRectangle(222, by + bh - 48, 10, 10, 3);
+        if (a.bg) {
+            return;
+        }
 
         // ---- board header
         var bx0 = 227 - (COLS * PITCH - 2) / 2;

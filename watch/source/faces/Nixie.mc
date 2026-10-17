@@ -178,7 +178,14 @@ class FaceNixie extends Face {
         return d.is24 ? d.h : (d.h % 12 == 0 ? 12 : d.h % 12);
     }
 
+    // static layer: tubes, rail, date tubes, neon windows; flicker, colon and dekatron glow move
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var L = LAY[st - 1] as Array;
         var tw = L[0];
@@ -207,81 +214,86 @@ class FaceNixie extends Face {
 
         // ---- dekatron ring (style 3): 60 cathode pins, a glow dot runs round = seconds
         if (st == 3) {
-            // glass rim: reflections only (full circles are expensive on the watch)
-            dc.setColor(0x34383B, -1);
-            dc.setPenWidth(1);
-            G.arcC(dc, 227, 227, 219, 290, 350);
-            G.arcC(dc, 227, 227, 219, 110, 170);
-            G.arcC(dc, 227, 227, 193, 300, 340);
-            // seconds index 0..50 outside the time area
-            dc.setColor(0x4A4440, -1);
-            for (var i = 0; i < 6; i++) {
-                var lb = "" + i * 10;
-                F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
-            }
-            if (_pin == null) {
-                var pn = new [240];
-                for (var i = 0; i < 60; i++) {
-                    var r1 = i % 5 == 0 ? 199 : 202;
-                    pn[i * 4] = G.ptX(227, r1, i * 6);
-                    pn[i * 4 + 1] = G.ptY(227, r1, i * 6);
-                    pn[i * 4 + 2] = G.ptX(227, 210, i * 6);
-                    pn[i * 4 + 3] = G.ptY(227, 210, i * 6);
+            if (S) {
+                // glass rim: reflections only (full circles are expensive on the watch)
+                dc.setColor(0x34383B, -1);
+                dc.setPenWidth(1);
+                G.arcC(dc, 227, 227, 219, 290, 350);
+                G.arcC(dc, 227, 227, 219, 110, 170);
+                G.arcC(dc, 227, 227, 193, 300, 340);
+                // seconds index 0..50 outside the time area
+                dc.setColor(0x4A4440, -1);
+                for (var i = 0; i < 6; i++) {
+                    var lb = "" + i * 10;
+                    F.px(dc, lb, G.ptX(227, 180, i * 60), G.ptY(227, 180, i * 60) - 7, 2, 1, 0);
                 }
-                _pin = pn;
+                if (_pin == null) {
+                    var pn = new [240];
+                    for (var i = 0; i < 60; i++) {
+                        var r1 = i % 5 == 0 ? 199 : 202;
+                        pn[i * 4] = G.ptX(227, r1, i * 6);
+                        pn[i * 4 + 1] = G.ptY(227, r1, i * 6);
+                        pn[i * 4 + 2] = G.ptX(227, 210, i * 6);
+                        pn[i * 4 + 3] = G.ptY(227, 210, i * 6);
+                    }
+                    _pin = pn;
+                }
+                var pin = _pin as Array;
+                dc.setPenWidth(3);
+                for (var i = 0; i < 60; i++) {
+                    dc.setColor(i % 5 == 0 ? 0x5A5550 : 0x3A3633, -1);
+                    dc.drawLine(pin[i * 4], pin[i * 4 + 1], pin[i * 4 + 2], pin[i * 4 + 3]);
+                }
             }
-            var pin = _pin as Array;
-            dc.setPenWidth(3);
-            for (var i = 0; i < 60; i++) {
-                dc.setColor(i % 5 == 0 ? 0x5A5550 : 0x3A3633, -1);
-                dc.drawLine(pin[i * 4], pin[i * 4 + 1], pin[i * 4 + 2], pin[i * 4 + 3]);
+            if (M) {
+                // glow position: jumps pin to pin, gliding over the guide cathodes in the first 160 ms
+                var sec = d.s;
+                var pos = sec.toFloat();
+                if (live && p >= 1) {
+                    pos = sec - 1 + G.easeInOut(G.clamp(a.ms / 160.0, 0.0, 1.0));
+                }
+                if (p < 1) {
+                    pos = sec - 40 * (1 - G.ease(p)); // intro: the glow spins in
+                }
+                var cd = pal(3, acc, warm);
+                for (var k = 3; k >= 1; k--) {
+                    var ang = (pos - k * 0.7) * 6;
+                    dc.setColor(G.dim(cd[1], 0.9 - k * 0.22), -1);
+                    dc.fillCircle(G.ptX(227, 205, ang), G.ptY(227, 205, ang), 6 - k);
+                }
+                var ang = pos * 6;
+                var gx = G.ptX(227, 205, ang);
+                var gy = G.ptY(227, 205, ang);
+                dc.setColor(cd[0], -1);
+                dc.fillCircle(gx, gy, 14);
+                dc.setColor(cd[1], -1);
+                dc.fillCircle(gx, gy, 9);
+                dc.setColor(cd[2], -1);
+                dc.fillCircle(gx, gy, 5);
+                dc.setColor(cd[3], -1);
+                dc.fillCircle(gx, gy, 2.5);
             }
-            // glow position: jumps pin to pin, gliding over the guide cathodes in the first 160 ms
-            var sec = d.s;
-            var pos = sec.toFloat();
-            if (live && p >= 1) {
-                pos = sec - 1 + G.easeInOut(G.clamp(a.ms / 160.0, 0.0, 1.0));
-            }
-            if (p < 1) {
-                pos = sec - 40 * (1 - G.ease(p)); // intro: the glow spins in
-            }
-            var cd = pal(3, acc, warm);
-            for (var k = 3; k >= 1; k--) {
-                var ang = (pos - k * 0.7) * 6;
-                dc.setColor(G.dim(cd[1], 0.9 - k * 0.22), -1);
-                dc.fillCircle(G.ptX(227, 205, ang), G.ptY(227, 205, ang), 6 - k);
-            }
-            var ang = pos * 6;
-            var gx = G.ptX(227, 205, ang);
-            var gy = G.ptY(227, 205, ang);
-            dc.setColor(cd[0], -1);
-            dc.fillCircle(gx, gy, 14);
-            dc.setColor(cd[1], -1);
-            dc.fillCircle(gx, gy, 9);
-            dc.setColor(cd[2], -1);
-            dc.fillCircle(gx, gy, 5);
-            dc.setColor(cd[3], -1);
-            dc.fillCircle(gx, gy, 2.5);
         }
 
         // ---- base rail behind the sockets
         var by = ty + th - 12;
         var tot = 4 * tw + 2 * gp + cgp;
         var x0 = 227 - tot / 2.0;
-        dc.setColor(st == 2 ? 0x15191D : 0x15110E, -1);
-        dc.fillRoundedRectangle(x0 - 10, by + 4, tot + 20, 16, 6);
-        dc.setColor(st == 2 ? 0x46525C : 0x4A3A2C, -1);
-        dc.setPenWidth(1);
-        dc.drawLine(x0 - 4, by + 5, x0 + tot + 4, by + 5);
-        if (st == 2) {
-            // blue LED underglow
-            for (var i = 0; i < 4; i++) {
-                var tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
-                dc.setColor(G.dim(0x0F3A60, warm), -1);
-                dc.fillEllipse(tx + tw / 2.0, by - 5, tw * 0.4, 13);
+        if (S) {
+            dc.setColor(st == 2 ? 0x15191D : 0x15110E, -1);
+            dc.fillRoundedRectangle(x0 - 10, by + 4, tot + 20, 16, 6);
+            dc.setColor(st == 2 ? 0x46525C : 0x4A3A2C, -1);
+            dc.setPenWidth(1);
+            dc.drawLine(x0 - 4, by + 5, x0 + tot + 4, by + 5);
+            if (st == 2) {
+                // blue LED underglow
+                for (var i = 0; i < 4; i++) {
+                    var tx = x0 + i * tw + (i > 0 ? gp : 0) + (i > 1 ? cgp : 0) + (i > 2 ? gp : 0);
+                    dc.setColor(G.dim(0x0F3A60, warm), -1);
+                    dc.fillEllipse(tx + tw / 2.0, by - 5, tw * 0.4, 13);
+                }
             }
         }
-
         // ---- big tubes: HH MM
         var hh = hm12(d);
         // 12 h mode: the first tube stays dark before 10 o'clock (no leading zero)
@@ -311,6 +323,10 @@ class FaceNixie extends Face {
                 } else {
                     b = 1;
                 }
+            }
+            // over the cached tubes only an ambient flicker redraws a tube
+            if (!S && (!(live && p >= 1) || b == 1)) {
+                continue;
             }
             var cols = b == 1 ? P1 : pal(st, acc, b);
             // glass glow fill
@@ -358,6 +374,9 @@ class FaceNixie extends Face {
             dc.fillCircle(227, ly, 2.5);
         }
 
+        if (!S) {
+            return;
+        }
         // ---- weekday + small date tubes (DD.MM)
         var dp = G.ease(G.clamp((p - 0.25) / 0.5, 0.0, 1.0));
         dc.setColor(G.dim(cLbl, dp), -1);

@@ -393,7 +393,14 @@ class FaceOrakel extends Face {
         F.st(dc, txt, x, y, h, 3, 1, 1.0, 0);
     }
 
+    // static layer: stars and time; question, orb and answer are the episode
+    function bgKey(d as D) as Number {
+        return minuteKey(d);
+    }
+
     function draw(dc as Dc, d as D, a as A) as Void {
+        var S = !a.bg; // draw the static parts
+        var M = !a.so; // draw the moving parts
         var st = d.cfg.style;
         var acc = d.accent;
         var p = a.intro;
@@ -417,20 +424,25 @@ class FaceOrakel extends Face {
         }
 
         var pale = G.mix(acc, 0xFFFFFF, 0.6);
-        stars(dc, t, st == 3, st == 3 ? 0xCDB8FF : 0xDCD4FF);
+        if (S) {
+            stars(dc, t, st == 3, st == 3 ? 0xCDB8FF : 0xDCD4FF);
 
-        // ---- time (always legible)
-        var ts = G.timeStr(d);
-        if (st == 3) {
-            dc.setColor(0x3A2470, -1);
-            F.px(dc, ts, 230, 37, 5, 1, 0);
-            dc.setColor(0xF2EAFF, -1);
-            F.px(dc, ts, 227, 34, 5, 1, 0);
-        } else {
-            dc.setColor(0xF2EEFF, -1);
-            F.st(dc, ts, 227, 56, 40, 3, 1, G.ease(p * 1.4), 0);
+            // ---- time (always legible)
+            var ts = G.timeStr(d);
+            if (st == 3) {
+                dc.setColor(0x3A2470, -1);
+                F.px(dc, ts, 230, 37, 5, 1, 0);
+                dc.setColor(0xF2EAFF, -1);
+                F.px(dc, ts, 227, 34, 5, 1, 0);
+            } else {
+                dc.setColor(0xF2EEFF, -1);
+                F.st(dc, ts, 227, 56, 40, 3, 1, G.ease(p * 1.4), 0);
+            }
         }
 
+        if (!M) {
+            return;
+        }
         // ---- question
         var qa = G.clamp((ms - 80) / 400.0, 0.0, 1.0);
         if (qa > 0) {

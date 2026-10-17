@@ -87,8 +87,54 @@ function chord(y, h) {
 
 function nv(v, suf) { return v < 0 ? "--" : v + suf; }
 
+// matrix rain columns (style 3); skipTime keeps them off the big time (drawn over a cached layer)
+function rain(dc, ms, skipTime, d) {
+  for (let c = 0; c < 24; c++) {
+    let sd = G.rnd(c * 7919 + 13);
+    const x = 24 + (c % 15) * 28 + (sd % 9);
+    sd = G.rnd(sd);
+    const v = 70 + (sd % 90); // px/s
+    sd = G.rnd(sd);
+    const span = 454 + 10 * 16;
+    const head = ((ms * v) / 1000 + (sd % span)) % span;
+    const hy = Math.floor(head / 16) * 16;
+    for (let j = 0; j < 10; j++) {
+      const yy = hy - j * 16;
+      // inside the circle, and never behind the session text (legibility + watchdog budget)
+      const dx = x + 5 - 227, dy = yy + 7 - 227;
+      if (dx * dx + dy * dy > 42000) continue;
+      if (yy > LY - 16 && yy < LY + 11 * LP && x > 84 && x < 370) continue;
+      // over the cached layer it also keeps clear of the big time
+      if (skipTime && yy > 44 && yy < 136 && x > 70 && x < 384) continue;
+      const ci = ((c * 31 + Math.floor(yy / 16) * 7 + Math.floor(ms / 220) * (j === 0 ? 3 : 0)) % 10) * 16;
+      dc.setColor(RC[j], -1);
+      for (let q = ci; q < ci + 16; q += 4) if (RG[q + 2] > 0) dc.fillRectangle(x + RG[q], yy + RG[q + 1], RG[q + 2], RG[q + 3]);
+    }
+  }
+}
+
+// commands typed at the prompt on each wrist raise
+const CMDS = ["uptime", "cat /schlaf", "ls ~/ziele", "top -b -n1", "ping coach", "./motivation", "sudo laufen", "git push --force"];
+
 export default {
   get fps() { return busy ? 20 : rainOn ? 12 : 4; },
+
+  // static layer: the finished session; every wrist raise types a new command at the prompt
+  bgKey(d) { return d.doy * 1440 + d.mins; },
+
+  moving(dc, d, a, st, fg) {
+    const ms = a.live ? a.t : 99999;
+    if (st === 3) rain(dc, ms, true, d);
+    const y = LY + 10 * LP;
+    const lx = Math.max(227 - (NCH * 12 - 2) / 2, 227 - chord(y, 14));
+    const cx = lx + F.pxW(PROMPT, 2) + 2;
+    const cmd = CMDS[d.wakeN % CMDS.length];
+    const n = G.clamp(Math.floor((ms - 600) / 70), 0, cmd.length);
+    dc.setColor(fg, -1);
+    if (n > 0) pxt(dc, cmd.substring(0, n), cx, y, 2, 0);
+    busy = n < cmd.length;
+    if (busy || !a.live || Math.floor(a.t / 500) % 2 === 0) dc.fillRectangle(cx + n * 12, y - 1, 10, 16);
+  },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -96,30 +142,13 @@ export default {
     const live = a.live;
     const ms = live ? a.t : 99999;
     rainOn = st === 3;
+    if (a.bg) {
+      this.moving(dc, d, a, st, fg);
+      return;
+    }
 
     // ---- matrix rain (behind everything)
-    if (st === 3) {
-      for (let c = 0; c < 24; c++) {
-        let sd = G.rnd(c * 7919 + 13);
-        const x = 24 + (c % 15) * 28 + (sd % 9);
-        sd = G.rnd(sd);
-        const v = 70 + (sd % 90); // px/s
-        sd = G.rnd(sd);
-        const span = 454 + 10 * 16;
-        const head = ((ms * v) / 1000 + (sd % span)) % span;
-        const hy = Math.floor(head / 16) * 16;
-        for (let j = 0; j < 10; j++) {
-          const yy = hy - j * 16;
-          // inside the circle, and never behind the session text (legibility + watchdog budget)
-          const dx = x + 5 - 227, dy = yy + 7 - 227;
-          if (dx * dx + dy * dy > 42000) continue;
-          if (yy > LY - 16 && yy < LY + 11 * LP && x > 84 && x < 370) continue;
-          const ci = ((c * 31 + Math.floor(yy / 16) * 7 + Math.floor(ms / 220) * (j === 0 ? 3 : 0)) % 10) * 16;
-          dc.setColor(RC[j], -1);
-          for (let q = ci; q < ci + 16; q += 4) if (RG[q + 2] > 0) dc.fillRectangle(x + RG[q], yy + RG[q + 1], RG[q + 2], RG[q + 3]);
-        }
-      }
-    }
+    if (st === 3 && !a.so) rain(dc, ms, false, d);
 
     // ---- big time with phosphor glow + scanlines
     const ts = G.timeStr(d);
@@ -201,9 +230,9 @@ export default {
         pxt(dc, s, lx, y, 2, 0);
       }
     }
-    busy = ms < tc + 60;
+    if (!a.so) busy = ms < tc + 60;
     // block cursor (blinks when idle)
-    if (cy >= 0 && (busy || !live || Math.floor(a.t / 500) % 2 === 0)) {
+    if (cy >= 0 && !a.so && (busy || !live || Math.floor(a.t / 500) % 2 === 0)) {
       dc.setColor(fg, -1);
       dc.fillRectangle(cx, cy - 1, 10, 16);
     }
