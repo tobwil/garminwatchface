@@ -3,8 +3,8 @@ import Toybox.Lang;
 import Toybox.Math;
 
 // CORE — "Energy Core": the round display is a glass tank, Body Battery is the
-// liquid level. Waves get choppier with stress, bubbles rise, the 24 h Body
-// Battery history is etched on the glass at the same scale as the liquid.
+// liquid level. Waves get choppier with stress, bubbles rise; the lowest and
+// highest level of the last 24 h are shown under the value.
 // Styles: 1 Plasma, 2 Ozean, 3 Lava. Mirrors web/js/faces/core.js.
 class FaceCore extends Face {
     function initialize() {
@@ -179,33 +179,6 @@ class FaceCore extends Face {
             }
         }
 
-        // ---- 24h history etched on the glass (same scale as the liquid)
-        var hs = d.bbHist;
-        var hn = hs.size();
-        if (hn > 1) {
-            var hp = G.ease(p * 1.4 - 0.3);
-            var lim = ((hn - 1) * hp).toNumber();
-            var sx = 286.0 / (hn - 1);
-            dc.setPenWidth(2);
-            dc.setColor(G.dim(G.mix(c, 0xFFFFFF, 0.45), 0.42), -1);
-            for (var i = 0; i < lim; i++) {
-                var v1 = hs[i];
-                var v2 = hs[i + 1];
-                if (v1 < 0 || v2 < 0) {
-                    continue;
-                }
-                var ya = lvlY(v1);
-                var yb = lvlY(v2);
-                var xa = 84 + i * sx;
-                // the line passes behind the time
-                var ym = (ya + yb) / 2;
-                if (ym > 156 && ym < 268) {
-                    continue;
-                }
-                dc.drawLine(xa, ya, xa + sx, yb);
-            }
-        }
-
         // ---- measuring scale on the right glass edge + level marker
         dc.setPenWidth(2);
         for (var v = 0; v <= 100; v += 10) {
@@ -232,6 +205,26 @@ class FaceCore extends Face {
         var bbs = d.bb < 0 ? "--" : "" + Math.round(bb * G.ease(p)).toNumber();
         dc.setColor(G.dim(0xFFFFFF, tp), -1);
         F.st(dc, bbs, cx, 94, 38, 5, 1, 1.0, 0);
+        // lowest / highest level of the last 24 h
+        var lo = d.bb < 0 ? 101 : d.bb;
+        var hi = d.bb;
+        var hs = d.bbHist;
+        for (var i = 0; i < hs.size(); i++) {
+            var v = hs[i];
+            if (v < 0) {
+                continue;
+            }
+            if (v < lo) {
+                lo = v;
+            }
+            if (v > hi) {
+                hi = v;
+            }
+        }
+        if (hi >= 0) {
+            dc.setColor(G.dim(G.mix(c, 0xFFFFFF, 0.6), tp * 0.8), -1);
+            F.px(dc, "TIEF " + lo + "   HOCH " + hi, cx, 124, 2, 1, 0);
+        }
 
         var hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
         var ts = hh + ":" + G.pad2(d.m);
