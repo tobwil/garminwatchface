@@ -8,6 +8,7 @@
 | `python3 tools/build.py [KEY…]` | kompiliert Watchfaces nach `dist/<KEY>.prg` (`CIQ_RELEASE=1` ohne Debug-Infos, `FL_DEBUG=1` zeigt Speicher/Renderzeit auf dem Display) |
 | `node tools/shot.mjs <dir> KEY:style … [--q "t=500&live=1"]` | rendert Designs mit der Web-Engine als PNG |
 | `tools/simrun.sh <prg> <out.png> [sek]` | startet die `.prg` im echten Garmin-Simulator (headless), speichert Screenshot + Konsolenausgabe |
+| `node tools/media.mjs [KEY…]` | erzeugt die README-Medien in `docs/media/` (Animationen, Varianten, Übersicht) aus der Web-Engine |
 | `node tools/bundle.mjs` | baut das Studio als Einzeldatei `site/FaceLab.html` (bettet `web/prg/*.prg` und den Schlüssel ein) |
 
 ## Headless-Simulator (optional)
