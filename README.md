@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 32 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 40 fertigen Designs, die du live
 ansehen, anpassen und als installierbares Watchface (`.prg`) herunterladen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store.
 
@@ -53,6 +53,14 @@ gleichzeitig auf der Uhr haben.
 | **Blick-Zähler** | interaktiv · Challenge | Zählt, wie oft du heute auf die Uhr schaust: Abzeichen, Vergleich mit gestern |
 | **Geheimcode** | versteckt · Pixel | Uhrzeit binär, als Morsecode oder römisch – nach ein paar Sekunden entschlüsselt sie sich |
 | **Nebel** | versteckt · interaktiv | Beschlagenes Display: ein Finger wischt die Uhrzeit frei, dann zieht der Nebel wieder zu |
+| **Nixie** | klassisch · ohne Sport | Glühende Nixie-Röhren, die beim Heben alle Ziffern durchlaufen; Dekatron-Variante mit Sekunden-Glimmpunkt |
+| **Skelett** | klassisch · ohne Sport | Offenes Uhrwerk mit schwingender Unruh, Räderwerk und Tourbillon; Gangreserve = Akku |
+| **Blockfall** | Pixel · ohne Sport | Fallende Blöcke stapeln sich zur Uhrzeit, Reihen werden abgeräumt, Rekord wird gespeichert |
+| **Aquarium** | Pixel · ohne Sport | Riff, Koi-Teich oder Tiefsee; nachts dunkel, beim Heben kommen die Fische an die Scheibe |
+| **Lavalampe** | wild · ohne Sport | Wachsblasen steigen und verschmelzen – je wärmer es draußen ist, desto lebhafter |
+| **Bauhaus** | klassisch · wild · ohne Sport | Kreis, Quadrat, Dreieck: Stunde und Minute als Formen, jede Minute neu komponiert (auch Mondrian, Memphis) |
+| **Sternenhimmel** | klassisch · ohne Sport | Der echte Himmel über deinem Standort: 151 Sterne, Sternbilder, Mond in echter Phase; Polarlicht-Variante |
+| **Wetterfenster** | Pixel · ohne Sport | Pixel-Fenster mit dem echten Wetter: Regen an der Scheibe, Schnee auf dem Sims, Katze, Postkarte, Diorama |
 
 **Trainingstage** erkennt FaceLab selbst: Ein Tag zählt, wenn er mindestens 30 Aktivminuten hat oder
 die Wochen-Rad-/Lauf-Distanz an diesem Tag um mehr als 1 km gewachsen ist.
@@ -96,7 +104,7 @@ site/           gebündeltes Studio (eine HTML-Datei)
   laufen über eigene, prozedurale Schriften (Vektor, 5×7-Pixel, 7-Segment) – dadurch sieht die
   Vorschau aus wie die Uhr.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
-  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–76 KB im Simulator gemessen).
+  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–84 KB im Simulator gemessen).
 * **Generator im Browser:** Jede `.prg` enthält Platzhalter für Face-Code, Namen und App-ID. Das Studio
   setzt deine Konfiguration ein und signiert die Datei neu (RSA, SHA-1 + SHA-256, wie der Garmin-Compiler).
   Den Schlüssel erzeugt `tools/build.py` beim ersten Build lokal in `tools/keys/` (nicht im Repo);
