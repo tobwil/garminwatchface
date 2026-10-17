@@ -758,6 +758,257 @@
         ],
         "dayGoal": 4
       }
+    },
+    {
+      "key": "NEURO",
+      "cls": "FaceNeuro",
+      "file": "Neuro.mc",
+      "js": "neuro.js",
+      "name": "Neuronetz",
+      "tags": [
+        "ki",
+        "daten",
+        "wild"
+      ],
+      "blurb": "Deine Körperdaten als Eingänge eines neuronalen Netzes: Signale pulsieren durch die Schichten, die Ausgabe-Neuronen leuchten deine Form-Prognose – und die Uhrzeit.",
+      "styles": [
+        "Synapse",
+        "Schaltplan",
+        "Bio"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "7C5CFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          42
+        ]
+      }
+    },
+    {
+      "key": "SCAN",
+      "cls": "FaceScan",
+      "file": "Scan.mc",
+      "js": "scan.js",
+      "name": "KI-Vision",
+      "tags": [
+        "ki",
+        "wild"
+      ],
+      "blurb": "Ein Objekterkennungs-Scanner: Fadenkreuz, Scanlinie und Bounding-Boxen, die deine Werte mit Konfidenz erkennen – „STRESS 28 · 97 %“. Die Uhrzeit ist das wichtigste erkannte Objekt.",
+      "styles": [
+        "Terminator",
+        "Clean",
+        "Thermal"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF3B30",
+        "dcol": "FFFFFF",
+        "slots": [
+          22,
+          23,
+          18
+        ]
+      }
+    },
+    {
+      "key": "LATENT",
+      "cls": "FaceLatent",
+      "file": "Latent.mc",
+      "js": "latent.js",
+      "name": "Latent",
+      "tags": [
+        "ki",
+        "versteckt",
+        "interaktiv"
+      ],
+      "blurb": "Wie ein Bildgenerator: Bei jedem Handgelenk-Heben entsteht die Uhrzeit Schritt für Schritt aus reinem Rauschen – jedes Mal mit neuem Seed, jedes Mal ein anderes Bild.",
+      "styles": [
+        "Diffusion",
+        "Pixel",
+        "Aquarell"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "00E5A8",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "COACH",
+      "cls": "FaceCoach",
+      "file": "Coach.mc",
+      "js": "coach.js",
+      "name": "KI-Coach",
+      "tags": [
+        "ki",
+        "interaktiv",
+        "daten"
+      ],
+      "blurb": "Ein Chat mit deinem Trainings-Coach: Bei jedem Blick tippt er eine neue Nachricht, gebaut aus Body Battery, Schlaf, Erholung und Wochenziel – mit Tipp des Tages.",
+      "styles": [
+        "Messenger",
+        "Terminal",
+        "Glas"
+      ],
+      "uses": [
+        "slots",
+        "bike",
+        "days"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "2F80FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          42,
+          21
+        ],
+        "bikeGoal": 150,
+        "dayGoal": 4
+      }
+    },
+    {
+      "key": "ORAKEL",
+      "cls": "FaceOrakel",
+      "file": "Orakel.mc",
+      "js": "orakel.js",
+      "name": "KI-Orakel",
+      "tags": [
+        "ki",
+        "interaktiv",
+        "wild"
+      ],
+      "blurb": "Eine leuchtende Orakel-Kugel: Bei jedem Handgelenk-Heben wirbelt sie und beantwortet eine Frage zu deinem Tag – gespeist aus deinen Daten und einer Prise Zufall.",
+      "styles": [
+        "Kristall",
+        "Nebula",
+        "8-Bit"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "B26BFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          42
+        ]
+      }
+    },
+    {
+      "key": "BLICK",
+      "cls": "FaceBlick",
+      "file": "Blick.mc",
+      "js": "blick.js",
+      "name": "Blick-Zähler",
+      "tags": [
+        "interaktiv",
+        "challenge",
+        "pixel"
+      ],
+      "blurb": "Wie oft schaust du heute auf die Uhr? Ein Auge zählt jeden Blick, vergibt Abzeichen und vergleicht mit gestern – Rekordjagd oder Digital-Detox, du entscheidest.",
+      "styles": [
+        "Auge",
+        "Pixel",
+        "Minimal"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB000",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "CIPHER",
+      "cls": "FaceCipher",
+      "file": "Cipher.mc",
+      "js": "cipher.js",
+      "name": "Geheimcode",
+      "tags": [
+        "versteckt",
+        "wild",
+        "pixel"
+      ],
+      "blurb": "Die Uhrzeit ist verschlüsselt – binär, als Morsecode oder in römischen Zahlen. Wer kurz wartet, sieht sie sich entschlüsseln; wer den Code beherrscht, braucht das nicht.",
+      "styles": [
+        "Binär",
+        "Morse",
+        "Römisch"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "00FF9C",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          22,
+          2
+        ]
+      }
+    },
+    {
+      "key": "NEBEL",
+      "cls": "FaceNebel",
+      "file": "Nebel.mc",
+      "js": "nebel.js",
+      "name": "Nebel",
+      "tags": [
+        "versteckt",
+        "interaktiv",
+        "wild"
+      ],
+      "blurb": "Das Display ist beschlagen. Beim Handgelenk-Heben wischt ein Finger die Uhrzeit frei – dann zieht der Nebel langsam wieder zu.",
+      "styles": [
+        "Beschlagen",
+        "Frost",
+        "Rauch"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "9ED8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          23,
+          2
+        ]
+      }
     }
   ]
 }

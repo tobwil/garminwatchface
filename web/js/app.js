@@ -9,19 +9,21 @@ import { patchPrg } from "./prg.js";
 import { makeZip } from "./zip.js";
 
 const MAX_ANIM_MS = 12000;
+const TAP_MS = 5000;
 const $ = (id) => document.getElementById(id);
 const faces = META.faces.filter((f) => FACES[f.key]);
 const byKey = Object.fromEntries(faces.map((f) => [f.key, f]));
 
 const ACCENTS = ["FF5A1F", "FC6719", "FFC83D", "E8C468", "3DDC97", "29E6FF", "4D8DFF", "8C7BFF", "FF2D55", "FF4FD8", "FFFFFF"];
 const DCOLS = ["FFFFFF", "D9DEE3", "FFD24A", "29E6FF", "3DDC97", "FF8A65"];
-const TAGS = [["alle", "Alle"], ["pixel", "Pixel"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"]];
+const TAGS = [["alle", "Alle"], ["ki", "KI"], ["interaktiv", "Interaktiv"], ["versteckt", "Versteckt"], ["pixel", "Pixel"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"]];
 const TAG_LABEL = Object.fromEntries(TAGS);
 const SIMS = [
   ["bb", "Body Battery", 0, 100, 1, ""], ["stress", "Stress", 0, 100, 1, ""], ["steps", "Schritte", 0, 25000, 100, ""],
   ["floorsWeek", "Etagen diese Woche", 0, 600, 1, ""], ["hr", "Puls", 40, 190, 1, " bpm"], ["sleep", "Schlafscore", 0, 100, 1, ""],
   ["recovH", "Erholungszeit", 0, 96, 1, " h"], ["wkBikeKm", "Rad diese Woche", 0, 600, 1, " km"], ["batt", "Akku", 0, 100, 1, " %"],
   ["temp", "Temperatur", -15, 38, 1, " °C"], ["trainDays", "Trainingstage diese Woche", 0, 7, 1, ""],
+  ["glances", "Blicke auf die Uhr heute", 0, 300, 1, ""],
 ];
 
 // ------------------------------------------------------------------ storage (per viewer)
@@ -49,6 +51,8 @@ const state = {
   scrub: 600,
   aod: false,
   wakeAt: performance.now(),
+  tapAt: -1,
+  raises: 0,
   dirty: true,
 };
 if (!byKey[state.key]) state.key = faces[0].key;
@@ -72,6 +76,8 @@ function setCfg(patch) {
 function simValues() {
   const s = { ...state.sim };
   const out = { ...s };
+  out.glances = (s.glances ?? SIM_DEFAULTS.glances) + state.raises;
+  out.wakeN = SIM_DEFAULTS.wakeN + state.raises;
   if (s.recovH !== undefined) out.recov = s.recovH * 60;
   if (s.wkBikeKm !== undefined) out.wkBike = s.wkBikeKm * 1000;
   return out;
@@ -115,7 +121,24 @@ function sizeScreen() {
   state.dirty = true;
 }
 
+// clicks/taps on the preview are forwarded to the face like screen taps on the watch
+function onScreenTap(ev) {
+  const face = FACES[state.key];
+  if (!face.tap || state.aod) return;
+  const r = screen.getBoundingClientRect();
+  const x = Math.round(((ev.clientX - r.left) / r.width) * 454), y = Math.round(((ev.clientY - r.top) / r.height) * 454);
+  if ((x - 227) ** 2 + (y - 227) ** 2 > 227 * 227) return;
+  useStore(state.key);
+  if (face.tap(x, y, cachedData || dataFor(state.key, cfgOf(state.key), now()))) {
+    state.tapAt = performance.now();
+    state.wakeAt = state.tapAt - INTRO_MS;
+    state.dirty = true;
+  }
+}
+
 function wake() {
+  state.raises++;
+  cachedData = null;
   state.wakeAt = performance.now();
   state.dirty = true;
 }
@@ -131,8 +154,9 @@ function loop(ts) {
   const face = FACES[key];
   const cfg = cfgOf(key);
   const t = ts - state.wakeAt;
-  const animating = !state.aod && cfg.anim > 0 && t < MAX_ANIM_MS && (t < INTRO_MS || (cfg.anim === 2 && (face.fps || 0) > 0));
-  const period = t < INTRO_MS ? 50 : 1000 / Math.max(1, face.fps || 1);
+  const tapping = !state.aod && state.tapAt >= 0 && ts - state.tapAt < TAP_MS;
+  const animating = tapping || (!state.aod && cfg.anim > 0 && t < MAX_ANIM_MS && (t < INTRO_MS || (cfg.anim === 2 && (face.fps || 0) > 0)));
+  const period = t < INTRO_MS || tapping ? 50 : 1000 / Math.max(1, face.fps || 1);
   const dt = now();
   const sec = dt.getSeconds();
   const due = state.dirty || (animating && ts - lastDraw >= period - 4) || sec !== lastSec;
@@ -147,7 +171,8 @@ function loop(ts) {
   cachedData.s = sec;
   state.dirty = false;
   useStore(key);
-  const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating, ms: dt.getMilliseconds() };
+  const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating, ms: dt.getMilliseconds(),
+    tap: state.tapAt < 0 ? 999999 : ts - state.tapAt };
   render(ctx, face, cachedData, a, state.aod);
   if (!mini.hidden) {
     const m = miniCanvas.getContext("2d");
@@ -233,6 +258,7 @@ function playTile(key) {
 // ------------------------------------------------------------------ configurator
 function selectFace(key) {
   state.key = key;
+  state.tapAt = -1;
   LS.set("key", key);
   Object.values(tiles).forEach((t) => t.btn.setAttribute("aria-pressed", "false"));
   if (tiles[key]) tiles[key].btn.setAttribute("aria-pressed", "true");
@@ -275,6 +301,8 @@ function syncPanel() {
   $("faceName").textContent = f.name;
   $("faceBlurb").textContent = f.blurb || "";
   $("faceTags").textContent = (f.tags || []).map((t) => TAG_LABEL[t] || t).join(" · ");
+  screen.style.cursor = FACES[state.key].tap ? "pointer" : "default";
+  $("tapHint").hidden = !(f.tags || []).includes("interaktiv");
   // styles
   const styles = f.styles || [];
   $("fStyle").hidden = styles.length < 2;
@@ -493,6 +521,7 @@ function boot() {
   syncPanel();
   sizeScreen();
   setupMini();
+  screen.addEventListener("click", onScreenTap);
   new ResizeObserver(sizeScreen).observe(screen);
   setInterval(() => faces.forEach((f) => refreshTile(f.key)), 60000);
   requestAnimationFrame(loop);

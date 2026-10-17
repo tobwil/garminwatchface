@@ -32,6 +32,14 @@ if [ "${1:-}" = "--inner" ]; then
     grep -q "Unable to connect" "$LOG" || break
     wait $MD 2>/dev/null; sleep 1
   done
+  # optional screen taps: SIM_TAPS="x,y,sec;x,y,sec" (display coords, seconds after launch)
+  if [ -n "${SIM_TAPS:-}" ]; then
+    IFS=';' read -ra TPS <<< "$SIM_TAPS"
+    for tp in "${TPS[@]}"; do
+      IFS=',' read -r tx ty tsec <<< "$tp"
+      (sleep "$tsec"; xdotool mousemove $((155 + tx)) $((216 + ty)) click 1) &
+    done
+  fi
   sleep $((SECS - 5))
   timeout 20 import -window root "$OUT.root.png"
   python3 - "$OUT" <<'PY'

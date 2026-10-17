@@ -112,7 +112,7 @@ export const SIM_DEFAULTS = {
   wkBike: 87400, wkRun: 21300, tStatus: "Produktiv", p5k: 1236, p10k: 2580, pHM: 5760, pM: 12300,
   resp: 14, spo2: 97, temp: 14, cond: 1, wind: 4.2, windDeg: 250, rain: 20, hiT: 17, loT: 8,
   batt: 76, battDays: 9, notif: 3, phone: true, alt: 212, pres: 101520,
-  lat: 50.11, lon: 8.68, metric: true, is24: true, trainDays: 3,
+  lat: 50.11, lon: 8.68, metric: true, is24: true, trainDays: 3, glances: 23, wakeN: 1234,
 };
 
 const DOW = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -180,6 +180,8 @@ export function buildData(cfg, sim, now) {
     if (day <= d.dayIdx) { mask |= 1 << day; n++; }
   }
   for (let i = 0; i <= d.dayIdx; i++) d.wkAct[i] = (mask >> i) & 1 ? Math.max(d.wkAct[i], 45) : Math.min(d.wkAct[i], 25);
+  d.glances = s.glances;
+  d.wakeN = s.wakeN;
   d.trainMask = mask;
   d.trainDays = n;
   d.sunrise = AST.cross(doy, d.lat, d.lon, tz, -0.833, true);

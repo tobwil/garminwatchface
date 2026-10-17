@@ -25,7 +25,9 @@ const sim = q.get("sim") ? JSON.parse(q.get("sim")) : {};
 const d = buildData(cfg, sim, now);
 const ctx = prepCanvas(document.getElementById("c"), 454);
 const t = +(q.get("t") ?? 99999);
-render(ctx, face, d, { ...animState(t, cfg), live: q.get("live") === "1" }, q.get("aod") === "1");
+// tap=<ms since tap>&tx=<x>&ty=<y> simulates a screen tap (face.tap is called first)
+if (q.get("tap") && face.tap) face.tap(+(q.get("tx") ?? 227), +(q.get("ty") ?? 227), d);
+render(ctx, face, d, { ...animState(t, cfg), live: q.get("live") === "1", ...(q.get("tap") ? { tap: +q.get("tap") } : {}) }, q.get("aod") === "1");
 document.title = "ready";
 </script>
 </body>

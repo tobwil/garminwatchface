@@ -13,6 +13,7 @@ import Toybox.WatchUi;
 class FaceView extends WatchUi.WatchFace {
     const INTRO_MS = 1400;
     const MAX_ANIM_MS = 12000;
+    const TAP_MS = 5000;   // frames keep running this long after a tap (reveals, games)
 
     var cfg as Cfg;
     var d as D;
@@ -25,6 +26,7 @@ class FaceView extends WatchUi.WatchFace {
     hidden var _period = 0;
     hidden var _edit = false;
     hidden var _lastSec = -1;
+    hidden var _tapAt = -1;
     hidden var _secAt = 0;
 
     function initialize(editMode as Boolean) {
@@ -69,6 +71,9 @@ class FaceView extends WatchUi.WatchFace {
 
     function onShow() as Void {
         d.refresh(true);
+        if (!_edit) {
+            d.countGlance();
+        }
         wake();
     }
 
@@ -79,6 +84,7 @@ class FaceView extends WatchUi.WatchFace {
     function onExitSleep() as Void {
         _sleeping = false;
         d.refresh(true);
+        d.countGlance();
         wake();
     }
 
@@ -135,8 +141,11 @@ class FaceView extends WatchUi.WatchFace {
         // slow data reads run here, in their own callback, so a heavy frame and the
         // once-a-minute refresh never share one watchdog budget
         d.refresh(false);
-        var t = System.getTimer() - _wake;
-        if (t > INTRO_MS) {
+        var now = System.getTimer();
+        var t = now - _wake;
+        if (_tapAt >= 0 && now - _tapAt < TAP_MS) {
+            startTimer(50);
+        } else if (t > INTRO_MS) {
             var fps = cfg.anim >= 2 ? face.fps() : 0;
             if (fps <= 0 || t > MAX_ANIM_MS) {
                 stopTimer();
@@ -172,6 +181,7 @@ class FaceView extends WatchUi.WatchFace {
             a.ms = 999;
         }
         a.t = t;
+        a.tap = _tapAt < 0 ? 999999 : now - _tapAt;
         a.live = !_sleeping && _timer != null;
         a.intro = (cfg.anim == 0 || _edit) ? 1.0 : G.clamp(t.toFloat() / INTRO_MS, 0.0, 1.0);
         face.draw(dc, d, a);
@@ -190,10 +200,9 @@ class FaceView extends WatchUi.WatchFace {
 
     function onTap(x as Number, y as Number) as Boolean {
         if (face.tap(x, y, d)) {
-            _wake = System.getTimer() - INTRO_MS;
-            if (cfg.anim > 0) {
-                startTimer(50);
-            }
+            _tapAt = System.getTimer();
+            _wake = _tapAt - INTRO_MS;
+            startTimer(50);
             WatchUi.requestUpdate();
             return true;
         }
@@ -215,6 +224,9 @@ class FaceDelegate extends WatchUi.WatchFaceDelegate {
 
     function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
         var c = clickEvent.getCoordinates();
+        if (Registry.DEBUG) {
+            System.println("tap " + c);
+        }
         return _view.onTap(c[0], c[1]);
     }
 
@@ -228,6 +240,11 @@ class FaceDelegate extends WatchUi.WatchFaceDelegate {
     }
 
     function onPress(clickEvent as WatchUi.ClickEvent) as Boolean {
-        return false;
+        // touch & hold reaches watch faces on some devices: forward it like a tap
+        var c = clickEvent.getCoordinates();
+        if (Registry.DEBUG) {
+            System.println("press " + c);
+        }
+        return _view.onTap(c[0], c[1]);
     }
 }

@@ -8,6 +8,7 @@ class A {
     var intro = 1.0;    // 0..1 linear progress of the intro animation (INTRO_MS)
     var live = false;   // true while in high-power mode and animations are on
     var ms = 0;         // ms since the clock second last changed (0..999), for sweeping hands
+    var tap = 999999;   // ms since the last screen tap the face accepted (999999 = none yet)
 
     function initialize() {
     }

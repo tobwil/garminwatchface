@@ -81,6 +81,15 @@ History arrays can contain `-1` gaps and may be empty on the watch – always gu
 * `a.intro` 0→1 linearly over 1.4 s after the wrist is raised (always 1.0 when animations are off
   or in the watch-face editor). Use `G.ease/easeInOut/spring/stag` to shape it.
 * `a.t` ms since wake. `a.live` true while the watch is awake & animating.
+* **Interaction model** (Garmin limits watch faces): every wrist raise is an "interaction" — `d.glances`
+  (raises today, persisted) and `d.wakeN` (raise counter since install; use it as a seed so each look shows
+  something new). Touch: only touch-and-hold (`onPress`) reaches a watch face, and only on some devices — treat
+  taps as a bonus, never as the only way to use a feature.
+* `a.tap` ms since the last screen tap your face accepted (999999 = none). Implement `tap(x, y, d)` (JS) /
+  `function tap(x as Number, y as Number, d as D) as Boolean` (MC) and return true to accept a tap; the engine then
+  renders at 20 fps for 5 s (`a.live` = true) so reveals/games can animate from `a.tap`. Keep state you need
+  (e.g. game state) in instance variables or St. The web preview forwards mouse clicks as taps; `dev.html`
+  takes `tap=<ms>&tx=<x>&ty=<y>`; the simulator: `SIM_TAPS="x,y,sec;..."` env for tools/simrun.sh (sec after launch).
 * `a.ms` ms since the clock second last changed (0..999) – use `d.s + a.ms/1000` for sweeping seconds hands.
 * `fps()` = ambient frame rate after the intro (0 = static; max 20). Ambient motion must be a pure
   function of `a.t` + data (no per-frame state).

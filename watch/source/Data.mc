@@ -26,6 +26,8 @@ class D {
     var wkSteps = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;
     var wkFloors = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;
     var wkAct = [-1, -1, -1, -1, -1, -1, -1] as Array<Number>;   // active (intensity) minutes per day
+    var glances = 0;    // wrist raises (wake-ups) today
+    var wakeN = 0;      // wake-ups since install: changes with every raise (seed for "new answer each look")
     var trainMask = 0;  // bit n = training day on weekday n (Mon = bit 0)
     var trainDays = 0;
     var dayGoal = 4;
@@ -184,6 +186,26 @@ class D {
             if (smp != null && smp.heartRate != ActivityMonitor.INVALID_HR_SAMPLE) {
                 hr = smp.heartRate;
             }
+        }
+    }
+
+    // Called once per wrist raise / face shown. Persists today's glance count.
+    function countGlance() as Void {
+        try {
+            var g = Application.Storage.getValue("gl") as Array?;
+            if (g == null || g.size() < 3) {
+                g = [doy, 0, 0];
+            }
+            if (g[0] != doy) {
+                g[0] = doy;
+                g[1] = 0;
+            }
+            g[1] = g[1] + 1;
+            g[2] = g[2] + 1;
+            Application.Storage.setValue("gl", g);
+            glances = g[1];
+            wakeN = g[2];
+        } catch (e) {
         }
     }
 
