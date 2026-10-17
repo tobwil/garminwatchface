@@ -31,12 +31,15 @@ class FaceLatent extends Face {
     const AH = 104; // aquarell time height
     const SP = 15.0; // aquarell dab spacing along the stroke
     // custom 5x7 glyphs: guillemets and a check mark
+    const LUT = [0, 64, 107, 150, 193, 236]; // level -> 0..255 brightness for the noise mix
     const GL = [0, 20, 10, 5, 10, 20, 0, 0, 5, 10, 20, 10, 5, 0, 0, 0, 1, 2, 20, 8, 0];
 
     hidden var _busy = true;
+    hidden var _aq = false; // Aquarell: slower ambient (it only dries)
+    hidden var _pKey = -1;  // prompt built for raise
     hidden var _nKey = -1;  // noise built for (raise, style)
     hidden var _tKey = "";  // target built for (style, time, raise)
-    hidden var _tg = null;  // target image, 0..255 per cell
+    hidden var _tg = null;  // target image, level 0..5 per cell
     hidden var _nz = null;  // seeded noise, 0..255 per cell
     hidden var _gc = 0;
     hidden var _gr = 0;
@@ -55,7 +58,7 @@ class FaceLatent extends Face {
     }
 
     function fps() as Number {
-        return _busy ? 20 : 6;
+        return _busy ? 20 : (_aq ? 4 : 6);
     }
 
     hidden function seedNo(w) {
@@ -90,24 +93,28 @@ class FaceLatent extends Face {
         return m[w % m.size()] as String;
     }
 
-    // per raise: grid geometry, prompt and the seeded noise (cheap 16-bit LCG, identical on the web)
+    // per raise: grid geometry and the prompt
     hidden function prep(d as D, st) as Void {
         _wn = d.wakeN.abs() % 100000;
-        var wn = _wn;
         if (st == 1) { _cs = 9; _gc = 42; _gr = 19; _gy0 = 118; } else { _cs = 14; _gc = 29; _gr = 11; _gy0 = 126; }
         _gx0 = 227 - (_gc * _cs) / 2;
-        var nm = _gc * _gr;
-        _nm = nm;
+        _nm = _gc * _gr;
+        if (_wn != _pKey) {
+            _pKey = _wn;
+            _pmt = prompt(d, _wn);
+        }
+    }
+
+    // the seeded noise (cheap 16-bit LCG, identical on the web); only built when it is drawn
+    hidden function noise(st) as Void {
+        var wn = _wn;
         var key = wn * 4 + st;
         if (key == _nKey) {
             return;
         }
         _nKey = key;
-        _pmt = prompt(d, wn);
         _nz = null;
-        if (st == 3) {
-            return;
-        }
+        var nm = _nm;
         var nz = new [nm]b;
         var sd = (wn * 7 + st * 131 + 17) % 65537;
         for (var k = 0; k < nm; k++) {
@@ -117,8 +124,8 @@ class FaceLatent extends Face {
         _nz = nz;
     }
 
-    // the target image (time + scenery), or the brush dabs for Aquarell; once per raise/minute.
-    // Grid styles only need it from step ~5 on, so the first frame after a raise stays light.
+    // the target image as levels 0..5 (time + scenery), or the brush dabs for Aquarell; once per
+    // raise/minute. Grid styles only need it from step ~5 on, so the first frame after a raise stays light.
     hidden function target(d as D, st) as Void {
         var ts = G.timeStr(d);
         var wn = _wn;
@@ -137,24 +144,23 @@ class FaceLatent extends Face {
         _tg = null;
         var gc = _gc;
         var gr = _gr;
-        var nm = _nm;
-        var tg = new [nm]b;
-        var hz = new [nm]b; // digit level (3..5), 1 = glow halo
+        var tg = new [_nm]b;
         // scenery: mountain ridge (Diffusion), horizon with a pixel sun and stars (Pixel)
         var ph = (wn % 97) * 1.0;
         var mx = 5 + ((wn * 7) % (gc - 10));
         for (var c = 0; c < gc; c++) {
-            var top = gr - 3 - Math.floor(2.2 * (1 + G.noise(c * 0.45 + ph))).toNumber();
-            for (var r = 0; r < gr; r++) {
-                var k = r * gc + c;
-                if (st == 1) {
-                    tg[k] = r >= top ? 1 : 0;
-                } else {
-                    tg[k] = r == 9 ? ((c >= mx - 1 && c <= mx + 1) ? 4 : 2) : (r == 10 ? 1 : ((r < 2 && (k * 7 + wn) % 9 == 0) ? 1 : 0));
+            if (st == 1) {
+                for (var r = gr - 3 - Math.floor(2.2 * (1 + G.noise(c * 0.45 + ph))).toNumber(); r < gr; r++) {
+                    tg[r * gc + c] = 1;
                 }
+            } else {
+                tg[9 * gc + c] = (c >= mx - 1 && c <= mx + 1) ? 4 : 2;
+                tg[10 * gc + c] = 1;
+                if ((c * 7 + wn) % 9 == 0) { tg[c] = 1; } // stars
+                if ((c * 7 + gc * 7 + wn) % 9 == 0) { tg[gc + c] = 1; }
             }
         }
-        // glyphs (+ halo around them for Diffusion)
+        // glyphs (+ glow halo around them for Diffusion: never over a digit, digits overwrite it)
         var dw = st == 1 ? 7 : 5;
         var cw = st == 1 ? 2 : 1;
         var r0 = st == 1 ? 4 : 2;
@@ -186,23 +192,18 @@ class FaceLatent extends Face {
                 for (var c = 0; c < w; c++) {
                     if ((bits & (1 << (w - 1 - c))) != 0) {
                         var k = (r0 + rr) * gc + x + c;
-                        hz[k] = lv;
+                        tg[k] = lv;
                         if (st == 1) {
                             for (var q = k - gc - 1; q <= k + gc - 1; q += gc) {
-                                if (hz[q] == 0) { hz[q] = 1; }
-                                if (hz[q + 1] == 0) { hz[q + 1] = 1; }
-                                if (hz[q + 2] == 0) { hz[q + 2] = 1; }
+                                if (tg[q] < 3) { tg[q] = 3; }
+                                if (tg[q + 1] < 3) { tg[q + 1] = 3; }
+                                if (tg[q + 2] < 3) { tg[q + 2] = 3; }
                             }
                         }
                     }
                 }
             }
             x += w;
-        }
-        for (var k = 0; k < nm; k++) {
-            var h = hz[k];
-            var lv = h >= 3 ? h : (h == 1 ? 3 : tg[k]);
-            tg[k] = lv > 0 ? lv * 43 + 21 : 0;
         }
         _tg = tg;
     }
@@ -381,6 +382,7 @@ class FaceLatent extends Face {
         var s = t / SMS;
         if (s > NS) { s = NS; }
         _busy = a.live && t < NS * SMS + 150;
+        _aq = st == 3;
         var ai = Math.round(G.easeInOut(s.toFloat() / NS) * 256).toNumber();
         // pure noise needs no target yet; while animating, the frame that builds it only draws
         // noise (watchdog budget: building + mixing in one frame is too much on the watch)
@@ -394,6 +396,9 @@ class FaceLatent extends Face {
             if (a.live) {
                 ai = 0;
             }
+        }
+        if (ai < 256) {
+            noise(st);
         }
         var acc = d.accent;
         var wn = _wn;
@@ -431,7 +436,7 @@ class FaceLatent extends Face {
                 var q = -1;
                 if (c < gc) {
                     var k = kb + c;
-                    q = ai >= 256 ? (tg[k] * 6) >> 8 : (ai <= 0 ? ((nz[k] ^ sx) * 6) >> 8 : ((tg[k] * ai + (nz[k] ^ sx) * bi) * 6) >> 16);
+                    q = ai >= 256 ? tg[k] : (ai <= 0 ? ((nz[k] ^ sx) * 6) >> 8 : ((LUT[tg[k]] * ai + (nz[k] ^ sx) * bi) * 6) >> 16);
                 }
                 if (q != lv) {
                     if (lv > 0) {
@@ -448,8 +453,8 @@ class FaceLatent extends Face {
             var tick = t / 170;
             for (var j = 0; j < 7; j++) {
                 var k = (tick * 7919 + j * 2731 + wn * 13) % nm;
-                if (tg[k] < 110) {
-                    var l = tg[k] > 0 ? (tg[k] - 21) / 43 + 1 : 1;
+                if (tg[k] < 3) {
+                    var l = tg[k] + 1;
                     dc.setColor(cur[l], -1);
                     dc.fillRectangle(gx0 + (k % gc) * cs, _gy0 + (k / gc) * cs, cs, cs);
                 }

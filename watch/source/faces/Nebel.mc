@@ -38,6 +38,8 @@ class FaceNebel extends Face {
     hidden var _glow as Array<Number>; // background colour under the fog per strip (light behind the time)
     hidden var _busy = true;
     hidden var _any = false; // is anything wiped right now?
+    hidden var _ymin = 0.0;  // vertical extent of everything wiped (cheap early-out)
+    hidden var _ymax = 0.0;
     hidden var _key = -1;
     hidden var _wn = 0;
     hidden var _tilt = 0;
@@ -114,8 +116,8 @@ class FaceNebel extends Face {
         for (var s = 0; s < NSTR; s++) {
             var xc = s * 6 + 3;
             var u = (xc - 227) / 227.0;
-            _cols[s] = G.mix(G.mix(PAL[b], PAL[b + 1], 0.5 + 0.5 * G.noise(xc * 0.031 + _ph)), PAL[b + 12], (1 - u * u) * 0.55);
-            _nj[s] = 1 + G.noise(xc * 0.045 + _ph);
+            _cols[s] = G.mix(G.mix(PAL[b], PAL[b + 1], 0.5 + 0.5 * Math.sin(xc * 0.053 + _ph)), PAL[b + 12], (1 - u * u) * 0.55);
+            _nj[s] = 1 + 0.6 * Math.sin(xc * 0.077 + _ph) + 0.3 * Math.sin(xc * 0.19 + _ph * 3);
             _glow[s] = G.mix(PAL[b + 5], PAL[b + 6], G.clamp(1.15 - u.abs() * 1.25, 0.0, 1.0));
         }
         _fern = null;
@@ -136,19 +138,22 @@ class FaceNebel extends Face {
                     sd = G.rnd(sd);
                     dr += (sd % 31) - 15;
                     var len = 15 - i;
-                    var nx = G.ptX(x, len, dr);
-                    var ny = G.ptY(y, len, dr);
+                    var sn = Math.sin(dr * 0.0174533);
+                    var cn = Math.cos(dr * 0.0174533);
+                    var nx = x + len * sn;
+                    var ny = y - len * cn;
                     fern[m] = x; fern[m + 1] = y; fern[m + 2] = nx; fern[m + 3] = ny;
                     m += 4;
                     if (i > 0) {
+                        // side branches at +-58 degrees (rotated direction, no extra trig)
                         var bl2 = (8 - i) * 2.8 + 5;
-                        for (var sgn = -1; sgn <= 1; sgn += 2) {
-                            fern[sb] = x;
-                            fern[sb + 1] = y;
-                            fern[sb + 2] = G.ptX(x, bl2, dr + sgn * 58);
-                            fern[sb + 3] = G.ptY(y, bl2, dr + sgn * 58);
-                            sb += 4;
-                        }
+                        fern[sb] = x; fern[sb + 1] = y;
+                        fern[sb + 2] = x + bl2 * (sn * 0.5299 + cn * 0.848);
+                        fern[sb + 3] = y - bl2 * (cn * 0.5299 - sn * 0.848);
+                        fern[sb + 4] = x; fern[sb + 5] = y;
+                        fern[sb + 6] = x + bl2 * (sn * 0.5299 - cn * 0.848);
+                        fern[sb + 7] = y - bl2 * (cn * 0.5299 + sn * 0.848);
+                        sb += 8;
                     }
                     x = nx;
                     y = ny;
@@ -169,6 +174,8 @@ class FaceNebel extends Face {
         var hw2 = 27 - 3 * cr;
         var tt = t * 0.0006;
         _any = t >= T0;
+        var ymin = 999.0;
+        var ymax = -999.0;
         var a1 = _a1;
         var b1 = _b1;
         var a2 = _a2;
@@ -204,7 +211,14 @@ class FaceNebel extends Face {
                 a2[s] = 1.0;
                 b2[s] = 0.0;
             }
+            if (a1[s] < b1[s]) {
+                if (a1[s] < ymin) { ymin = a1[s]; }
+                if (b1[s] > ymax) { ymax = b1[s]; }
+            }
+            if (a2[s] < b2[s] && b2[s] > ymax) { ymax = b2[s]; }
         }
+        _ymin = ymin;
+        _ymax = ymax;
     }
 
     // is the point inside a wiped area (with a margin)?
@@ -399,7 +413,8 @@ class FaceNebel extends Face {
                 var y1 = fern[o + 1];
                 var x2 = fern[o + 2];
                 var y2 = fern[o + 3];
-                if (clearAt((x1 + x2) / 2, (y1 + y2) / 2, 11)) {
+                var my = (y1 + y2) / 2;
+                if (my > _ymin - 11 && my < _ymax + 11 && clearAt((x1 + x2) / 2, my, 11)) {
                     continue;
                 }
                 if (i < _nMain) {

@@ -34,9 +34,12 @@ const SP = 15; // aquarell dab spacing along the stroke
 const GL = [0, 20, 10, 5, 10, 20, 0, 0, 5, 10, 20, 10, 5, 0, 0, 0, 1, 2, 20, 8, 0];
 
 let busy = true;
+let aq = false; // Aquarell: slower ambient (it only dries)
+let pKey = -1; // prompt built for raise
 let nKey = -1; // noise built for (raise, style)
 let tKey = ""; // target built for (style, time, raise)
-let tg = null; // target image, 0..255 per cell
+let tg = null; // target image, level 0..5 per cell
+const LUT = [0, 64, 107, 150, 193, 236]; // level -> 0..255 brightness for the noise mix
 let nz = null; // seeded noise, 0..255 per cell
 let gc = 0, gr = 0, cs = 0, gx0 = 0, gy0 = 0, nm = 0;
 let pmt = "";
@@ -72,25 +75,27 @@ function prompt(d, w) {
   return m[w % m.length];
 }
 
-// per raise: grid geometry, prompt and the seeded noise (cheap 16-bit LCG, identical on the watch)
+// per raise: grid geometry and the prompt
 function prep(d, st) {
   wn = wake(d);
   if (st === 1) { cs = 9; gc = 42; gr = 19; gy0 = 118; } else { cs = 14; gc = 29; gr = 11; gy0 = 126; }
   gx0 = 227 - (gc * cs) / 2;
   nm = gc * gr;
+  if (wn !== pKey) { pKey = wn; pmt = prompt(d, wn); }
+}
+
+// the seeded noise (cheap 16-bit LCG, identical on the watch); only built when it is drawn
+function noise(st) {
   const key = wn * 4 + st;
   if (key === nKey) return;
   nKey = key;
-  pmt = prompt(d, wn);
-  nz = null;
-  if (st === 3) return;
   nz = new Uint8Array(nm);
   let sd = (wn * 7 + st * 131 + 17) % 65537;
   for (let k = 0; k < nm; k++) { sd = (sd * 75 + 74) % 65537; nz[k] = sd & 255; }
 }
 
-// the target image (time + scenery), or the brush dabs for Aquarell; once per raise/minute.
-// Grid styles only need it from step ~5 on, so the first frame after a raise stays light.
+// the target image as levels 0..5 (time + scenery), or the brush dabs for Aquarell; once per
+// raise/minute. Grid styles only need it from step ~5 on, so the first frame after a raise stays light.
 function target(d, st) {
   const ts = G.timeStr(d);
   const key = st + ts + "/" + wn;
@@ -98,19 +103,20 @@ function target(d, st) {
   tKey = key;
   if (st === 3) { buildAq(ts, G.rnd(wn * 31 + 11)); return; }
   tg = new Uint8Array(nm);
-  const hz = new Uint8Array(nm); // digit level (3..5), 1 = glow halo
   // scenery: mountain ridge (Diffusion), horizon with a pixel sun and stars (Pixel)
   const ph = (wn % 97) * 1.0;
   const mx = 5 + ((wn * 7) % (gc - 10));
   for (let c = 0; c < gc; c++) {
-    const top = gr - 3 - Math.floor(2.2 * (1 + G.noise(c * 0.45 + ph)));
-    for (let r = 0; r < gr; r++) {
-      const k = r * gc + c;
-      if (st === 1) tg[k] = r >= top ? 1 : 0;
-      else tg[k] = r === 9 ? (c >= mx - 1 && c <= mx + 1 ? 4 : 2) : r === 10 ? 1 : r < 2 && (k * 7 + wn) % 9 === 0 ? 1 : 0;
+    if (st === 1) {
+      for (let r = gr - 3 - Math.floor(2.2 * (1 + G.noise(c * 0.45 + ph))); r < gr; r++) tg[r * gc + c] = 1;
+    } else {
+      tg[9 * gc + c] = c >= mx - 1 && c <= mx + 1 ? 4 : 2;
+      tg[10 * gc + c] = 1;
+      if ((c * 7 + wn) % 9 === 0) tg[c] = 1; // stars
+      if ((c * 7 + gc * 7 + wn) % 9 === 0) tg[gc + c] = 1;
     }
   }
-  // glyphs (+ halo around them for Diffusion)
+  // glyphs (+ glow halo around them for Diffusion: never over a digit, digits overwrite it)
   const dw = st === 1 ? 7 : 5;
   const cw = st === 1 ? 2 : 1;
   const r0 = st === 1 ? 4 : 2;
@@ -136,22 +142,18 @@ function target(d, st) {
       for (let c = 0; c < w; c++) {
         if (bits & (1 << (w - 1 - c))) {
           const k = (r0 + rr) * gc + x + c;
-          hz[k] = lv;
+          tg[k] = lv;
           if (st === 1) {
             for (let q = k - gc - 1; q <= k + gc - 1; q += gc) {
-              if (hz[q] === 0) hz[q] = 1;
-              if (hz[q + 1] === 0) hz[q + 1] = 1;
-              if (hz[q + 2] === 0) hz[q + 2] = 1;
+              if (tg[q] < 3) tg[q] = 3;
+              if (tg[q + 1] < 3) tg[q + 1] = 3;
+              if (tg[q + 2] < 3) tg[q + 2] = 3;
             }
           }
         }
       }
     }
     x += col ? cw : dw;
-  }
-  for (let k = 0; k < nm; k++) {
-    const lv = hz[k] >= 3 ? hz[k] : hz[k] === 1 ? 3 : tg[k];
-    tg[k] = lv > 0 ? lv * 43 + 21 : 0;
   }
 }
 
@@ -290,7 +292,7 @@ function drawAq(dc, d, a, s, t) {
 }
 
 export default {
-  get fps() { return busy ? 20 : 6; },
+  get fps() { return busy ? 20 : aq ? 4 : 6; },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -298,6 +300,7 @@ export default {
     const t = a.live ? a.t : 99999;
     const s = Math.min(NS, Math.floor(t / SMS));
     busy = a.live && t < NS * SMS + 150;
+    aq = st === 3;
     let ai = Math.round(G.easeInOut(s / NS) * 256);
     // pure noise needs no target yet; while animating, the frame that builds it only draws
     // noise (watchdog budget: building + mixing in one frame is too much on the watch)
@@ -306,6 +309,7 @@ export default {
       target(d, st);
       if (a.live) ai = 0;
     }
+    if (ai < 256) noise(st);
     const acc = d.accent;
     const pi = wn % 4;
     // level colours: grey noise that takes on the palette while it denoises
@@ -329,7 +333,7 @@ export default {
         let q = -1;
         if (c < gc) {
           const k = kb + c;
-          q = ai >= 256 ? (tg[k] * 6) >> 8 : ai <= 0 ? ((nz[k] ^ sx) * 6) >> 8 : ((tg[k] * ai + (nz[k] ^ sx) * bi) * 6) >> 16;
+          q = ai >= 256 ? tg[k] : ai <= 0 ? ((nz[k] ^ sx) * 6) >> 8 : ((LUT[tg[k]] * ai + (nz[k] ^ sx) * bi) * 6) >> 16;
         }
         if (q !== lv) {
           if (lv > 0) {
@@ -346,8 +350,8 @@ export default {
       const tick = Math.floor(t / 170);
       for (let j = 0; j < 7; j++) {
         const k = (tick * 7919 + j * 2731 + wn * 13) % nm;
-        if (tg[k] < 110) {
-          const l = tg[k] > 0 ? Math.floor((tg[k] - 21) / 43) + 1 : 1;
+        if (tg[k] < 3) {
+          const l = tg[k] + 1;
           dc.setColor(cur[l], -1);
           dc.fillRectangle(gx0 + (k % gc) * cs, gy0 + Math.floor(k / gc) * cs, cs, cs);
         }

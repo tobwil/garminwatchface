@@ -30,6 +30,7 @@ const NJ = new Float64Array(NSTR); // edge raggedness per strip
 const GLOW = new Array(NSTR); // background colour under the fog per strip (light behind the time)
 let busy = true;
 let any = false; // is anything wiped right now?
+let ymin = 0, ymax = 0; // vertical extent of everything wiped (cheap early-out)
 let cKey = -1;
 let wn = 0, tilt = 0, bow = 0, dir = 1, ph = 0, tilt2 = 0;
 let blobs = null; // x, y, r, tone
@@ -64,8 +65,8 @@ function build(st, d) {
   for (let s = 0; s < NSTR; s++) {
     const xc = s * 6 + 3;
     const u = (xc - 227) / 227.0;
-    COLS[s] = G.mix(G.mix(P[0], P[1], 0.5 + 0.5 * G.noise(xc * 0.031 + ph)), P[12], (1 - u * u) * 0.55);
-    NJ[s] = 1 + G.noise(xc * 0.045 + ph);
+    COLS[s] = G.mix(G.mix(P[0], P[1], 0.5 + 0.5 * Math.sin(xc * 0.053 + ph)), P[12], (1 - u * u) * 0.55);
+    NJ[s] = 1 + 0.6 * Math.sin(xc * 0.077 + ph) + 0.3 * Math.sin(xc * 0.19 + ph * 3);
     GLOW[s] = G.mix(P[5], P[6], G.clamp(1.15 - Math.abs(u) * 1.25, 0, 1));
   }
   fern = null;
@@ -84,14 +85,16 @@ function build(st, d) {
         sd = G.rnd(sd);
         dr += (sd % 31) - 15;
         const len = 15 - i;
-        const nx = G.ptX(x, len, dr), ny = G.ptY(y, len, dr);
+        const sn = Math.sin(dr * 0.0174533), cn = Math.cos(dr * 0.0174533);
+        const nx = x + len * sn, ny = y - len * cn;
         fern[m++] = x; fern[m++] = y; fern[m++] = nx; fern[m++] = ny;
         if (i > 0) {
+          // side branches at +-58 degrees (rotated direction, no extra trig)
           const bl = (8 - i) * 2.8 + 5;
-          for (let sgn = -1; sgn <= 1; sgn += 2) {
-            fern[sb++] = x; fern[sb++] = y;
-            fern[sb++] = G.ptX(x, bl, dr + sgn * 58); fern[sb++] = G.ptY(y, bl, dr + sgn * 58);
-          }
+          fern[sb++] = x; fern[sb++] = y;
+          fern[sb++] = x + bl * (sn * 0.5299 + cn * 0.848); fern[sb++] = y - bl * (cn * 0.5299 - sn * 0.848);
+          fern[sb++] = x; fern[sb++] = y;
+          fern[sb++] = x + bl * (sn * 0.5299 - cn * 0.848); fern[sb++] = y - bl * (cn * 0.5299 + sn * 0.848);
         }
         x = nx; y = ny;
       }
@@ -110,6 +113,7 @@ function strips(st, t) {
   const hw2 = 27 - 3 * cr;
   const tt = t * 0.0006;
   any = t >= T0;
+  ymin = 999; ymax = -999;
   for (let s = 0; s < NSTR; s++) {
     const xc = s * 6 + 3;
     const u = (xc - 227) / 227.0;
@@ -129,6 +133,8 @@ function strips(st, t) {
     const y2 = Y2 + (tilt2 * (xc - 227)) / 107.0;
     const j2 = jit * 0.4;
     if (h > j2) { A2[s] = y2 - h + j2; B2[s] = y2 + h - j2; } else { A2[s] = 1; B2[s] = 0; }
+    if (A1[s] < B1[s]) { if (A1[s] < ymin) ymin = A1[s]; if (B1[s] > ymax) ymax = B1[s]; }
+    if (A2[s] < B2[s] && B2[s] > ymax) ymax = B2[s];
   }
 }
 
@@ -270,7 +276,8 @@ export default {
       for (let i = 0; i < n; i++) {
         const o = i * 4;
         const x1 = fern[o], y1 = fern[o + 1], x2 = fern[o + 2], y2 = fern[o + 3];
-        if (clearAt((x1 + x2) / 2, (y1 + y2) / 2, 11)) continue;
+        const my = (y1 + y2) / 2;
+        if (my > ymin - 11 && my < ymax + 11 && clearAt((x1 + x2) / 2, my, 11)) continue;
         if (i < nMain) { dc.setColor(P[4], -1); dc.setPenWidth(2); }
         else { dc.setColor(0x86a9c8, -1); dc.setPenWidth(1); }
         dc.drawLine(x1, y1, x2, y2);
