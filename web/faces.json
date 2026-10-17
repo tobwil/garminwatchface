@@ -7,7 +7,8 @@
       "js": "mono.js",
       "name": "Mono",
       "tags": [
-        "klassisch"
+        "klassisch",
+        "ohnesport"
       ],
       "blurb": "Riesige Monoline-Ziffern, die sich beim Handgelenk-Heben selbst schreiben. 60 Ticks zeigen dein Schrittziel, drei frei wählbare Datenfelder.",
       "styles": [
@@ -36,7 +37,8 @@
       "js": "chrono.js",
       "name": "Chronograph",
       "tags": [
-        "klassisch"
+        "klassisch",
+        "ohnesport"
       ],
       "blurb": "Analoger Chronograph mit Hilfszifferblättern, Datumsfenster und butterweich gleitendem Sekundenzeiger. Die Zeiger schwingen beim Aufwachen in Position.",
       "styles": [
@@ -65,7 +67,8 @@
       "js": "wort.js",
       "name": "Wortuhr",
       "tags": [
-        "klassisch"
+        "klassisch",
+        "ohnesport"
       ],
       "blurb": "\"ES IST VIERTEL NACH ZEHN\" – die Wortuhr fürs Handgelenk. Die Buchstaben leuchten beim Aufwachen nacheinander auf.",
       "styles": [
@@ -93,7 +96,8 @@
       "name": "Split-Flap",
       "tags": [
         "klassisch",
-        "wild"
+        "wild",
+        "ohnesport"
       ],
       "blurb": "Die Abflugtafel vom Bahnhof: Klappziffern, die sich beim Aufwachen und jede Minute durchblättern. Darunter deine Daten als Tafelzeilen.",
       "styles": [
@@ -285,7 +289,8 @@
       "name": "Daylight",
       "tags": [
         "daten",
-        "klassisch"
+        "klassisch",
+        "ohnesport"
       ],
       "blurb": "Sonnenbogen, Himmelsfarbe nach echtem Sonnenstand, Goldene Stunde, verbleibendes Tageslicht für die Feierabendrunde – und nachts der Mond in seiner echten Phase.",
       "styles": [
@@ -314,7 +319,8 @@
       "js": "glitch.js",
       "name": "Glitch",
       "tags": [
-        "wild"
+        "wild",
+        "ohnesport"
       ],
       "blurb": "Die Uhr glitcht im Takt deines Stresslevels: entspannt bleibt alles sauber, unter Stress zerfällt die Zeit in RGB-Splitter und Scanlines.",
       "styles": [
@@ -343,7 +349,8 @@
       "js": "orbit.js",
       "name": "Orbit",
       "tags": [
-        "wild"
+        "wild",
+        "ohnesport"
       ],
       "blurb": "Ein Sonnensystem als Uhr: Stunden- und Minutenplanet kreisen um die Sonne, ein Komet zieht die Sekunden, der Mond zeigt seine echte Phase.",
       "styles": [
@@ -672,7 +679,8 @@
       "js": "bahn.js",
       "name": "Bahnhofsuhr",
       "tags": [
-        "klassisch"
+        "klassisch",
+        "ohnesport"
       ],
       "blurb": "Die klassische Bahnhofsuhr mit roter Kelle: Der Sekundenzeiger läuft in 58,5 Sekunden herum, wartet oben und gibt die Minute frei – wie am Bahnsteig.",
       "styles": [
@@ -702,7 +710,8 @@
       "js": "synth.js",
       "name": "Synthwave",
       "tags": [
-        "wild"
+        "wild",
+        "ohnesport"
       ],
       "blurb": "Outrun bis zum Horizont: Retro-Sonne nach echtem Sonnenstand, ein Gitter-Highway, der im Takt deines Pulses rast, und die Uhrzeit in Chrom-Neon.",
       "styles": [
@@ -829,7 +838,8 @@
       "tags": [
         "ki",
         "versteckt",
-        "interaktiv"
+        "interaktiv",
+        "ohnesport"
       ],
       "blurb": "Wie ein Bildgenerator: Bei jedem Handgelenk-Heben entsteht die Uhrzeit Schritt für Schritt aus reinem Rauschen – jedes Mal mit neuem Seed, jedes Mal ein anderes Bild.",
       "styles": [
@@ -955,7 +965,8 @@
       "tags": [
         "versteckt",
         "wild",
-        "pixel"
+        "pixel",
+        "ohnesport"
       ],
       "blurb": "Die Uhrzeit ist verschlüsselt – binär, als Morsecode oder in römischen Zahlen. Wer kurz wartet, sieht sie sich entschlüsseln; wer den Code beherrscht, braucht das nicht.",
       "styles": [
@@ -985,7 +996,8 @@
       "tags": [
         "versteckt",
         "interaktiv",
-        "wild"
+        "wild",
+        "ohnesport"
       ],
       "blurb": "Das Display ist beschlagen. Beim Handgelenk-Heben wischt ein Finger die Uhrzeit frei – dann zieht der Nebel langsam wieder zu.",
       "styles": [
@@ -1005,6 +1017,261 @@
           38,
           23,
           2
+        ]
+      }
+    },
+    {
+      "key": "NIXIE",
+      "cls": "FaceNixie",
+      "file": "Nixie.mc",
+      "js": "nixie.js",
+      "name": "Nixie",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Glühende Nixie-Röhren mit gestapelten Ziffern-Kathoden. Beim Handgelenk-Heben läuft der „Kathoden-Check“ durch alle Ziffern, bis die Uhrzeit einrastet – mit warmem Glimmen und Röhrenflackern.",
+      "styles": [
+        "Klassisch",
+        "Eisblau",
+        "Dekatron"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF7A1F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "SKELETT",
+      "cls": "FaceSkelett",
+      "file": "Skelett.mc",
+      "js": "skelett.js",
+      "name": "Skelett",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Ein offenes mechanisches Uhrwerk: Unruh, Ankerrad und Räderwerk arbeiten sichtbar, die Gangreserve ist dein Akku. Beim Heben schwingt die Unruh an.",
+      "styles": [
+        "Gold",
+        "Stahl",
+        "Tourbillon"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "D4A64A",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "BLOCK",
+      "cls": "FaceBlock",
+      "file": "Block.mc",
+      "js": "block.js",
+      "name": "Blockfall",
+      "tags": [
+        "pixel",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Fallende Pixel-Blöcke drehen sich, rutschen und stapeln sich zur Uhrzeit. Zu jeder neuen Minute wird eine Reihe abgeräumt – mit Punkten, Level und Highscore.",
+      "styles": [
+        "Klassik",
+        "Gameboy",
+        "Neon"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3FD8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "AQUA",
+      "cls": "FaceAqua",
+      "file": "Aqua.mc",
+      "js": "aqua.js",
+      "name": "Aquarium",
+      "tags": [
+        "pixel",
+        "ohnesport"
+      ],
+      "blurb": "Ein Pixel-Aquarium am Handgelenk: Fische ziehen ihre Bahnen, Luftblasen steigen, Seegras wiegt sich, nachts leuchtet das Becken. Beim Heben kommen die Fische neugierig zur Scheibe.",
+      "styles": [
+        "Riff",
+        "Teich",
+        "Tiefsee"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "aqua"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3FC8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "LAVA",
+      "cls": "FaceLava",
+      "file": "Lava.mc",
+      "js": "lava.js",
+      "name": "Lavalampe",
+      "tags": [
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Wachsblasen steigen auf, teilen sich und verschmelzen in einer Lavalampe – die Uhrzeit schwimmt mittendrin. Je wärmer es draußen ist, desto lebhafter die Lampe.",
+      "styles": [
+        "Retro",
+        "Ozean",
+        "Plasma"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF3D7F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "BAUHAUS",
+      "cls": "FaceBauhaus",
+      "file": "Bauhaus.mc",
+      "js": "bauhaus.js",
+      "name": "Bauhaus",
+      "tags": [
+        "klassisch",
+        "wild",
+        "ohnesport"
+      ],
+      "blurb": "Kreis, Quadrat, Dreieck: Eine geometrische Komposition, die beim Handgelenk-Heben zusammenfällt und sich jede Minute neu ordnet. Stunde und Minute sind Formen, keine Zeiger.",
+      "styles": [
+        "Bauhaus",
+        "Mondrian",
+        "Memphis"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E53935",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "STERNE",
+      "cls": "FaceSterne",
+      "file": "Sterne.mc",
+      "js": "sterne.js",
+      "name": "Sternenhimmel",
+      "tags": [
+        "klassisch",
+        "ohnesport"
+      ],
+      "blurb": "Der echte Himmel über deinem Standort, jetzt: helle Sterne, Sternbilder und Mond am richtigen Platz, nach Ortszeit berechnet. Die Uhrzeit dreht den Himmel.",
+      "styles": [
+        "Planetarium",
+        "Sternkarte",
+        "Polarlicht"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "9FC4FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
+        ]
+      }
+    },
+    {
+      "key": "WETTER",
+      "cls": "FaceWetter",
+      "file": "Wetter.mc",
+      "js": "wetter.js",
+      "name": "Wetterfenster",
+      "tags": [
+        "pixel",
+        "daten",
+        "ohnesport"
+      ],
+      "blurb": "Ein Pixel-Fenster mit dem echten Wetter draußen: Regen läuft die Scheibe herunter, Schnee bleibt auf dem Sims liegen, Wind biegt den Baum, nachts Mond und Sterne. Dazu Höchst-/Tiefstwert und Regenrisiko.",
+      "styles": [
+        "Fenster",
+        "Postkarte",
+        "Diorama"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "wetter"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFD23F",
+        "dcol": "FFFFFF",
+        "slots": [
+          38,
+          1,
+          17
         ]
       }
     }

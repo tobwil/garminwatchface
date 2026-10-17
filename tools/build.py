@@ -201,6 +201,12 @@ def compile_face(face, typecheck="2"):
 def main():
     keys = sys.argv[1:]
     faces = [f for f in META["faces"] if not keys or f["key"] in keys]
+    if not keys:
+        # faces listed in faces.json but not written yet are skipped when building everything
+        todo = [f["key"] for f in faces if not os.path.exists(os.path.join(ROOT, "watch", "source", "faces", f["file"]))]
+        if todo:
+            print("SKIP (no source yet):", " ".join(todo))
+        faces = [f for f in faces if f["key"] not in todo]
     if keys and len(faces) != len(keys):
         print("unknown face key(s):", set(keys) - {f["key"] for f in faces})
         sys.exit(2)

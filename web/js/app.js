@@ -16,7 +16,7 @@ const byKey = Object.fromEntries(faces.map((f) => [f.key, f]));
 
 const ACCENTS = ["FF5A1F", "FC6719", "FFC83D", "E8C468", "3DDC97", "29E6FF", "4D8DFF", "8C7BFF", "FF2D55", "FF4FD8", "FFFFFF"];
 const DCOLS = ["FFFFFF", "D9DEE3", "FFD24A", "29E6FF", "3DDC97", "FF8A65"];
-const TAGS = [["alle", "Alle"], ["ki", "KI"], ["interaktiv", "Interaktiv"], ["versteckt", "Versteckt"], ["pixel", "Pixel"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"]];
+const TAGS = [["alle", "Alle"], ["ki", "KI"], ["interaktiv", "Interaktiv"], ["versteckt", "Versteckt"], ["pixel", "Pixel"], ["klassisch", "Klassisch"], ["wild", "Wild"], ["rad", "Rad"], ["challenge", "Challenge"], ["daten", "Daten"], ["ohnesport", "Ohne Sport"]];
 const TAG_LABEL = Object.fromEntries(TAGS);
 const SIMS = [
   ["bb", "Body Battery", 0, 100, 1, ""], ["stress", "Stress", 0, 100, 1, ""], ["steps", "Schritte", 0, 25000, 100, ""],
