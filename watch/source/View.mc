@@ -184,6 +184,10 @@ class FaceView extends WatchUi.WatchFace {
         }
     }
 
+    // Not used on AMOLED (no partial updates); present so the callback always resolves.
+    function onPartialUpdate(dc as Dc) as Void {
+    }
+
     function onTap(x as Number, y as Number) as Boolean {
         if (face.tap(x, y, d)) {
             _wake = System.getTimer() - INTRO_MS;

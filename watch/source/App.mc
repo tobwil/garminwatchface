@@ -21,6 +21,42 @@ class FaceLabApp extends Application.AppBase {
         return [_view, new FaceDelegate(_view)];
     }
 
+    // Lifecycle callbacks the system may invoke. They are all implemented (as no-ops
+    // where nothing needs to happen) so an invocation never fails with
+    // "Symbol Not Found / Failed invoking" on a fresh install.
+    function onStop(state as Dictionary?) as Void {
+    }
+
+    function onActive(state as Dictionary?) as Void {
+    }
+
+    function onInactive(state as Dictionary?) as Void {
+    }
+
+    function onAppInstall() as Void {
+    }
+
+    function onAppUpdate() as Void {
+    }
+
+    function onStorageChanged() as Void {
+    }
+
+    function onDeviceSettingChanged(aSymbol as Symbol, aValue as Object) as Void {
+        if (_view != null) {
+            _view.onSettingsChanged();
+        }
+    }
+
+    function onDisplayModeChanged() as Void {
+    }
+
+    function onNightModeChanged() as Void {
+    }
+
+    function onEnhancedReadabilityModeChanged() as Void {
+    }
+
     function onSettingsChanged() as Void {
         if (_view != null) {
             _view.onSettingsChanged();

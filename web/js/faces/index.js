@@ -13,6 +13,16 @@ import f10 from "./glitch.js";
 import f11 from "./orbit.js";
 import f12 from "./quest.js";
 import f13 from "./term.js";
+import f14 from "./rider.js";
+import f15 from "./buddy.js";
+import f16 from "./dungeon.js";
+import f17 from "./city.js";
+import f18 from "./munch.js";
+import f19 from "./tour.js";
+import f20 from "./velo.js";
+import f21 from "./bahn.js";
+import f22 from "./synth.js";
+import f23 from "./woche.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -28,4 +38,14 @@ export const FACES = {
   ORBIT: f11,
   QUEST: f12,
   TERM: f13,
+  RIDER: f14,
+  BUDDY: f15,
+  DUNGEON: f16,
+  CITY: f17,
+  MUNCH: f18,
+  TOUR: f19,
+  VELO: f20,
+  BAHN: f21,
+  SYNTH: f22,
+  WOCHE: f23,
 };
