@@ -238,14 +238,15 @@ class FaceCore extends Face {
         // slots (skip a Body Battery slot: it is the liquid itself)
         var ns = 0;
         for (var k = 0; k < 3; k++) {
-            if (!(d.slots[k][:lbl] as String).equals("B-BATT")) {
+            var l = d.slots[k][:lbl] as String;
+            if (l.length() > 0 && !l.equals("B-BATT")) {
                 ns++;
             }
         }
         var j = 0;
         for (var k = 0; k < 3; k++) {
             var sl = d.slots[k];
-            if ((sl[:lbl] as String).equals("B-BATT")) {
+            if ((sl[:lbl] as String).length() == 0 || (sl[:lbl] as String).equals("B-BATT")) {
                 continue;
             }
             var x = cx + (j - (ns - 1) / 2.0) * 112;

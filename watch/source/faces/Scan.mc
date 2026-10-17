@@ -287,9 +287,18 @@ class FaceScan extends Face {
 
         // ---- objects: slots 0..2 and the time (3)
         var found = 0;
+        var nObj = 1; // the time plus every non-empty slot
+        for (var k = 0; k < 3; k++) {
+            if ((d.slots[k][:lbl] as String).length() > 0) {
+                nObj++;
+            }
+        }
         for (var oi = 0; oi < 4; oi++) {
             var i = ORDER[oi];
             var sl = i < 3 ? d.slots[i] : null;
+            if (sl != null && (sl[:lbl] as String).length() == 0) {
+                continue; // empty slot: nothing to detect
+            }
             var known = i == 3 || (sl[:raw] != -1);
             var t0 = passT(BY[i] + BH[i] / 2.0);
             var lt = t - t0; // ms since lock started
@@ -415,8 +424,8 @@ class FaceScan extends Face {
         dc.fillRectangle(340, 96, 3, 5);
         dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100.0, 0.0, 1.0)), 7);
         F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
-        var all = found >= 4;
-        var msg = all ? "ERKANNT: 4 OBJEKTE" : "SUCHE ... " + found + "/4";
+        var all = found >= nObj;
+        var msg = all ? "ERKANNT: " + nObj + (nObj == 1 ? " OBJEKT" : " OBJEKTE") : "SUCHE ... " + found + "/" + nObj;
         var full = msg;
         if (all && t > 4200) {
             // after the detection: a verdict on the main object, typed out

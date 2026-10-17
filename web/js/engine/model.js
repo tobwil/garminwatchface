@@ -32,6 +32,7 @@ export const SLOT_TYPES = [
   [28, "10K", "Prognose 10 km"],
   [29, "HM", "Prognose Halbmarathon"],
   [30, "M", "Prognose Marathon"],
+  [0, "", "– leer –"],
 ];
 const SLOT_LABEL = Object.fromEntries(SLOT_TYPES.map(([t, l]) => [t, l]));
 
@@ -75,7 +76,9 @@ export function decodeCode(s) {
 }
 
 // Format a complication value into { lbl, val } — identical to Data.mc fmtSlot().
+// An empty slot (type 0) has lbl "" and val "": faces skip it.
 export function fmtSlot(type, raw, metric) {
+  if (type === 0) return { lbl: "", val: "", raw: -1 };
   const lbl = SLOT_LABEL[type] || "--";
   if (raw === null || raw === undefined || raw === -1) return { lbl, val: "--", raw: -1 };
   let val;

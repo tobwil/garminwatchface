@@ -189,6 +189,9 @@ class FaceGlitch extends Face {
                 continue;
             }
             var sl = d.slots[i];
+            if ((sl[:lbl] as String).length() == 0) {
+                continue;
+            }
             var y = 312 + i * 21;
             var x = cx - 100;
             dc.setColor(G.dim(c0, sp), -1);

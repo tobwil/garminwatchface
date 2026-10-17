@@ -400,6 +400,7 @@ const face = {
     if (q > 0 && st !== 2) {
       for (let j = 0; j < 3; j++) {
         const sl = d.slots[j];
+        if (!sl.lbl) continue; // empty slot: no cell
         const x = CX + (j - 1) * 106;
         if (st === 3) {
           dc.setColor(ink, -1);

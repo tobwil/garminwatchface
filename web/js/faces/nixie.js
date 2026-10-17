@@ -350,6 +350,7 @@ export default {
     const y0 = L[8];
     for (let k = 0; k < 3; k++) {
       const sl = d.slots[k];
+      if (!sl.lbl) continue;
       const sp = G.stag(p, k, 0.1, 0.4);
       if (sp <= 0) continue;
       const cx = 227 + (k - 1) * (st === 3 ? 92 : 104);

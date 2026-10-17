@@ -406,6 +406,9 @@ class FaceCity extends Face {
                 continue;
             }
             if (k < 3) {
+                if ((d.slots[k][:lbl] as String).length() == 0) {
+                    continue; // empty slot: no billboard
+                }
                 var b = BOARD_B[k];
                 board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k][:lbl] as String, d.slots[k][:val] as String, cols[k], st, pal, day);
             } else if (!tempSlot) {

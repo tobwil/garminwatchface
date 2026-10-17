@@ -163,6 +163,7 @@ export default {
       const sp = G.stag(p, i, 0.1, 0.45);
       if (sp <= 0) continue;
       const sl = d.slots[i];
+      if (!sl.lbl) continue;
       const y = 312 + i * 21;
       const x = cx - 100;
       dc.setColor(G.dim(c0, sp), -1);

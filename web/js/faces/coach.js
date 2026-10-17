@@ -362,15 +362,17 @@ export default {
     }
 
     // ---- slot chips
-    let lb = [], tw = 0;
+    let lb = [], tw = 0, n = 0;
     for (let k = 0; k < 3; k++) {
       lb.push(d.slots[k].lbl);
+      if (lb[k]) n++;
     }
     let ws = [];
     for (let pass = 0; pass < 2; pass++) {
-      tw = 16;
+      tw = n > 1 ? (n - 1) * 8 : 0; // gaps between the chips; empty slots take no space
       ws = [];
       for (let k = 0; k < 3; k++) {
+        if (!lb[k]) { ws.push(0); continue; }
         const w = Math.max(F.pxW(lb[k], 2), F.pxW(d.slots[k].val, 2)) + 16;
         ws.push(w);
         tw += w;
@@ -380,6 +382,7 @@ export default {
     }
     let x = 227 - tw / 2;
     for (let k = 0; k < 3; k++) {
+      if (!lb[k]) continue;
       const sp = G.stag(p, k, 0.1, 0.5);
       const w = ws[k];
       if (sp > 0) {

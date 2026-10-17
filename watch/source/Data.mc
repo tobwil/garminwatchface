@@ -493,7 +493,11 @@ class D {
     }
 
     // Mirrors fmtSlot() in model.js
+    // An empty slot (type 0) has lbl "" and val "": faces skip it.
     static function fmtSlot(t as Number, raw, metric as Boolean) as Dictionary {
+        if (t == 0) {
+            return {:lbl => "", :val => "", :raw => -1};
+        }
         var lbl = label(t);
         if (raw == null || (raw instanceof Number && raw == -1)) {
             return {:lbl => lbl, :val => "--", :raw => -1};

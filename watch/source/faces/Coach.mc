@@ -449,12 +449,20 @@ class FaceCoach extends Face {
         var lb = new [3];
         var ws = new [3];
         var tw = 0;
+        var n = 0;
         for (var k = 0; k < 3; k++) {
             lb[k] = d.slots[k][:lbl] as String;
+            if ((lb[k] as String).length() > 0) {
+                n++;
+            }
         }
         for (var pass = 0; pass < 2; pass++) {
-            tw = 16;
+            tw = n > 1 ? (n - 1) * 8 : 0; // gaps between the chips; empty slots take no space
             for (var k = 0; k < 3; k++) {
+                if ((lb[k] as String).length() == 0) {
+                    ws[k] = 0;
+                    continue;
+                }
                 var w1 = F.pxW(lb[k] as String, 2);
                 var w2 = F.pxW(d.slots[k][:val] as String, 2);
                 var w = (w1 > w2 ? w1 : w2) + 16;
@@ -472,6 +480,9 @@ class FaceCoach extends Face {
         }
         var x = 227 - tw / 2.0;
         for (var k = 0; k < 3; k++) {
+            if ((lb[k] as String).length() == 0) {
+                continue;
+            }
             var sp = G.stag(p, k, 0.1, 0.5);
             var w = ws[k];
             if (sp > 0) {

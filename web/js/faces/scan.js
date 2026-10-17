@@ -205,11 +205,13 @@ export default {
     BX[3] = 87;
 
     // ---- objects: slots 0..2 and the time (3)
-    let found = 0;
+    let found = 0, nObj = 1; // the time plus every non-empty slot
+    for (let k = 0; k < 3; k++) if (d.slots[k].lbl) nObj++;
     const order = [3, 0, 1, 2]; // draw time last (on top)
     for (let oi = 0; oi < 4; oi++) {
       const i = order[oi];
       const sl = i < 3 ? d.slots[i] : null;
+      if (sl && !sl.lbl) continue; // empty slot: nothing to detect
       const known = i === 3 || sl.raw !== -1;
       const t0 = passT(BY[i] + BH[i] / 2);
       const lt = t - t0; // ms since lock started
@@ -322,8 +324,8 @@ export default {
     dc.fillRectangle(340, 96, 3, 5);
     dc.fillRectangle(321, 95, Math.round(16 * G.clamp(d.batt / 100, 0, 1)), 7);
     F.px(dc, d.batt + "%", 348, 92, 2, 0, 0);
-    const all = found >= 4;
-    let msg = all ? "ERKANNT: 4 OBJEKTE" : "SUCHE ... " + found + "/4";
+    const all = found >= nObj;
+    let msg = all ? "ERKANNT: " + nObj + (nObj === 1 ? " OBJEKT" : " OBJEKTE") : "SUCHE ... " + found + "/" + nObj;
     if (all && t > 4200) {
       // after the detection: a verdict on the main object, typed out
       msg = verdict(d);

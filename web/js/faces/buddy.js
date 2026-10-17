@@ -344,6 +344,7 @@ export default {
     // ---------------- slots
     for (let i = 0; i < 3; i++) {
       const sl = d.slots[i];
+      if (!sl.lbl) continue;
       const x = 125 + i * 102;
       const vs = F.pxW(sl.val, 3) > 88 ? 2 : 3;
       if (st === 3) {

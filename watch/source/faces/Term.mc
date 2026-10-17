@@ -204,6 +204,9 @@ class FaceTerm extends Face {
             ];
             for (var k = 0; k < 3; k++) {
                 var sl = d.slots[k];
+                if ((sl[:lbl] as String).length() == 0) {
+                    continue; // empty slot: blank line
+                }
                 var l = lc(sl[:lbl] as String);
                 var v = lc(sl[:val] as String);
                 var dots = " ";

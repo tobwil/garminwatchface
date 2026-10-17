@@ -371,6 +371,9 @@ class FaceSynth extends Face {
                 continue;
             }
             var sl = d.slots[k];
+            if ((sl[:lbl] as String).length() == 0) {
+                continue;
+            }
             var x = CX + (k - 1) * 106;
             dc.setColor(c[15], -1);
             dc.fillRoundedRectangle(x - 50, 340, 100, 48, 7);

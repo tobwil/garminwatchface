@@ -296,6 +296,7 @@ const face = {
       const q = G.stag(p - 0.55, k, 0.08, 0.3);
       if (q <= 0) continue;
       const sl = d.slots[k];
+      if (!sl.lbl) continue;
       const x = CX + (k - 1) * 106;
       dc.setColor(c[15], -1);
       dc.fillRoundedRectangle(x - 50, 340, 100, 48, 7);

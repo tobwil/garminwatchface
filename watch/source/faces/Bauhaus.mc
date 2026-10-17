@@ -508,6 +508,9 @@ class FaceBauhaus extends Face {
         if (q > 0 && st != 2) {
             for (var j = 0; j < 3; j++) {
                 var sl = d.slots[j];
+                if ((sl[:lbl] as String).length() == 0) {
+                    continue; // empty slot: no cell
+                }
                 var x = CX + (j - 1) * 106;
                 if (st == 3) {
                     dc.setColor(ink, -1);

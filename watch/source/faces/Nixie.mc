@@ -400,6 +400,9 @@ class FaceNixie extends Face {
         var y0 = L[8];
         for (var k = 0; k < 3; k++) {
             var sl = d.slots[k];
+            if ((sl[:lbl] as String).length() == 0) {
+                continue;
+            }
             var sp = G.stag(p, k, 0.1, 0.4);
             if (sp <= 0) {
                 continue;

@@ -331,6 +331,7 @@ export default {
       // switch-on flicker, always over before the intro ends (p reaches exactly 1)
       if (p < p0 + 0.12 && p < 1 && Math.floor(a.t / 60) % 2 === 1) continue;
       if (k < 3) {
+        if (!d.slots[k].lbl) continue; // empty slot: no billboard
         const b = BOARD_B[k];
         board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k].lbl, d.slots[k].val, cols[k], st, pal, day);
       } else if (!tempSlot) {

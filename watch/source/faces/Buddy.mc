@@ -457,6 +457,9 @@ class FaceBuddy extends Face {
             var sl = d.slots[i];
             var x = 125 + i * 102;
             var lbl = sl[:lbl] as String;
+            if (lbl.length() == 0) {
+                continue;
+            }
             var val = sl[:val] as String;
             var vs = F.pxW(val, 3) > 88 ? 2 : 3;
             if (st == 3) {

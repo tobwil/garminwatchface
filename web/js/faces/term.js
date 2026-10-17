@@ -160,6 +160,7 @@ export default {
       ];
       for (let k = 0; k < 3; k++) {
         const sl = d.slots[k];
+        if (!sl.lbl) continue; // empty slot: blank line
         const l = lc(sl.lbl), v = lc(sl.val);
         let dots = " ";
         for (let i = l.length + v.length + 2; i < NCH; i++) dots += ".";

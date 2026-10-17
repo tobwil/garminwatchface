@@ -215,13 +215,13 @@ export default {
     dc.setColor(G.dim(0xd0d0d0, tp), -1);
     F.px(dc, d.dowStr + " " + d.day + " " + d.monStr, cx, 282, 2, 1, 0);
 
-    // slots (skip a Body Battery slot: it is the liquid itself)
+    // slots (skip a Body Battery slot: it is the liquid itself; and empty slots)
     let ns = 0;
-    for (let k = 0; k < 3; k++) if (d.slots[k].lbl !== "B-BATT") ns++;
+    for (let k = 0; k < 3; k++) if (d.slots[k].lbl && d.slots[k].lbl !== "B-BATT") ns++;
     let j = 0;
     for (let k = 0; k < 3; k++) {
       const sl = d.slots[k];
-      if (sl.lbl === "B-BATT") continue;
+      if (!sl.lbl || sl.lbl === "B-BATT") continue;
       const x = cx + (j - (ns - 1) / 2.0) * 112;
       const sp = G.stag(p, j, 0.12, 0.5);
       j++;
