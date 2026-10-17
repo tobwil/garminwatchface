@@ -29,7 +29,7 @@ const BRT = [109, 20, -32, 32, 61, 14, 104, 166, 140, 18, 110, 138, 140, 18, 222
 
 // band on a circle around the centre (clock a0..a1) with round end caps, as flat [x0, y0, x1, y1, ...]
 function band(r, w, a0, a1) {
-  const n = Math.max(4, Math.round((a1 - a0) / 6));
+  const n = 10; // fixed: every band has 28 points and shares one point pool
   const h = w / 2;
   const f = [];
   for (let i = 0; i <= n; i++) { const g = a0 + ((a1 - a0) * i) / n; f.push(G.ptX(227, r + h, g), G.ptY(227, r + h, g)); }
@@ -61,7 +61,7 @@ function quad(r1, r2, w, g) {
 }
 
 // minute ticks [x1,y1,x2,y2], index quads + lume lines, bridge bands (chamfer, top) + one point pool per bridge
-const TK = [], IQ = [], IL = [], BF = [], BPL = [];
+const TK = [], IQ = [], IL = [], BF = [];
 for (let i = 0; i < 60; i++) {
   const g = i * 6;
   if (i % 5 === 0) {
@@ -74,8 +74,17 @@ for (let i = 0; i < 60; i++) {
 for (let k = 0; k < 24; k += 4) {
   BF.push(band(BRT[k], BRT[k + 1], BRT[k + 2], BRT[k + 3]));
   BF.push(band(BRT[k], BRT[k + 1] - 6, BRT[k + 2], BRT[k + 3]));
-  BPL.push(pts(BF[BF.length - 1], null));
 }
+const BPL = pts(BF[0], null);
+// plate ring: two half annuli r 175..205 (flat) + their point pool
+function halfF(r1, r2, a0) {
+  const f = [];
+  for (let i = 0; i <= 22; i++) f.push(G.ptX(227, r2, a0 + i * 180 / 22.0), G.ptY(227, r2, a0 + i * 180 / 22.0));
+  for (let i = 22; i >= 0; i--) f.push(G.ptX(227, r1, a0 + i * 180 / 22.0), G.ptY(227, r1, a0 + i * 180 / 22.0));
+  return f;
+}
+const PF = [halfF(175, 205, 0), halfF(175, 205, 180)];
+const PPL = pts(PF[0], null);
 
 // n radial teeth from r1 to r2 starting at clock angle a0; sk = tip lean in degrees (escape wheel hooks)
 function teeth(dc, cx, cy, r1, r2, n, a0, sk) {
@@ -115,9 +124,9 @@ function pinion(dc, cx, cy, r, n, ang, col) {
 // curved bridge k: chamfer (darker), flat top surface, polished edge lines
 function arcBr(dc, k, col, hi, lo) {
   dc.setColor(lo, -1);
-  dc.fillPolygon(pts(BF[k * 2], BPL[k]));
+  dc.fillPolygon(pts(BF[k * 2], BPL));
   dc.setColor(col, -1);
-  dc.fillPolygon(pts(BF[k * 2 + 1], BPL[k]));
+  dc.fillPolygon(pts(BF[k * 2 + 1], BPL));
   const r = BRT[k * 4], h = BRT[k * 4 + 1] / 2 - 1;
   dc.setPenWidth(1);
   dc.setColor(hi, -1);
@@ -183,7 +192,7 @@ export default {
     const acc = d.accent;
     const p = a.intro;
     const live = a.live;
-    fx = live ? 20 : 0;
+    fx = live ? 15 : 0;
 
     // palette per style: bridge, bridge hi, wheel, wheel hi, screw, screw hi, hands, lume, ring
     let cBr, cBrH, cW, cWH, cSc, cScH, cHd, cLu, cRg;
@@ -211,24 +220,22 @@ export default {
     const amp = 150 * G.ease(G.clamp(p * 1.3, 0, 1));
     const bal = live ? amp * Math.sin(2 * Math.PI * HZ * sec) : 0;
 
-    // ---- main plate ring (circular graining) + chapter ring: minute track + applied indices
+    // ---- main plate ring with polished reflections + chapter ring: minute track + applied indices
     dc.setColor(cPl, -1);
-    dc.fillCircle(227, 227, 205);
-    dc.setColor(0x000000, -1);
-    dc.fillCircle(227, 227, 175);
-    dc.setColor(G.mix(cPl, 0xffffff, 0.07), -1);
+    dc.fillPolygon(pts(PF[0], PPL));
+    dc.fillPolygon(pts(PF[1], PPL));
+    dc.setColor(G.mix(cPl, 0xffffff, 0.12), -1);
     dc.setPenWidth(1);
-    for (let r = 182; r < 205; r += 8) dc.drawCircle(227, 227, r);
-    dc.setColor(G.mix(cPl, 0x000000, 0.5), -1);
-    dc.drawCircle(227, 227, 175);
+    G.arcC(dc, 227, 227, 186, 296, 346);
+    G.arcC(dc, 227, 227, 198, 300, 336);
+    G.arcC(dc, 227, 227, 186, 116, 166);
+    G.arcC(dc, 227, 227, 198, 120, 156);
     if (p < 1) {
       // intro: a polish glint runs round the plate
       const g = p * 400 - 20;
       dc.setColor(G.mix(cPl, 0xffffff, 0.22 * (1 - p)), -1);
-      dc.fillPolygon(pts(band(190, 26, g - 30, g), null));
+      dc.fillPolygon(pts(band(190, 26, g - 30, g), BPL));
     }
-    dc.setColor(0x2a2a2a, -1);
-    dc.drawCircle(227, 227, 222);
     dc.setPenWidth(2);
     dc.setColor(0x6a6a6a, -1);
     for (let i = 0; i < 192; i += 4) dc.drawLine(TK[i], TK[i + 1], TK[i + 2], TK[i + 3]);
@@ -421,7 +428,8 @@ export default {
       dc.setColor(G.dim(0x8a8a8a, sp), -1);
       F.px(dc, sl.lbl, SX[k], SY[k] - 20, 2, 1, 0);
       dc.setColor(G.mix(0x000000, d.dcol, sp), -1);
-      F.st(dc, sl.val, SX[k], SY[k] + 6, 18, 2, 1, 1.0, 0);
+      const vw = F.stW(sl.val, 18);
+      F.st(dc, sl.val, SX[k], SY[k] + 6, vw > 80 ? (18 * 80) / vw : 18, 2, 1, 1.0, 0);
     }
 
     // ---- hands (spring in from 12 on every raise)

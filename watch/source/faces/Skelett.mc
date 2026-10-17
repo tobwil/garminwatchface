@@ -32,6 +32,8 @@ class FaceSkelett extends Face {
     hidden var _il as Array;
     hidden var _bf as Array;
     hidden var _bpl as Array;
+    hidden var _pf as Array;
+    hidden var _ppl as Array;
 
     function initialize() {
         Face.initialize();
@@ -54,12 +56,13 @@ class FaceSkelett extends Face {
             }
         }
         _bf = new [12];
-        _bpl = new [6];
         for (var k = 0; k < 24; k += 4) {
             _bf[k / 2] = band(BRT[k], BRT[k + 1], BRT[k + 2], BRT[k + 3]);
             _bf[k / 2 + 1] = band(BRT[k], BRT[k + 1] - 6, BRT[k + 2], BRT[k + 3]);
-            _bpl[k / 4] = pts(_bf[k / 2 + 1] as Array, null);
         }
+        _bpl = pts(_bf[0] as Array, null);
+        _pf = [halfF(175, 205, 0), halfF(175, 205, 180)];
+        _ppl = pts(_pf[0] as Array, null);
     }
 
     function fps() as Number {
@@ -68,10 +71,7 @@ class FaceSkelett extends Face {
 
     // band on a circle around the centre (clock a0..a1) with round end caps, as flat [x0, y0, x1, y1, ...]
     hidden function band(r, w, a0, a1) as Array {
-        var n = Math.round((a1 - a0) / 6.0).toNumber();
-        if (n < 4) {
-            n = 4;
-        }
+        var n = 10; // fixed: every band has 28 points and shares one point pool
         var h = w / 2.0;
         var f = new [4 * n + 16];
         var q = 0;
@@ -100,6 +100,20 @@ class FaceSkelett extends Face {
             f[q] = G.ptX(cx, h, a0 + 180 + 45 * j);
             f[q + 1] = G.ptY(cy, h, a0 + 180 + 45 * j);
             q += 2;
+        }
+        return f;
+    }
+
+    // plate ring: half annulus r1..r2 from clock a0 (flat)
+    hidden function halfF(r1, r2, a0) as Array {
+        var f = new [92];
+        for (var i = 0; i <= 22; i++) {
+            f[i * 2] = G.ptX(227, r2, a0 + i * 180 / 22.0);
+            f[i * 2 + 1] = G.ptY(227, r2, a0 + i * 180 / 22.0);
+        }
+        for (var i = 22; i >= 0; i--) {
+            f[(45 - i) * 2] = G.ptX(227, r1, a0 + i * 180 / 22.0);
+            f[(45 - i) * 2 + 1] = G.ptY(227, r1, a0 + i * 180 / 22.0);
         }
         return f;
     }
@@ -177,9 +191,9 @@ class FaceSkelett extends Face {
     // curved bridge k: chamfer (darker), flat top surface, polished edge lines
     hidden function arcBr(dc as Dc, k, col, hi, lo) as Void {
         dc.setColor(lo, -1);
-        dc.fillPolygon(pts(_bf[k * 2] as Array, _bpl[k]));
+        dc.fillPolygon(pts(_bf[k * 2] as Array, _bpl));
         dc.setColor(col, -1);
-        dc.fillPolygon(pts(_bf[k * 2 + 1] as Array, _bpl[k]));
+        dc.fillPolygon(pts(_bf[k * 2 + 1] as Array, _bpl));
         var r = BRT[k * 4];
         var h = BRT[k * 4 + 1] / 2.0 - 1;
         dc.setPenWidth(1);
@@ -245,7 +259,7 @@ class FaceSkelett extends Face {
         var acc = d.accent;
         var p = a.intro;
         var live = a.live;
-        _fx = live ? 20 : 0;
+        _fx = live ? 15 : 0;
 
         // palette per style: bridge, bridge hi, wheel, wheel hi, screw, screw hi, hands, lume, ring
         var cBr;
@@ -281,26 +295,22 @@ class FaceSkelett extends Face {
         var amp = 150 * G.ease(G.clamp(p * 1.3, 0.0, 1.0));
         var bal = live ? amp * Math.sin(2 * Math.PI * HZ * sec) : 0.0;
 
-        // ---- main plate ring (circular graining) + chapter ring: minute track + applied indices
+        // ---- main plate ring with polished reflections + chapter ring: minute track + applied indices
         dc.setColor(cPl, -1);
-        dc.fillCircle(227, 227, 205);
-        dc.setColor(0x000000, -1);
-        dc.fillCircle(227, 227, 175);
-        dc.setColor(G.mix(cPl, 0xFFFFFF, 0.07), -1);
+        dc.fillPolygon(pts(_pf[0] as Array, _ppl));
+        dc.fillPolygon(pts(_pf[1] as Array, _ppl));
+        dc.setColor(G.mix(cPl, 0xFFFFFF, 0.12), -1);
         dc.setPenWidth(1);
-        for (var r = 182; r < 205; r += 8) {
-            dc.drawCircle(227, 227, r);
-        }
-        dc.setColor(G.mix(cPl, 0x000000, 0.5), -1);
-        dc.drawCircle(227, 227, 175);
+        G.arcC(dc, 227, 227, 186, 296, 346);
+        G.arcC(dc, 227, 227, 198, 300, 336);
+        G.arcC(dc, 227, 227, 186, 116, 166);
+        G.arcC(dc, 227, 227, 198, 120, 156);
         if (p < 1) {
             // intro: a polish glint runs round the plate
             var g = p * 400 - 20;
             dc.setColor(G.mix(cPl, 0xFFFFFF, 0.22 * (1 - p)), -1);
-            dc.fillPolygon(pts(band(190, 26, g - 30, g), null));
+            dc.fillPolygon(pts(band(190, 26, g - 30, g), _bpl));
         }
-        dc.setColor(0x2A2A2A, -1);
-        dc.drawCircle(227, 227, 222);
         dc.setPenWidth(2);
         dc.setColor(0x6A6A6A, -1);
         var tkk = _tk;
@@ -525,7 +535,9 @@ class FaceSkelett extends Face {
             dc.setColor(G.dim(0x8A8A8A, sp), -1);
             F.px(dc, sl[:lbl] as String, SX[k], SY[k] - 20, 2, 1, 0);
             dc.setColor(G.mix(0x000000, d.dcol, sp), -1);
-            F.st(dc, sl[:val] as String, SX[k], SY[k] + 6, 18, 2, 1, 1.0, 0);
+            var val = sl[:val] as String;
+            var vw = F.stW(val, 18);
+            F.st(dc, val, SX[k], SY[k] + 6, vw > 80 ? 18 * 80 / vw : 18, 2, 1, 1.0, 0);
         }
 
         // ---- hands (spring in from 12 on every raise)
