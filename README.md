@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 14 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 32 fertigen Designs, die du live
 ansehen, anpassen und als installierbares Watchface (`.prg`) herunterladen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store.
 
@@ -45,9 +45,23 @@ gleichzeitig auf der Uhr haben.
 | **Synthwave** | wild | Retro-Sonne nach echtem Sonnenstand, Gitter rast im Pulstakt |
 | **Glitch** | wild | Die Uhr glitcht im Takt deines Stresslevels |
 | **Orbit** | wild | Sonnensystem: Planeten für Stunde und Minute, Komet für Sekunden, echter Mond |
+| **Neuronetz** | KI · Daten | Körperdaten als Eingänge eines neuronalen Netzes, Signale pulsieren bis zur Uhrzeit |
+| **KI-Vision** | KI · wild | Objekterkennung: Bounding-Boxen erkennen deine Werte mit Konfidenz („STRESS 28 · 97 %“) |
+| **Latent** | KI · versteckt · interaktiv | Bei jedem Handgelenk-Heben entsteht die Uhrzeit wie bei einem Bildgenerator aus Rauschen – jedes Mal mit neuem Seed |
+| **KI-Coach** | KI · interaktiv | Chat mit deinem Coach: bei jedem Blick eine neue Nachricht aus Body Battery, Schlaf, Erholung, Wochenziel |
+| **KI-Orakel** | KI · interaktiv | Orakel-Kugel, die bei jedem Heben eine Frage zu deinem Tag beantwortet |
+| **Blick-Zähler** | interaktiv · Challenge | Zählt, wie oft du heute auf die Uhr schaust: Abzeichen, Vergleich mit gestern |
+| **Geheimcode** | versteckt · Pixel | Uhrzeit binär, als Morsecode oder römisch – nach ein paar Sekunden entschlüsselt sie sich |
+| **Nebel** | versteckt · interaktiv | Beschlagenes Display: ein Finger wischt die Uhrzeit frei, dann zieht der Nebel wieder zu |
 
 **Trainingstage** erkennt FaceLab selbst: Ein Tag zählt, wenn er mindestens 30 Aktivminuten hat oder
 die Wochen-Rad-/Lauf-Distanz an diesem Tag um mehr als 1 km gewachsen ist.
+
+**Interaktion:** Garmin gibt Watchfaces keine normalen Touch-Eingaben (Antippen geht nur im
+Watchface-Editor). Die interaktiven Designs reagieren deshalb auf das **Handgelenk-Heben**: Jeder Blick
+zählt, erzeugt eine neue Antwort, einen neuen Seed oder eine neue Wisch-Geste. Auf Geräten, die
+langes Drücken an das Watchface weiterreichen, liefern KI-Coach und KI-Orakel damit zusätzlich eine
+neue Nachricht und Geheimcode entschlüsselt sich erneut (im Simulator nicht prüfbar).
 
 Alle Designs haben drei Varianten, eine Intro-Animation beim Handgelenk-Heben, teils fortlaufende
 Animationen (solange die Uhr wach ist, ca. 10 s) und einen eigenen, stromsparenden Always-On-Modus
@@ -82,7 +96,7 @@ site/           gebündeltes Studio (eine HTML-Datei)
   laufen über eigene, prozedurale Schriften (Vektor, 5×7-Pixel, 7-Segment) – dadurch sieht die
   Vorschau aus wie die Uhr.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
-  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 44–60 KB im Simulator gemessen).
+  deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–76 KB im Simulator gemessen).
 * **Generator im Browser:** Jede `.prg` enthält Platzhalter für Face-Code, Namen und App-ID. Das Studio
   setzt deine Konfiguration ein und signiert die Datei neu (RSA, SHA-1 + SHA-256, wie der Garmin-Compiler).
   Den Schlüssel erzeugt `tools/build.py` beim ersten Build lokal in `tools/keys/` (nicht im Repo);

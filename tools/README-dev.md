@@ -20,7 +20,7 @@
 * Der Simulator braucht die **offiziellen** Gerätedateien (`fr970.bin`, `simulator.json`, Fonts) aus dem
   Garmin SDK-Manager unter `~/.Garmin/ConnectIQ/`. Diese Dateien sind urheberrechtlich geschützt und
   gehören nicht ins Repo. Für das reine Kompilieren reicht `tools/device/fr970/compiler.json`.
-* Bis zu drei Simulatoren laufen parallel: jeder auf eigenem Xvfb-Display (`:91`–`:93`), mit eigenem
+* Bis zu vier Simulatoren laufen parallel (`SIM_SLOTS`): jeder auf eigenem Xvfb-Display (`:91`–`:94`), mit eigenem
   `$HOME` (der Simulator erlaubt nur eine Instanz pro Home) und in einem eigenen Netzwerk-Namespace
   (`unshare -n`), weil `monkeydo` über einen festen TCP-Port mit dem Simulator spricht.
 
