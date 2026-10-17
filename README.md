@@ -1,8 +1,8 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
 FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 40 fertigen Designs, die du live
-ansehen, anpassen und als installierbares Watchface (`.prg`) herunterladen kannst – direkt im Browser,
-ohne SDK, ohne Konto, ohne Connect IQ Store.
+ansehen, anpassen und mit einem Klick per USB auf die Uhr übertragen kannst – direkt im Browser,
+ohne SDK, ohne Konto, ohne Connect IQ Store, ohne Zusatzprogramm.
 
 <p align="center"><img src="docs/media/studio.webp" alt="FaceLab-Studio" width="100%"></p>
 
@@ -132,6 +132,10 @@ Viele Designs leben mit dem echten Tag: Sonnenstand, Dämmerung, Nacht und Mond 
 <td align="center" valign="top" width="25%"><img src="docs/media/day/ORBIT.webp" width="180" alt="Orbit im Tagesverlauf"><br><b>Orbit</b><br><sub>Planeten für Stunde und Minute ziehen ihre Bahnen</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/day/SKELETT.webp" width="180" alt="Skelett im Tagesverlauf"><br><b>Skelett</b><br><sub>Zeiger und Räderwerk im Zeitraffer</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/day/BUDDY.webp" width="180" alt="Pixel Buddy im Tagesverlauf"><br><b>Pixel Buddy</b><br><sub>Schläft nachts mit Mütze, wacht morgens auf</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/CITY.webp" width="180" alt="Pixel City im Tagesverlauf"><br><b>Pixel City</b><br><sub>Variante Winter: Morgens gehen die Lichter aus, abends wieder an</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/SYNTH.webp" width="180" alt="Synthwave im Tagesverlauf"><br><b>Synthwave</b><br><sub>Die Retro-Sonne steigt und sinkt mit der echten, nachts ein Ringplanet</sub></td>
 </tr>
 </table>
 
@@ -344,6 +348,10 @@ site/           gebündeltes Studio (eine HTML-Datei)
   Vorschau aus wie die Uhr.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
   deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–84 KB im Simulator gemessen).
+* **USB-Übertragung im Browser:** Das Studio spricht per WebUSB direkt das MTP-Protokoll der Uhr
+  (`web/js/mtp.js`): Sitzung öffnen, `GARMIN/APPS` suchen, gleichnamige `.prg` löschen, neue senden.
+  Das geht in Chromium-Browsern (Chrome, Edge, Brave), auch aus der lokalen `FaceLab.html`. Ist die Uhr
+  belegt, hält meist Garmin Express, OpenMTP oder Android File Transfer sie fest.
 * **Generator im Browser:** Jede `.prg` enthält Platzhalter für Face-Code, Namen und App-ID. Das Studio
   setzt deine Konfiguration ein und signiert die Datei neu (RSA, SHA-1 + SHA-256, wie der Garmin-Compiler).
   Den Schlüssel erzeugt `tools/build.py` beim ersten Build lokal in `tools/keys/` (nicht im Repo);

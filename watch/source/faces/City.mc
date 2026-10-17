@@ -405,10 +405,6 @@ class FaceCity extends Face {
             if (p < p0 + 0.12 && p < 1 && (a.t / 60) % 2 == 1) {
                 continue;
             }
-            // occasional flicker of one neon sign
-            if (st == 1 && k == 1 && a.live && p >= 1 && tt % 5200 > 4900 && (tt / 70) % 2 == 0) {
-                continue;
-            }
             if (k < 3) {
                 var b = BOARD_B[k];
                 board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k][:lbl] as String, d.slots[k][:val] as String, cols[k], st, pal, day);

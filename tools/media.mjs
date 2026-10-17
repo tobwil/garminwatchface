@@ -29,7 +29,8 @@ const STYLE_PX = 220;    // size of one face in the style strips
 const STEP = 100;        // ms between animation frames
 const END = 4500;        // ms of animation
 const HOLD = 1500;       // extra ms the last frame is shown
-const DAY = ["SUN", "RIDER", "STERNE", "WETTER", "AQUA", "ORBIT", "SKELETT", "BUDDY"];
+const DAY = ["SUN", "RIDER", "STERNE", "WETTER", "AQUA", "ORBIT", "SKELETT", "BUDDY", "CITY", "SYNTH"];
+const DAY_STYLE = { CITY: 3 }; // time-lapse style where the default one ignores the sun
 const DAY_STEP = 15;     // minutes of the day between time-lapse frames
 const DAY_MS = 90;       // ms per time-lapse frame
 
@@ -154,7 +155,7 @@ for (const k of dayFaces) {
     secs.push(m * 60);
     times.push(20000 + times.length * DAY_MS);
   }
-  await anim(await frames(k, f.defaults.style || 1, times, secs), join(OUT, "day", `${k}.webp`), DAY_MS, 0);
+  await anim(await frames(k, DAY_STYLE[k] || f.defaults.style || 1, times, secs), join(OUT, "day", `${k}.webp`), DAY_MS, 0);
   console.log("day", k);
 }
 

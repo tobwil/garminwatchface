@@ -330,8 +330,6 @@ export default {
       if (p < p0) continue;
       // switch-on flicker, always over before the intro ends (p reaches exactly 1)
       if (p < p0 + 0.12 && p < 1 && Math.floor(a.t / 60) % 2 === 1) continue;
-      // occasional flicker of one neon sign
-      if (st === 1 && k === 1 && a.live && p >= 1 && tt % 5200 > 4900 && Math.floor(tt / 70) % 2 === 0) continue;
       if (k < 3) {
         const b = BOARD_B[k];
         board(dc, BOARD_X[k], BLD[b * 5 + 2], d.slots[k].lbl, d.slots[k].val, cols[k], st, pal, day);
