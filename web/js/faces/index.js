@@ -23,6 +23,22 @@ import f20 from "./velo.js";
 import f21 from "./bahn.js";
 import f22 from "./synth.js";
 import f23 from "./woche.js";
+import f24 from "./neuro.js";
+import f25 from "./scan.js";
+import f26 from "./latent.js";
+import f27 from "./coach.js";
+import f28 from "./orakel.js";
+import f29 from "./blick.js";
+import f30 from "./cipher.js";
+import f31 from "./nebel.js";
+import f32 from "./nixie.js";
+import f33 from "./skelett.js";
+import f34 from "./block.js";
+import f35 from "./aqua.js";
+import f36 from "./lava.js";
+import f37 from "./bauhaus.js";
+import f38 from "./sterne.js";
+import f39 from "./wetter.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -48,4 +64,20 @@ export const FACES = {
   BAHN: f21,
   SYNTH: f22,
   WOCHE: f23,
+  NEURO: f24,
+  SCAN: f25,
+  LATENT: f26,
+  COACH: f27,
+  ORAKEL: f28,
+  BLICK: f29,
+  CIPHER: f30,
+  NEBEL: f31,
+  NIXIE: f32,
+  SKELETT: f33,
+  BLOCK: f34,
+  AQUA: f35,
+  LAVA: f36,
+  BAUHAUS: f37,
+  STERNE: f38,
+  WETTER: f39,
 };
