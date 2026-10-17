@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 60 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 64 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 60 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 64 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -61,6 +61,20 @@ Heben gibt es die typische Animation.
 <td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, die Zeilen gleiten von rechts herein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KANALOG.webp" width="180" alt="Kiesel Analog"><br><b>Kiesel Analog</b><br><sub>Simple Analog: kräftige Striche, roter Sekundenzeiger, Datum im Kästchen, Zeiger drehen ein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KROLL.webp" width="180" alt="Kiesel Rolle"><br><b>Kiesel Rolle</b><br><sub>Ziffernwalzen, die beim Heben wie ein Spielautomat rotieren und nacheinander einrasten</sub></td>
+</tr>
+</table>
+
+### AMOLED
+
+Gemacht für das AMOLED-Display: Schwarz ist hier wirklich aus, Farben leuchten. Diese Designs bestehen fast
+nur aus Licht auf Schwarz – und sparen dabei Akku.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/NEON.webp" width="180" alt="Neon"><br><b>Neon</b><br><sub>Glühende Neonröhren, die beim Heben flackernd zünden; ein Neon-Herz schlägt im echten Puls</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/FIREWORK.webp" width="180" alt="Feuerwerk"><br><b>Feuerwerk</b><br><sub>Raketen steigen über der Skyline auf, ihre Funken werden zur Uhrzeit; beim Schrittziel das Finale</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/PLASMA.webp" width="180" alt="Plasmakugel"><br><b>Plasmakugel</b><br><sub>Die Zeit im glühenden Kern, Blitze zur Glaswand: mehr Stress, mehr Blitze, höherer Puls, schnellere Blitze</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/HOLE.webp" width="180" alt="Schwarzes Loch"><br><b>Schwarzes Loch</b><br><sub>Gargantua: Akkretionsscheibe, gekrümmter Lichtbogen, Kepler-Bahnen und Doppler-Leuchten</sub></td>
 </tr>
 </table>
 
@@ -454,6 +468,22 @@ Und die Pixel-Geschichten durch ihren Tag:
 **Kiesel Rolle**: Weiß · Schwarz · Farbe
 
 <img src="docs/media/styles/KROLL.webp" width="560" alt="Kiesel Rolle: Varianten">
+
+**Neon**: Miami · Motel · Akzent
+
+<img src="docs/media/styles/NEON.webp" width="560" alt="Neon: Varianten">
+
+**Feuerwerk**: Silvester · Gold · Akzent
+
+<img src="docs/media/styles/FIREWORK.webp" width="560" alt="Feuerwerk: Varianten">
+
+**Plasmakugel**: Violett · Eis · Akzent
+
+<img src="docs/media/styles/PLASMA.webp" width="560" alt="Plasmakugel: Varianten">
+
+**Schwarzes Loch**: Gargantua · Quasar · Akzent
+
+<img src="docs/media/styles/HOLE.webp" width="560" alt="Schwarzes Loch: Varianten">
 
 </details>
 

@@ -59,6 +59,10 @@ import f56 from "./kiesel.js";
 import f57 from "./ktext.js";
 import f58 from "./kanalog.js";
 import f59 from "./kroll.js";
+import f60 from "./neon.js";
+import f61 from "./fireworks.js";
+import f62 from "./plasma.js";
+import f63 from "./blackhole.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -120,4 +124,8 @@ export const FACES = {
   KTEXT: f57,
   KANALOG: f58,
   KROLL: f59,
+  NEON: f60,
+  FIREWORK: f61,
+  PLASMA: f62,
+  HOLE: f63,
 };

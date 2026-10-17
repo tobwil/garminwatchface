@@ -1921,6 +1921,124 @@
           22
         ]
       }
+    },
+    {
+      "key": "NEON",
+      "cls": "FaceNeon",
+      "file": "Neon.mc",
+      "js": "neon.js",
+      "name": "Neon",
+      "tags": [
+        "amoled",
+        "wild"
+      ],
+      "blurb": "Die Uhrzeit als glühende Neonröhren auf echtem Schwarz. Beim Heben zünden die Röhren flackernd Buchstabe für Buchstabe, ab und zu zuckt eine müde Röhre. Ein Neon-Herz schlägt im echten Puls, die Body Battery leuchtet als Röhrenkette.",
+      "styles": [
+        "Miami",
+        "Motel",
+        "Akzent"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "8A5AFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "FIREWORK",
+      "cls": "FaceFireworks",
+      "file": "Fireworks.mc",
+      "js": "fireworks.js",
+      "name": "Feuerwerk",
+      "tags": [
+        "amoled",
+        "wild"
+      ],
+      "blurb": "Die Uhrzeit aus Funken über einer nächtlichen Skyline: Beim Heben steigt pro Ziffer eine Rakete auf, explodiert, und die Funken fallen an ihren Platz. Danach funkeln die Punkte und kleine Feuerwerke gehen hoch – beim Schrittziel das große Finale.",
+      "styles": [
+        "Silvester",
+        "Gold",
+        "Akzent"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3AE0FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "PLASMA",
+      "cls": "FacePlasma",
+      "file": "Plasma.mc",
+      "js": "plasma.js",
+      "name": "Plasmakugel",
+      "tags": [
+        "amoled",
+        "wild",
+        "daten"
+      ],
+      "blurb": "Eine Plasmakugel auf echtem Schwarz: Die Uhrzeit steht im glühenden Kern, Blitze zucken zur Glaswand. Mehr Stress, mehr Blitze – höherer Puls, schnellere Blitze. Beim Heben schießen sie aus dem Kern.",
+      "styles": [
+        "Violett",
+        "Eis",
+        "Akzent"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "5AFF8A",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "HOLE",
+      "cls": "FaceBlackhole",
+      "file": "Blackhole.mc",
+      "js": "blackhole.js",
+      "name": "Schwarzes Loch",
+      "tags": [
+        "amoled",
+        "wild",
+        "daten"
+      ],
+      "blurb": "Ein Schwarzes Loch wie Gargantua: Akkretionsscheibe, gekrümmter Lichtbogen und Photonenring auf echtem Schwarz. Die Materie kreist nach Kepler, die dir zugewandte Seite leuchtet heller, beim Heben spiralt sie herein. Unten: noch so viele Schritte bis zum Ereignishorizont.",
+      "styles": [
+        "Gargantua",
+        "Quasar",
+        "Akzent"
+      ],
+      "uses": [],
+      "sprites": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3AE0A0",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
     }
   ]
 }
