@@ -31,8 +31,10 @@ class FaceVelo extends Face {
         Face.initialize();
     }
 
+    hidden var _fps = 15;
+
     function fps() as Number {
-        return 15;
+        return _fps;
     }
 
     // spectators on the two stand tiers (visible part only), relative to the centre at zoom 1
@@ -224,6 +226,7 @@ class FaceVelo extends Face {
         var live = a.live && p >= 1;
         var C = trackCols(st, acc);
         var bg = C[0];
+        _fps = st == 2 ? 12 : 15;
 
         // camera zoom
         var z = 0.6 + 0.4 * G.ease(G.clamp(p / 0.6, 0.0, 1.0));
@@ -296,9 +299,9 @@ class FaceVelo extends Face {
                     if (live) {
                         fl = 0.85 + 0.15 * G.noise(t / 160.0 + k * 3.7);
                     }
-                    for (var j = 0; j < 4; j++) {
-                        dc.setColor(G.mix(C[1], 0xFFD59A, (0.07 + j * 0.14) * fl * fade), -1);
-                        dc.fillCircle(q[0], q[1], (21 - j * 5) * z);
+                    for (var j = 0; j < 3; j++) {
+                        dc.setColor(G.mix(C[1], 0xFFD59A, (0.09 + j * 0.16) * fl * fade), -1);
+                        dc.fillCircle(q[0], q[1], (19 - j * 6) * z);
                     }
                 }
             }
@@ -326,7 +329,7 @@ class FaceVelo extends Face {
             var f = G.easeInOut(G.stag(p, k, 0.07, 0.5));
             if (st == 2 && k >= 2) {
                 dc.setColor(G.dim(LC[k], 0.3), -1);
-                dc.setPenWidth(8);
+                dc.setPenWidth(6);
                 stadLine(dc, za, LR[k] * z, f);
             }
             dc.setColor(LC[k], -1);
@@ -435,7 +438,7 @@ class FaceVelo extends Face {
             dc.setColor(G.mix(ib, sub, ip), -1);
             F.px(dc, sl[:lbl] as String, x, 124, 2, 1, 0);
             dc.setColor(G.mix(ib, d.dcol, ip * sp), -1);
-            F.st(dc, sl[:val] as String, x, 156, 20, 3, 1, 1.0, 0);
+            F.px(dc, sl[:val] as String, x, 142, 3, 1, 0);
         }
         // time
         var hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);

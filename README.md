@@ -23,18 +23,31 @@ gleichzeitig auf der Uhr haben.
 |---|---|---|
 | **Mono** | klassisch | Riesige Monoline-Ziffern, die sich beim Handgelenk-Heben selbst schreiben |
 | **Chronograph** | klassisch | Analoger Chronograph mit Hilfszifferblättern und gleitendem Sekundenzeiger |
+| **Bahnhofsuhr** | klassisch | Roter Kellen-Sekundenzeiger: 58,5 s Umlauf, Halt bei 12, Minutensprung |
 | **Wortuhr** | klassisch | „ES IST VIERTEL NACH ZEHN“ – deutsche Wortuhr |
 | **Split-Flap** | retro | Bahnhofs-Klapptafel, die sich durchblättert |
-| **Alpe 21** | Rad · Challenge | Deine Etagen der Woche als Aufstieg über die 21 Kehren der Alpe d'Huez (oder Ventoux, Stelvio, Everest) |
-| **Power HUD** | Rad | Zwift-inspiriert: FTP, W/kg, Kategorie, Leistungszonen in Watt, Workout des Tages nach Body Battery, Schlaf & Erholung |
+| **Alpe 21** | Rad · Challenge | 21 Kehren der Alpe d'Huez (oder Ventoux, Stelvio, Everest) – Antrieb wählbar: Höhenmeter, Rad-km-Wochenziel oder Trainingstage |
+| **Tour de Woche** | Rad · Challenge | Die Woche als Rundfahrt: 7 Etappen, Gelbes (Rad-km), Grünes (Trainingstage) und Bergtrikot (Höhenmeter) |
+| **Velodrom** | Rad | Wochen-km als Runden auf der 250-m-Bahn, Rundentafel und Zielglocke |
+| **Power HUD** | Rad | Zwift-inspiriert: FTP, W/kg, Kategorie, Zonen in Watt, Workout des Tages |
 | **Drivetrain** | Rad · wild | Kettenblatt und Kassette als Uhr – jede Stunde ein Ritzel weiter |
+| **Pixel Rider** | Pixel · Rad | 8-Bit-Sidescroller mit Parallax, echter Tag/Nacht-Himmel, Etappenziel mit Zielbanner |
+| **Pixel City** | Pixel · Daten | Skyline, in der jede erklommene Etage ein Fenster erleuchtet; S-Bahn, Regen, Schnee |
+| **Pixel Buddy** | Pixel · wild | Tamagotchi, das auf Body Battery, Stress, Schritte und Schlaf reagiert |
+| **Dungeon** | Pixel · Challenge | Täglich ein neues Monster – deine Schritte sind die Angriffe, Gold und Sieg-Serie |
+| **Muncher** | Pixel · Challenge | Arcade-Labyrinth: frisst deine Schritt-Punkte, Stress bringt Geister |
+| **Daily Quest** | Pixel · Challenge | Drei tägliche Quests, XP, Level und Streak |
+| **Terminal** | Pixel · wild | Grüner Phosphor, Shell-Session mit deinen Körperdaten |
+| **Wochenbilanz** | Daten · Challenge | Heatmap der Woche, Trainingstage als Ring |
 | **Energy Core** | Daten-Kunst | Body Battery als Flüssigkeit; Stress macht die Wellen wild |
 | **Pulse** | Daten-Kunst | 2 h Herzfrequenz als Radial-Spektrum, EKG im echten Takt |
 | **Daylight** | Daten | Sonnenstand, Goldene Stunde, Rest-Tageslicht, Mondphase |
+| **Synthwave** | wild | Retro-Sonne nach echtem Sonnenstand, Gitter rast im Pulstakt |
 | **Glitch** | wild | Die Uhr glitcht im Takt deines Stresslevels |
 | **Orbit** | wild | Sonnensystem: Planeten für Stunde und Minute, Komet für Sekunden, echter Mond |
-| **Daily Quest** | Challenge | Drei tägliche Quests, XP, Level und Streak – automatisch mit deinen Daten geprüft |
-| **Terminal** | wild | Grüner Phosphor, Shell-Session mit deinen Körperdaten |
+
+**Trainingstage** erkennt FaceLab selbst: Ein Tag zählt, wenn er mindestens 30 Aktivminuten hat oder
+die Wochen-Rad-/Lauf-Distanz an diesem Tag um mehr als 1 km gewachsen ist.
 
 Alle Designs haben drei Varianten, eine Intro-Animation beim Handgelenk-Heben, teils fortlaufende
 Animationen (solange die Uhr wach ist, ca. 10 s) und einen eigenen, stromsparenden Always-On-Modus

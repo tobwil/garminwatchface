@@ -160,8 +160,10 @@ function trackCols(st, acc) {
   return [0x0b0b0b, 0xdcac70, 0xb47c45, 0xc4904f, 0x4fa3e3, 0x1c3a2b, 0x1a1a1a, 0xd6262b, 0x2f6fd6, 0xdedede, 0xffffff, 0x9fb3c4, 0x3a3a3a];
 }
 
+let FPS = 15;
+
 export default {
-  fps: 15,
+  get fps() { return FPS; },
 
   draw(dc, d, a) {
     const st = d.cfg.style;
@@ -171,6 +173,7 @@ export default {
     const live = a.live && p >= 1;
     const C = trackCols(st, acc);
     const bg = C[0];
+    FPS = st === 2 ? 12 : 15;
 
     // camera zoom
     const z = 0.6 + 0.4 * G.ease(G.clamp(p / 0.6, 0, 1));
@@ -235,9 +238,9 @@ export default {
           const q = stadPt(za, (R_IN + 21) * z, LU[k]);
           let fl = 1.0;
           if (live) fl = 0.85 + 0.15 * G.noise(t / 160.0 + k * 3.7);
-          for (let j = 0; j < 4; j++) {
-            dc.setColor(G.mix(C[1], 0xffd59a, (0.07 + j * 0.14) * fl * fade), -1);
-            dc.fillCircle(q[0], q[1], (21 - j * 5) * z);
+          for (let j = 0; j < 3; j++) {
+            dc.setColor(G.mix(C[1], 0xffd59a, (0.09 + j * 0.16) * fl * fade), -1);
+            dc.fillCircle(q[0], q[1], (19 - j * 6) * z);
           }
         }
       }
@@ -263,7 +266,7 @@ export default {
       const f = G.easeInOut(G.stag(p, k, 0.07, 0.5));
       if (st === 2 && k >= 2) {
         dc.setColor(G.dim(LC[k], 0.3), -1);
-        dc.setPenWidth(8);
+        dc.setPenWidth(6);
         stadLine(dc, za, LR[k] * z, f);
       }
       dc.setColor(LC[k], -1);
@@ -364,7 +367,7 @@ export default {
       dc.setColor(G.mix(ib, sub, ip), -1);
       F.px(dc, sl.lbl, x, 124, 2, 1, 0);
       dc.setColor(G.mix(ib, d.dcol, ip * sp), -1);
-      F.st(dc, sl.val, x, 156, 20, 3, 1, 1.0, 0);
+      F.px(dc, sl.val, x, 142, 3, 1, 0);
     }
     // time
     const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
