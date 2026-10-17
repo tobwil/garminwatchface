@@ -188,6 +188,18 @@ function tower(dc, x, y) {
   dc.fillRectangle(x - 4, y - 16, 8, 3);
 }
 
+// profile: elevation fraction -> x
+function profX(gr, sum, ef, x0, sw) {
+  let e = 0;
+  const n = gr.length;
+  for (let i = 0; i < n; i++) {
+    const ei = gr[i] / sum;
+    if (ef <= e + ei || i === n - 1) return x0 + (i + G.clamp((ef - e) / ei, 0, 1)) * sw;
+    e += ei;
+  }
+  return x0 + n * sw;
+}
+
 function burst(dc, x, y, col, sp, a) {
   const rot = a.live ? (a.t * 0.01) % 30 : 0;
   dc.setColor(G.dim(col, 0.55), -1);
@@ -224,12 +236,66 @@ function stars() {
   return STARS;
 }
 
+// progress along the climb from the chosen source (d.src):
+// 0 climbed metres (floors x 3; Everest cumulative), 1 weekly bike km vs bikeGoal, 2 training days vs dayGoal
 function progress(d) {
   const c = G.clamp(d.cfg.climb, 0, 3);
+  const src = G.clamp(d.src, 0, 2);
+  if (src === 1) {
+    const H = Math.max(d.cfg.bikeGoal, 1);
+    const m = d.wkBike > 0 ? d.wkBike / 1000 : 0;
+    return { src, m, H, f: G.clamp(m / H, 0, 1), sum: m >= H ? 1 : 0, done: m >= H };
+  }
+  if (src === 2) {
+    const H = G.clamp(d.dayGoal, 1, 7);
+    const m = Math.max(d.trainDays, 0);
+    return { src, m, H, f: G.clamp(m / H, 0, 1), sum: m >= H ? 1 : 0, done: m >= H };
+  }
   const H = HM[c];
   const m = c === 3 ? evMetres(d) : Math.max(d.floorsWeek, 0) * 3;
-  if (c === 3) return { m, H, f: (m % H) / H, sum: Math.floor(m / H), done: false };
-  return { m, H, f: G.clamp(m / H, 0, 1), sum: m >= H ? 1 : 0, done: m >= H };
+  if (c === 3) return { src, m, H, f: (m % H) / H, sum: Math.floor(m / H), done: false };
+  return { src, m, H, f: G.clamp(m / H, 0, 1), sum: m >= H ? 1 : 0, done: m >= H };
+}
+
+// "612/1.071 HM" / "87/150 KM" / "3/4 TAGE"
+function amountStr(c, pr) {
+  if (pr.src === 1) return Math.floor(pr.m) + "/" + pr.H + " KM";
+  if (pr.src === 2) return pr.m + "/" + pr.H + (pr.H === 1 ? " TAG" : " TAGE");
+  return c === 3 ? G.num(pr.m % pr.H) + "/" + G.num(pr.H) + " M" : G.num(pr.m) + "/" + G.num(pr.H) + " HM";
+}
+
+// what is left to the summit
+function remStr(pr) {
+  if (pr.src === 1) return (pr.done ? 0 : Math.ceil(pr.H - pr.m)) + " KM";
+  if (pr.src === 2) { const r = pr.done ? 0 : pr.H - pr.m; return r + (r === 1 ? " TAG" : " TAGE"); }
+  return G.num(pr.done ? 0 : Math.round(pr.H * (1 - pr.f))) + " HM";
+}
+
+// weekday dots M D M D F S S: filled = training day, today outlined
+function weekDots(dc, d, y, p, night) {
+  const acc = d.accent;
+  const lt = ["M", "D", "M", "D", "F", "S", "S"];
+  for (let i = 0; i < 7; i++) {
+    const sp = G.ease(G.stag(p, i, 0.05, 0.4) * 1.0);
+    if (sp <= 0) continue;
+    const x = CX + (i - 3) * 24;
+    const on = ((d.trainMask >> i) & 1) === 1;
+    const fut = i > d.dayIdx;
+    if (on) {
+      dc.setColor(G.dim(acc, sp), -1);
+      dc.fillCircle(x, y, 10);
+    } else {
+      dc.setColor(G.dim(night ? 0x13224a : 0x26282c, sp), -1);
+      dc.fillCircle(x, y, 10);
+    }
+    if (i === d.dayIdx) {
+      dc.setColor(G.dim(0xffffff, sp), -1);
+      dc.setPenWidth(2);
+      dc.drawCircle(x, y, 11);
+    }
+    dc.setColor(on ? 0x000000 : G.dim(fut ? 0x5a5a5a : (night ? 0x9fb4e8 : 0xbdbdbd), sp), -1);
+    F.px(dc, lt[i], x + 1, y - 7, 2, 1, 0);
+  }
 }
 
 // "KEHRE 14" / "KM 12" / "LAGER 2"
@@ -273,9 +339,9 @@ export default {
       dc.fillCircle(357, 172, 10);
     }
 
-    // ---- bike ring (weekly km vs goal)
-    const goal = d.cfg.bikeGoal;
-    const bk = d.wkBike >= 0 ? d.wkBike / 1000 : -1;
+    // ---- secondary ring: weekly bike km vs goal (or climbed HM when bike km drives the climb)
+    const goal = pr.src === 1 ? HM[c] : d.cfg.bikeGoal;
+    const bk = pr.src === 1 ? (d.floorsWeek >= 0 ? d.floorsWeek * 3 : -1) : (d.wkBike >= 0 ? d.wkBike / 1000 : -1);
     const bf = bk >= 0 && goal > 0 ? G.clamp(bk / goal, 0, 1) : 0;
     G.ring(dc, CX, 227, 222, 3, bf * G.ease(p * 1.3), night ? 0x8fb4ff : G.mix(acc, 0xffffff, 0.45), night ? 0x0d1530 : 0x1a1a1a);
 
@@ -289,7 +355,7 @@ export default {
 
     // info line: STAGE · m/H HM
     const s1 = stageStr(c, pr.f, pr, prof);
-    const s2 = c === 3 ? G.num(pr.m % pr.H) + "/" + G.num(pr.H) + " M" : G.num(pr.m) + "/" + G.num(pr.H) + " HM";
+    const s2 = amountStr(c, pr);
     const ih = 16, iy = prof ? 140 : 132;
     const w1 = F.stW(s1, ih), w2 = F.stW(s2, ih);
     const ix = CX - (w1 + w2 + 22) / 2;
@@ -299,7 +365,7 @@ export default {
     dc.setColor(G.dim(night ? 0x9fb0d8 : 0xb4b4b4, ip), -1);
     dc.fillCircle(ix + w1 + 11, iy, 2);
     F.st(dc, s2, ix + w1 + 22, iy, ih, 2, 0, ip, 0);
-    if (c === 3 && pr.sum > 0) {
+    if (c === 3 && pr.src === 0 && pr.sum > 0) {
       dc.setColor(acc, -1);
       F.px(dc, "^ " + pr.sum + "X GIPFEL", CX, iy + 16, 2, 1, 0);
     }
@@ -311,17 +377,20 @@ export default {
     const si = d.cfg.slots[0] === 20 ? 1 : 0;
     const sl = d.slots[si];
     const dp = G.ease(p * 1.5 - 0.4);
-    const lx = prof ? 166 : 84, rx = prof ? 288 : 370, ly = prof ? 380 : 214;
+    const days = pr.src === 2;
+    const lx = prof ? 166 : 84, rx = prof ? 288 : 370, ly = prof ? (days ? 350 : 380) : 214;
     dc.setColor(G.dim(night ? 0x7d8fbf : 0x8a8a8a, dp), -1);
     F.px(dc, sl.lbl, lx, ly, 2, 1, 0);
-    F.px(dc, "RAD KM", rx, ly, 2, 1, 0);
+    F.px(dc, pr.src === 1 ? "HM/WO" : "RAD KM", rx, ly, 2, 1, 0);
     dc.setColor(G.dim(d.dcol, dp), -1);
     F.st(dc, sl.val, lx, ly + 32, 20, 3, 1, 1.0, 0);
-    const bs = bk >= 0 ? "" + Math.round(bk) : "--";
-    const wb = F.stW(bs, 20), wg = F.stW("/" + goal, 14);
+    const bs = bk >= 0 ? G.num(bk) : "--";
+    const gs = pr.src === 1 ? "" : "/" + G.num(goal);
+    const wb = F.stW(bs, 20), wg = F.stW(gs, 14);
     F.st(dc, bs, rx - (wb + wg + 3) / 2, ly + 32, 20, 3, 0, 1.0, 0);
     dc.setColor(G.dim(night ? 0x7d8fbf : 0x8a8a8a, dp), -1);
-    F.st(dc, "/" + goal, rx + (wb + wg + 3) / 2, ly + 35, 14, 2, 2, 1.0, 0);
+    F.st(dc, gs, rx + (wb + wg + 3) / 2, ly + 35, 14, 2, 2, 1.0, 0);
+    if (days) weekDots(dc, d, prof ? 420 : 428, G.clamp((p - 0.3) / 0.7, 0, 1), night);
   },
 
   serp(dc, d, a, c, pr, night) {
@@ -414,6 +483,23 @@ export default {
     const st0 = segPt(g, 0, 0);
     dc.setColor(0xffffff, -1);
     dc.fillRectangle(st0[0] - 1, st0[1] - PEN0[c] / 2, 3, PEN0[c]);
+
+    // training-day stages: one bar across the road per day of the goal
+    if (pr.src === 2 && pr.H > 1) {
+      for (let k = 1; k < pr.H; k++) {
+        const sk = (L * k) / pr.H;
+        if (sk > sRoad) break;
+        const q0 = pathPt(gm, sk - 1), q1 = pathPt(gm, sk + 1);
+        const dx = q1[0] - q0[0], dy = q1[1] - q0[1];
+        const dl = Math.sqrt(dx * dx + dy * dy);
+        const nx = dl > 0 ? -dy / dl : 0, ny = dl > 0 ? dx / dl : 1;
+        const pm = pathPt(gm, sk);
+        const hl = 9;
+        dc.setColor(sk <= sRid ? 0xffffff : (night ? 0x5a78c0 : 0x8a8a8a), -1);
+        dc.setPenWidth(3);
+        dc.drawLine(pm[0] - nx * hl, pm[1] - ny * hl, pm[0] + nx * hl, pm[1] + ny * hl);
+      }
+    }
 
     // summit
     const sm = pathPt(gm, L);
@@ -509,12 +595,27 @@ export default {
       lx = nx; ly = ny;
     }
     // remaining height to the summit
-    const rem = pr.done ? 0 : Math.round(pr.H * (1 - pr.f));
     const tp = G.ease(p * 1.5 - 0.4);
     dc.setColor(G.dim(0x8a8a8a, tp), -1);
     F.px(dc, "NOCH", 48, 184, 2, 0, 0);
     dc.setColor(G.dim(0xffffff, tp), -1);
-    F.st(dc, G.num(rem) + " HM", 48, 214, 18, 3, 0, 1.0, 0);
+    F.st(dc, remStr(pr), 48, 214, 18, 3, 0, 1.0, 0);
+    // training-day stages: dividers through the profile
+    if (pr.src === 2 && pr.H > 1) {
+      for (let k = 1; k < pr.H; k++) {
+        const ek = k / pr.H;
+        const xk = profX(gr, sum, ek, x0, sw);
+        const yk = y0 - (y0 - yt) * ek;
+        const dp2 = G.ease(G.stag(p, k, 0.08, 0.4));
+        if (dp2 <= 0) continue;
+        dc.setColor(0x000000, -1);
+        dc.setPenWidth(3);
+        dc.drawLine(xk, yb, xk, yk - 2);
+        dc.setColor(G.dim(ek <= ef + 0.0001 ? 0xffffff : 0x777777, dp2), -1);
+        dc.setPenWidth(2);
+        dc.drawLine(xk, yk - 8, xk, yk - 16);
+      }
+    }
     // base line
     dc.setColor(0x444444, -1);
     dc.fillRectangle(x0, yb + 2, (x1 - x0) * G.ease(p * 2), 2);

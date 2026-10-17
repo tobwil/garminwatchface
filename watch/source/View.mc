@@ -194,4 +194,14 @@ class FaceDelegate extends WatchUi.WatchFaceDelegate {
 
     function onPowerBudgetExceeded(powerInfo as WatchUi.WatchFacePowerInfo) as Void {
     }
+
+    // Called by the system in the watch face editor. We draw our own highlight-free
+    // layout, so no drawable is returned; implemented so the callback always exists.
+    function getComplicationDrawable(complication as WatchFaceConfig.ComplicationRef) as WatchUi.Drawable or WatchUi.ComplicationDrawableRef or Null {
+        return null;
+    }
+
+    function onPress(clickEvent as WatchUi.ClickEvent) as Boolean {
+        return false;
+    }
 }

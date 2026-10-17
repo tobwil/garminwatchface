@@ -57,6 +57,7 @@ class FaceAlpe extends Face {
     hidden var _pf = 0.0;
     hidden var _psum = 0;
     hidden var _pdone = false;
+    hidden var _psrc = 0;
 
     function initialize() {
         Face.initialize();
@@ -323,8 +324,29 @@ class FaceAlpe extends Face {
         return _stars as Array;
     }
 
+    // progress along the climb from the chosen source (d.src):
+    // 0 climbed metres (floors x 3; Everest cumulative), 1 weekly bike km vs bikeGoal, 2 training days vs dayGoal
     hidden function progress(d as D) as Void {
         var c = G.clamp(d.cfg.climb, 0, 3);
+        var src = G.clamp(d.src, 0, 2);
+        _psrc = src;
+        if (src != 0) {
+            var H2 = 1;
+            var m2 = 0;
+            if (src == 1) {
+                H2 = d.cfg.bikeGoal > 1 ? d.cfg.bikeGoal : 1;
+                m2 = d.wkBike > 0 ? d.wkBike / 1000.0 : 0.0;
+            } else {
+                H2 = G.clamp(d.dayGoal, 1, 7);
+                m2 = d.trainDays > 0 ? d.trainDays : 0;
+            }
+            _pm = m2;
+            _pH = H2;
+            _pf = G.clamp(m2.toFloat() / H2, 0.0, 1.0);
+            _pdone = m2 >= H2;
+            _psum = _pdone ? 1 : 0;
+            return;
+        }
         var H = HM[c];
         var m = c == 3 ? evMetres(d) : (d.floorsWeek > 0 ? d.floorsWeek : 0) * 3;
         _pm = m;
@@ -338,6 +360,71 @@ class FaceAlpe extends Face {
             _psum = m >= H ? 1 : 0;
             _pdone = m >= H;
         }
+    }
+
+    // "612/1.071 HM" / "87/150 KM" / "3/4 TAGE"
+    hidden function amountStr(c) as String {
+        if (_psrc == 1) {
+            return "" + Math.floor(_pm).toNumber() + "/" + _pH + " KM";
+        }
+        if (_psrc == 2) {
+            return "" + _pm + "/" + _pH + (_pH == 1 ? " TAG" : " TAGE");
+        }
+        return c == 3 ? G.num(_pm % _pH) + "/" + G.num(_pH) + " M" : G.num(_pm) + "/" + G.num(_pH) + " HM";
+    }
+
+    // what is left to the summit
+    hidden function remStr() as String {
+        if (_psrc == 1) {
+            return "" + (_pdone ? 0 : Math.ceil(_pH - _pm).toNumber()) + " KM";
+        }
+        if (_psrc == 2) {
+            var r = _pdone ? 0 : _pH - _pm;
+            return "" + r + (r == 1 ? " TAG" : " TAGE");
+        }
+        return G.num(_pdone ? 0 : Math.round(_pH * (1 - _pf))) + " HM";
+    }
+
+    // weekday dots M D M D F S S: filled = training day, today outlined
+    hidden function weekDots(dc as Dc, d as D, y, p, night) as Void {
+        var acc = d.accent;
+        var lt = ["M", "D", "M", "D", "F", "S", "S"];
+        for (var i = 0; i < 7; i++) {
+            var sp = G.ease(G.stag(p, i, 0.05, 0.4));
+            if (sp <= 0) {
+                continue;
+            }
+            var x = CX + (i - 3) * 24;
+            var on = ((d.trainMask >> i) & 1) == 1;
+            var fut = i > d.dayIdx;
+            if (on) {
+                dc.setColor(G.dim(acc, sp), -1);
+            } else {
+                dc.setColor(G.dim(night ? 0x13224A : 0x26282C, sp), -1);
+            }
+            dc.fillCircle(x, y, 10);
+            if (i == d.dayIdx) {
+                dc.setColor(G.dim(0xFFFFFF, sp), -1);
+                dc.setPenWidth(2);
+                dc.drawCircle(x, y, 11);
+            }
+            dc.setColor(on ? 0x000000 : G.dim(fut ? 0x5A5A5A : (night ? 0x9FB4E8 : 0xBDBDBD), sp), -1);
+            F.px(dc, lt[i], x + 1, y - 7, 2, 1, 0);
+        }
+    }
+
+    // profile: elevation fraction -> x
+    hidden function profX(gr, sum, ef, x0, sw) {
+        var e = 0.0;
+        var n = gr.size();
+        for (var i = 0; i < n; i++) {
+            var ei = gr[i] / sum;
+            if (ef <= e + ei || i == n - 1) {
+                return x0 + (i + G.clamp((ef - e) / ei, 0.0, 1.0)) * sw;
+            }
+            e += ei;
+        }
+        return x0 + n * sw;
     }
 
     // "KEHRE 14" / "KM 12" / "LAGER 2"
@@ -391,9 +478,9 @@ class FaceAlpe extends Face {
             dc.fillCircle(357, 172, 10);
         }
 
-        // ---- bike ring (weekly km vs goal)
-        var goal = d.cfg.bikeGoal;
-        var bk = d.wkBike >= 0 ? d.wkBike / 1000.0 : -1.0;
+        // ---- secondary ring: weekly bike km vs goal (or climbed HM when bike km drives the climb)
+        var goal = _psrc == 1 ? HM[c] : d.cfg.bikeGoal;
+        var bk = _psrc == 1 ? (d.floorsWeek >= 0 ? d.floorsWeek * 3.0 : -1.0) : (d.wkBike >= 0 ? d.wkBike / 1000.0 : -1.0);
         var bf = bk >= 0 && goal > 0 ? G.clamp(bk / goal, 0.0, 1.0) : 0.0;
         G.ring(dc, CX, 227, 222, 3, bf * G.ease(p * 1.3), night ? 0x8FB4FF : G.mix(acc, 0xFFFFFF, 0.45), night ? 0x0D1530 : 0x1A1A1A);
 
@@ -407,7 +494,7 @@ class FaceAlpe extends Face {
 
         // info line: STAGE . m/H HM
         var s1 = stageStr(c, _pf, prof);
-        var s2 = c == 3 ? G.num(_pm % _pH) + "/" + G.num(_pH) + " M" : G.num(_pm) + "/" + G.num(_pH) + " HM";
+        var s2 = amountStr(c);
         var ih = 16;
         var iy = prof ? 140 : 132;
         var w1 = F.stW(s1, ih);
@@ -419,7 +506,7 @@ class FaceAlpe extends Face {
         dc.setColor(G.dim(night ? 0x9FB0D8 : 0xB4B4B4, ip), -1);
         dc.fillCircle(ix + w1 + 11, iy, 2);
         F.st(dc, s2, ix + w1 + 22, iy, ih, 2, 0, ip, 0);
-        if (c == 3 && _psum > 0) {
+        if (c == 3 && _psrc == 0 && _psum > 0) {
             dc.setColor(acc, -1);
             F.px(dc, "^ " + _psum + "X GIPFEL", CX, iy + 16, 2, 1, 0);
         }
@@ -436,18 +523,23 @@ class FaceAlpe extends Face {
         var dp = G.ease(p * 1.5 - 0.4);
         var lx = prof ? 166 : 84;
         var rx = prof ? 288 : 370;
-        var ly = prof ? 380 : 214;
+        var days = _psrc == 2;
+        var ly = prof ? (days ? 350 : 380) : 214;
         dc.setColor(G.dim(night ? 0x7D8FBF : 0x8A8A8A, dp), -1);
         F.px(dc, sl[:lbl] as String, lx, ly, 2, 1, 0);
-        F.px(dc, "RAD KM", rx, ly, 2, 1, 0);
+        F.px(dc, _psrc == 1 ? "HM/WO" : "RAD KM", rx, ly, 2, 1, 0);
         dc.setColor(G.dim(d.dcol, dp), -1);
         F.st(dc, sl[:val] as String, lx, ly + 32, 20, 3, 1, 1.0, 0);
-        var bs = bk >= 0 ? "" + Math.round(bk).toNumber() : "--";
+        var bs = bk >= 0 ? G.num(bk) : "--";
+        var gs = _psrc == 1 ? "" : "/" + G.num(goal);
         var wb = F.stW(bs, 20);
-        var wg = F.stW("/" + goal, 14);
+        var wg = F.stW(gs, 14);
         F.st(dc, bs, rx - (wb + wg + 3) / 2.0, ly + 32, 20, 3, 0, 1.0, 0);
         dc.setColor(G.dim(night ? 0x7D8FBF : 0x8A8A8A, dp), -1);
-        F.st(dc, "/" + goal, rx + (wb + wg + 3) / 2.0, ly + 35, 14, 2, 2, 1.0, 0);
+        F.st(dc, gs, rx + (wb + wg + 3) / 2.0, ly + 35, 14, 2, 2, 1.0, 0);
+        if (days) {
+            weekDots(dc, d, prof ? 420 : 428, G.clamp((p - 0.3) / 0.7, 0.0, 1.0), night);
+        }
     }
 
     hidden function serp(dc as Dc, d as D, a as A, c, night) as Void {
@@ -543,6 +635,28 @@ class FaceAlpe extends Face {
         var st0 = segPt(0, 0.0);
         dc.setColor(0xFFFFFF, -1);
         dc.fillRectangle(st0[0] - 1, st0[1] - PEN0[c] / 2.0, 3, PEN0[c]);
+
+        // training-day stages: one bar across the road per day of the goal
+        if (_psrc == 2 && _pH > 1) {
+            for (var k = 1; k < _pH; k++) {
+                var sk = L * k / _pH.toFloat();
+                if (sk > sRoad) {
+                    break;
+                }
+                var q0 = pathPt(sk - 1);
+                var q1 = pathPt(sk + 1);
+                var dx = q1[0] - q0[0];
+                var dy = q1[1] - q0[1];
+                var dl = Math.sqrt(dx * dx + dy * dy);
+                var nx = dl > 0 ? -dy / dl : 0.0;
+                var ny = dl > 0 ? dx / dl : 1.0;
+                var pm = pathPt(sk);
+                var hl = 9;
+                dc.setColor(sk <= sRid ? 0xFFFFFF : (night ? 0x5A78C0 : 0x8A8A8A), -1);
+                dc.setPenWidth(3);
+                dc.drawLine(pm[0] - nx * hl, pm[1] - ny * hl, pm[0] + nx * hl, pm[1] + ny * hl);
+            }
+        }
 
         // summit
         var sm = pathPt(L);
@@ -660,12 +774,29 @@ class FaceAlpe extends Face {
             ly = ny;
         }
         // remaining height to the summit
-        var rem = _pdone ? 0 : Math.round(_pH * (1 - _pf)).toNumber();
         var tp = G.ease(p * 1.5 - 0.4);
         dc.setColor(G.dim(0x8A8A8A, tp), -1);
         F.px(dc, "NOCH", 48, 184, 2, 0, 0);
         dc.setColor(G.dim(0xFFFFFF, tp), -1);
-        F.st(dc, G.num(rem) + " HM", 48, 214, 18, 3, 0, 1.0, 0);
+        F.st(dc, remStr(), 48, 214, 18, 3, 0, 1.0, 0);
+        // training-day stages: dividers through the profile
+        if (_psrc == 2 && _pH > 1) {
+            for (var k = 1; k < _pH; k++) {
+                var ek = k / _pH.toFloat();
+                var xk = profX(gr, sum, ek, x0, sw);
+                var yk = y0 - (y0 - yt) * ek;
+                var dp2 = G.ease(G.stag(p, k, 0.08, 0.4));
+                if (dp2 <= 0) {
+                    continue;
+                }
+                dc.setColor(0x000000, -1);
+                dc.setPenWidth(3);
+                dc.drawLine(xk, yb, xk, yk - 2);
+                dc.setColor(G.dim(ek <= ef + 0.0001 ? 0xFFFFFF : 0x777777, dp2), -1);
+                dc.setPenWidth(2);
+                dc.drawLine(xk, yk - 8, xk, yk - 16);
+            }
+        }
         // base line
         dc.setColor(0x444444, -1);
         dc.fillRectangle(x0, yb + 2, (x1 - x0) * G.ease(p * 2), 2);
