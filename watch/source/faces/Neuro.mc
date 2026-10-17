@@ -20,6 +20,7 @@ class FaceNeuro extends Face {
     const LX = [100, 176, 252, 326];
     const LN = [6, 5, 4, 3];
     const NS = [0.0, 0.33, 0.6, 0.82];
+    const LO = [0, 6, 11, 15]; // first node index of each layer
     const CY = 1800; // ambient forward-pass cycle (ms)
     const Q = [
         ["KOM-Jagd frei!", "Beine sagen: Go!", "Heute Intervalle", "BB # - Attacke!", "Zwift-Rennen? Ja!"],
@@ -45,6 +46,32 @@ class FaceNeuro extends Face {
     hidden var _py = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] as Array<Float>;
     hidden var _qx = 0.0;
     hidden var _qy = 0.0;
+    // static geometry: node positions, edge endpoints (node indices) and target index
+    hidden var _nx as Array<Number>;
+    hidden var _ny as Array<Number>;
+    hidden var _ea as Array<Number>;
+    hidden var _eb as Array<Number>;
+    hidden var _ej as Array<Number>;
+    hidden var _bx as Array<Float>;
+    hidden var _by as Array<Float>;
+    // per data snapshot caches
+    hidden var _kU = -1;
+    hidden var _kS = -1;
+    hidden var _kA = -1;
+    hidden var _win = 0;
+    hidden var _es as Array<Float>;
+    hidden var _ec as Array<Number>;
+    hidden var _pc as Array<Number>;
+    hidden var _nh as Array<Number>;
+    hidden var _nb as Array<Number>;
+    hidden var _nk as Array<Number>;
+    hidden var _nr as Array<Float>;
+    hidden var _nc as Array<Number>;
+    hidden var _tC = 0;
+    hidden var _tH = 0;
+    hidden var _tB = 0;
+    hidden var _tK = 0;
+    hidden var _tR = 0.0;
 
     function initialize() {
         Face.initialize();
@@ -69,6 +96,46 @@ class FaceNeuro extends Face {
         for (var q = 0; q < 12; q++) {
             _w3[q] = W3B[q] + (r() - 0.5) * 0.3;
         }
+        _nx = new [18] as Array<Number>;
+        _ny = new [18] as Array<Number>;
+        for (var L = 0; L < 4; L++) {
+            for (var i = 0; i < LN[L]; i++) {
+                _nx[LO[L] + i] = LX[L];
+                _ny[LO[L] + i] = ny(L, i);
+            }
+        }
+        _ea = new [62] as Array<Number>;
+        _eb = new [62] as Array<Number>;
+        _ej = new [62] as Array<Number>;
+        var e = 0;
+        for (var L = 0; L < 3; L++) {
+            for (var j = 0; j < LN[L + 1]; j++) {
+                for (var i = 0; i < LN[L]; i++) {
+                    _ea[e] = LO[L] + i;
+                    _eb[e] = LO[L + 1] + j;
+                    _ej[e] = j;
+                    e++;
+                }
+            }
+        }
+        // Bio: perpendicular unit vector * 5 px of every edge
+        _bx = new [62] as Array<Float>;
+        _by = new [62] as Array<Float>;
+        for (var q = 0; q < 62; q++) {
+            var dx = _nx[_eb[q]] - _nx[_ea[q]];
+            var dy = _ny[_eb[q]] - _ny[_ea[q]];
+            var len = Math.sqrt(dx * dx + dy * dy);
+            _bx[q] = (-dy / len * 5).toFloat();
+            _by[q] = (dx / len * 5).toFloat();
+        }
+        _es = new [62] as Array<Float>;
+        _ec = new [62] as Array<Number>;
+        _pc = new [124] as Array<Number>;
+        _nh = new [18] as Array<Number>;
+        _nb = new [18] as Array<Number>;
+        _nk = new [18] as Array<Number>;
+        _nr = new [18] as Array<Float>;
+        _nc = new [18] as Array<Number>;
     }
 
     hidden function r() as Float {
@@ -154,17 +221,21 @@ class FaceNeuro extends Face {
         return L == 0 ? _a0[i] : (L == 1 ? (_h1[i] + 1) / 2.0 : (L == 2 ? (_h2[i] + 1) / 2.0 : _pr[i]));
     }
 
-    // path of an edge into _px/_py; returns point count (style-dependent wiring)
-    hidden function path(st, L, i, j, e, tt) as Number {
-        var x1 = LX[L];
-        var y1 = ny(L, i);
-        var x2 = LX[L + 1];
-        var y2 = ny(L + 1, j);
+    // path of edge e (node a -> node b, target index j in layer L+1) into _px/_py;
+    // returns the point count (style-dependent wiring)
+    hidden function path(st, e, tt, s) as Number {
+        var na = _ea[e];
+        var nb = _eb[e];
+        var x1 = _nx[na];
+        var y1 = _ny[na];
+        var x2 = _nx[nb];
+        var y2 = _ny[nb];
         _px[0] = x1;
         _py[0] = y1;
         if (st == 2) {
             // schematic: horizontal - vertical - horizontal, one vertical bus per target neuron
-            var mx = x1 + 16 + (j * (x2 - x1 - 32)).toFloat() / (LN[L + 1] - 1);
+            var L = e < 30 ? 0 : (e < 50 ? 1 : 2);
+            var mx = x1 + 16 + (_ej[e] * (x2 - x1 - 32)).toFloat() / (LN[L + 1] - 1);
             _px[1] = mx;
             _py[1] = y1;
             _px[2] = mx;
@@ -173,21 +244,21 @@ class FaceNeuro extends Face {
             _py[3] = y2;
             return 4;
         }
-        if (st == 3) {
-            // wavy dendrite, gently breathing
+        if (st == 3 && s >= 0.3) {
+            // strong edges: wavy dendrite (S-curve), gently breathing; weak ones stay straight
             var dx = x2 - x1;
             var dy = y2 - y1;
             var len = Math.sqrt(dx * dx + dy * dy);
-            var amp = 5 * Math.cos(tt / 900.0 + e * 0.7);
-            for (var k = 1; k < 5; k++) {
-                var f = k / 5.0;
-                var o = amp * Math.sin(f * 6.283);
-                _px[k] = x1 + dx * f - (dy / len) * o;
-                _py[k] = y1 + dy * f + (dx / len) * o;
-            }
-            _px[5] = x2;
-            _py[5] = y2;
-            return 6;
+            var o = 5 * Math.cos(tt / 900.0 + e * 0.7);
+            var nx = (-dy / len) * o;
+            var nyy = (dx / len) * o;
+            _px[1] = x1 + dx / 3.0 + nx;
+            _py[1] = y1 + dy / 3.0 + nyy;
+            _px[2] = x1 + (2 * dx) / 3.0 - nx;
+            _py[2] = y1 + (2 * dy) / 3.0 - nyy;
+            _px[3] = x2;
+            _py[3] = y2;
+            return 4;
         }
         _px[1] = x2;
         _py[1] = y2;
@@ -227,6 +298,67 @@ class FaceNeuro extends Face {
         _qy = _py[n - 1];
     }
 
+    // node look for reveal progress np -> _tC (colour), _tH halo, _tB body, _tK core (-1 none), _tR radius
+    hidden function nodeLook(st, C as Array<Number>, n, np, win) as Void {
+        var L = n < 6 ? 0 : (n < 11 ? 1 : (n < 15 ? 2 : 3));
+        var i = n - LO[L];
+        var v = nodeV(L, i);
+        var isWin = L == 3 && i == win;
+        var pos = L == 0 ? P[i] > 0 : (L == 1 ? _h1[i] >= 0 : (L == 2 ? _h2[i] >= 0 : true));
+        var col = L == 3 ? (isWin ? C[6] : C[3]) : (pos ? C[1] : C[2]);
+        var known = L > 0 || _kn[i];
+        var br = G.clamp((0.3 + 0.7 * v) * np, 0.0, 1.0);
+        var r = L == 0 ? 5 + 4 * v : (L == 3 ? 6 + 5 * v : 6);
+        _tR = r * G.spring(np);
+        _tC = col;
+        _tK = -1;
+        if (st == 2) {
+            _tH = G.mix(C[0], col, 0.5 + 0.5 * br);
+            var h = Math.round(_tR).toNumber() + 1;
+            _tB = known ? Math.round((h - 2) * v).toNumber() : 0;
+        } else {
+            _tH = G.mix(C[0], col, (st == 3 ? 0.22 : 0.28) * br);
+            if (!known) {
+                _tB = -1;
+                _tK = G.mix(C[0], col, 0.6);
+            } else {
+                _tB = G.mix(C[5], col, br);
+                if (br > 0.55) {
+                    _tK = G.mix(col, 0xFFFFFF, st == 3 ? 0.45 : 0.7);
+                }
+            }
+        }
+    }
+
+    // per data snapshot: forward pass + all static edge/node colours (the JS version
+    // recomputes them every frame; same results)
+    hidden function prep(d as D, st, C as Array<Number>) as Void {
+        _win = forward(d);
+        var e = 0;
+        for (var L = 0; L < 3; L++) {
+            for (var j = 0; j < LN[L + 1]; j++) {
+                for (var i = 0; i < LN[L]; i++) {
+                    var w = edgeW(L, i, j);
+                    var s = G.clamp((w * edgeA(L, i)).abs() / (L == 2 ? 1.6 : 1.0), 0.0, 1.0);
+                    var col = w >= 0 ? C[1] : C[2];
+                    _es[e] = s;
+                    _ec[e] = G.mix(C[0], col, 0.16 + 0.7 * s);
+                    _pc[e * 2] = G.mix(C[0], col, 0.45);
+                    _pc[e * 2 + 1] = G.mix(col, 0xFFFFFF, 0.6);
+                    e++;
+                }
+            }
+        }
+        for (var n = 0; n < 18; n++) {
+            nodeLook(st, C, n, 1.0, _win);
+            _nh[n] = _tH;
+            _nb[n] = _tB;
+            _nk[n] = _tK;
+            _nr[n] = _tR;
+            _nc[n] = _tC;
+        }
+    }
+
     // style palette: [bg, pos, neg, label, time, node-dark, win]
     hidden function pal(st, acc) as Array<Number> {
         if (st == 2) {
@@ -257,32 +389,38 @@ class FaceNeuro extends Face {
         var p = a.intro;
         var live = a.live;
         var tt = live ? a.t : 900; // frozen pulse phase when static
-        var win = forward(d);
+        if (_kU != d.unix || _kS != st || _kA != d.accent) {
+            _kU = d.unix;
+            _kS = st;
+            _kA = d.accent;
+            prep(d, st, C);
+        }
+        var win = _win;
 
         // ---- background
-        dc.setColor(C[0], -1);
-        dc.fillCircle(227, 227, 227);
+        // (big fills are expensive on the watch: few, cheap layers)
         if (st == 2) {
-            for (var g = 11; g < 454; g += 24) {
-                dc.setColor((g - 11) % 96 == 48 ? 0x173A68 : 0x10294D, -1);
+            dc.setColor(C[0], -1);
+            dc.fillCircle(227, 227, 227);
+            for (var g = 3; g < 454; g += 32) {
+                dc.setColor((g - 3) % 128 == 64 ? 0x173A68 : 0x10294D, -1);
                 dc.drawLine(g, 0, g, 454);
                 dc.drawLine(0, g, 454, g);
             }
         } else if (st == 3) {
             // drifting soft cells
+            dc.setPenWidth(2);
             for (var c = 0; c < 4; c++) {
                 var x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000.0);
                 var y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000.0);
-                for (var k = 0; k < 3; k++) {
-                    dc.setColor(G.mix(C[0], 0x22100A, (k + 1) / 3.0), -1);
-                    dc.fillCircle(x, y, (46 + c * 9) * (1 - k * 0.22));
-                }
+                dc.setColor(0x21100A, -1);
+                dc.drawCircle(x, y, 40 + c * 8);
+                dc.setColor(0x1A0B07, -1);
+                dc.fillCircle(x + 6, y - 4, 9 + c * 2);
             }
         } else {
-            for (var k = 0; k < 5; k++) {
-                dc.setColor(G.mix(C[0], 0x150E30, (k + 1) / 5.0), -1);
-                dc.fillCircle(227, 252, 190 - 34 * k);
-            }
+            dc.setColor(0x0C0819, -1);
+            dc.fillCircle(227, 252, 170);
         }
 
         // ---- intro schedule: layer reveal (nodes) and edge growth
@@ -290,43 +428,80 @@ class FaceNeuro extends Face {
         var eP = [G.easeInOut((p - 0.1) / 0.25), G.easeInOut((p - 0.4) / 0.22), G.easeInOut((p - 0.66) / 0.2)];
         var ph = ((tt % CY).toFloat() / CY) * 3.6 - 0.3; // layer phase of the travelling wave
 
-        // ---- edges
-        var e = 0;
-        for (var L = 0; L < 3; L++) {
+        // ---- edges (flat loop over the 62 edges; colours cached per data snapshot)
+        var pen = 0;
+        for (var e = 0; e < 62; e++) {
+            var L = e < 30 ? 0 : (e < 50 ? 1 : 2);
             var ep = eP[L];
-            for (var j = 0; j < LN[L + 1]; j++) {
-                for (var i = 0; i < LN[L]; i++) {
-                    if (ep > 0) {
-                        var w = edgeW(L, i, j);
-                        var s = G.clamp((w * edgeA(L, i)).abs() / (L == 2 ? 1.6 : 1.0), 0.0, 1.0);
-                        var col = w >= 0 ? C[1] : C[2];
-                        var n = path(st, L, i, j, e, tt);
-                        dc.setColor(G.mix(C[0], col, 0.16 + 0.7 * s), -1);
-                        dc.setPenWidth(s > 0.62 ? 2 : 1);
-                        drawPath(dc, n, ep);
-                        // signal pulse on strong edges
-                        if (p >= 1 && s > 0.22) {
-                            var f = ph - L + (((e * 37) % 11) - 5) * 0.03;
-                            if (f >= 0 && f <= 1) {
-                                along(n, f);
-                                if (st == 2) {
-                                    dc.setColor(G.mix(col, 0xFFFFFF, 0.6), -1);
-                                    dc.fillRectangle(_qx - 2, _qy - 2, 5, 5);
-                                } else {
-                                    dc.setColor(G.mix(C[0], col, 0.45), -1);
-                                    dc.fillCircle(_qx, _qy, 5);
-                                    dc.setColor(G.mix(col, 0xFFFFFF, 0.6), -1);
-                                    dc.fillCircle(_qx, _qy, s > 0.6 ? 3 : 2);
-                                }
-                            }
-                        }
+            if (ep <= 0) {
+                e = L == 0 ? 29 : (L == 1 ? 49 : 61);
+                continue;
+            }
+            var s = _es[e];
+            var pw = s > 0.62 ? 2 : 1;
+            if (pw != pen) {
+                pen = pw;
+                dc.setPenWidth(pw);
+            }
+            dc.setColor(_ec[e], -1);
+            var n = 2;
+            if ((st == 1 || (st == 3 && s < 0.3)) && ep >= 1) {
+                dc.drawLine(_nx[_ea[e]], _ny[_ea[e]], _nx[_eb[e]], _ny[_eb[e]]);
+            } else if (st == 3 && ep >= 1) {
+                // (s >= 0.3 here)
+                // inlined wavy path (same points as path())
+                var x1 = _nx[_ea[e]];
+                var y1 = _ny[_ea[e]];
+                var dx = _nx[_eb[e]] - x1;
+                var dy = _ny[_eb[e]] - y1;
+                var o = Math.cos(tt / 900.0 + e * 0.7);
+                var nx = _bx[e] * o;
+                var nyy = _by[e] * o;
+                var ax = x1 + dx / 3.0 + nx;
+                var ay = y1 + dy / 3.0 + nyy;
+                var bx = x1 + (2 * dx) / 3.0 - nx;
+                var by = y1 + (2 * dy) / 3.0 - nyy;
+                dc.drawLine(x1, y1, ax, ay);
+                dc.drawLine(ax, ay, bx, by);
+                dc.drawLine(bx, by, x1 + dx, y1 + dy);
+                n = 4;
+                _px[0] = x1;
+                _py[0] = y1;
+                _px[1] = ax;
+                _py[1] = ay;
+                _px[2] = bx;
+                _py[2] = by;
+                _px[3] = x1 + dx;
+                _py[3] = y1 + dy;
+            } else {
+                n = path(st, e, tt, s);
+                drawPath(dc, n, ep);
+            }
+            // signal pulse on strong edges
+            if (p >= 1 && s > 0.22) {
+                var f = ph - L + (((e * 37) % 11) - 5) * 0.03;
+                if (f >= 0 && f <= 1) {
+                    if (n == 2) {
+                        _qx = _nx[_ea[e]] + (_nx[_eb[e]] - _nx[_ea[e]]) * f;
+                        _qy = _ny[_ea[e]] + (_ny[_eb[e]] - _ny[_ea[e]]) * f;
+                    } else {
+                        along(n, f);
                     }
-                    e++;
+                    if (st == 2) {
+                        dc.setColor(_pc[e * 2 + 1], -1);
+                        dc.fillRectangle(_qx - 2, _qy - 2, 5, 5);
+                    } else {
+                        dc.setColor(_pc[e * 2], -1);
+                        dc.fillCircle(_qx, _qy, 5);
+                        dc.setColor(_pc[e * 2 + 1], -1);
+                        dc.fillCircle(_qx, _qy, s > 0.6 ? 3 : 2);
+                    }
                 }
             }
         }
 
         // ---- nodes
+        dc.setPenWidth(2);
         for (var L = 0; L < 4; L++) {
             if (nP[L] <= 0) {
                 continue;
@@ -339,49 +514,57 @@ class FaceNeuro extends Face {
                 if (np <= 0) {
                     continue;
                 }
-                var x = LX[L];
-                var y = ny(L, i);
-                var v = nodeV(L, i);
-                var isWin = L == 3 && i == win;
-                var pos = L == 0 ? P[i] > 0 : (L == 1 ? _h1[i] >= 0 : (L == 2 ? _h2[i] >= 0 : true));
-                var col = L == 3 ? (isWin ? C[6] : C[3]) : (pos ? C[1] : C[2]);
-                var known = L > 0 || _kn[i];
-                var br = G.clamp((0.3 + 0.7 * v) * np + fl * 0.3, 0.0, 1.0);
-                var r = L == 0 ? 5 + 4 * v : (L == 3 ? 6 + 5 * v : 6);
-                r = r * G.spring(np);
+                var n = LO[L] + i;
+                var x = _nx[n];
+                var y = _ny[n];
+                if (np >= 1) {
+                    _tH = _nh[n];
+                    _tB = _nb[n];
+                    _tK = _nk[n];
+                    _tR = _nr[n];
+                    _tC = _nc[n];
+                } else {
+                    nodeLook(st, C, n, np, win);
+                }
+                var r = _tR;
+                var col = _tC;
                 if (st == 2) {
                     var h = Math.round(r).toNumber() + 1;
                     dc.setColor(C[0], -1);
                     dc.fillRectangle(x - h, y - h, 2 * h + 1, 2 * h + 1);
-                    dc.setColor(G.mix(C[0], col, 0.5 + 0.5 * br), -1);
-                    dc.setPenWidth(2);
+                    dc.setColor(_tH, -1);
                     dc.drawRectangle(x - h, y - h, 2 * h + 1, 2 * h + 1);
-                    if (known) {
-                        var ih = Math.round((h - 2) * v).toNumber();
-                        if (ih > 0) {
-                            dc.fillRectangle(x - ih, y - ih, 2 * ih + 1, 2 * ih + 1);
-                        }
+                    var ih = _tB;
+                    if (ih > 0) {
+                        dc.fillRectangle(x - ih, y - ih, 2 * ih + 1, 2 * ih + 1);
                     }
                 } else {
                     // glow halo, body, bright core
-                    dc.setColor(G.mix(C[0], col, (st == 3 ? 0.22 : 0.28) * br), -1);
+                    dc.setColor(_tH, -1);
                     dc.fillCircle(x, y, r + (st == 3 ? 6 : 5));
-                    if (!known) {
-                        dc.setColor(G.mix(C[0], col, 0.6), -1);
-                        dc.setPenWidth(2);
+                    if (_tB < 0) {
+                        dc.setColor(_tK, -1);
                         dc.drawCircle(x, y, r);
                     } else {
-                        dc.setColor(G.mix(C[5], col, br), -1);
+                        dc.setColor(_tB, -1);
                         dc.fillCircle(x, y, r);
-                        if (br > 0.55) {
-                            dc.setColor(G.mix(col, 0xFFFFFF, st == 3 ? 0.45 : 0.7), -1);
+                        if (_tK >= 0) {
+                            dc.setColor(_tK, -1);
                             dc.fillCircle(x, y, r * 0.4);
                         }
                     }
                 }
-                if (isWin && np >= 1) {
+                if (fl > 0 && np >= 1) {
+                    // arrival flash ring
+                    dc.setColor(G.mix(C[0], col, fl), -1);
+                    if (st == 2) {
+                        dc.drawRectangle(x - r - 3, y - r - 3, 2 * r + 7, 2 * r + 7);
+                    } else {
+                        dc.drawCircle(x, y, r + 3);
+                    }
+                }
+                if (L == 3 && i == win && np >= 1) {
                     dc.setColor(C[6], -1);
-                    dc.setPenWidth(2);
                     if (st == 2) {
                         dc.drawRectangle(x - r - 5, y - r - 5, 2 * r + 11, 2 * r + 11);
                     } else {
@@ -412,15 +595,8 @@ class FaceNeuro extends Face {
         // ---- time + date
         var tp = G.easeInOut(p * 1.35);
         var ts = G.timeStr(d);
-        if (st == 1) {
-            dc.setColor(G.dim(d.accent, 0.35), -1);
-            F.st(dc, ts, 227, 98, 74, 13, 1, tp, 0);
-        } else if (st == 3) {
-            dc.setColor(0x4A2414, -1);
-            F.st(dc, ts, 227, 98, 74, 14, 1, tp, 0);
-        }
         dc.setColor(C[4], -1);
-        F.st(dc, ts, 227, 98, 74, st == 2 ? 4 : (st == 3 ? 7 : 5), 1, tp, 0);
+        F.st(dc, ts, 227, 98, 74, st == 2 ? 4 : (st == 3 ? 7 : 6), 1, tp, 0);
         if (st == 2) {
             // dimension line under the time
             dc.setColor(C[3], -1);
@@ -436,9 +612,9 @@ class FaceNeuro extends Face {
         // ---- forecast
         if (nP[3] > 0) {
             dc.setColor(G.mix(C[0], C[3], nP[3]), -1);
-            F.px(dc, "FORM-PROGNOSE", 227, 352, 2, 1, 0);
+            F.px(dc, "FORM-PROGNOSE", 227, 350, 2, 1, 0);
             dc.setColor(G.mix(C[0], C[6], nP[3]), -1);
-            F.st(dc, OUT_L[win] + " " + Math.round(_pr[win] * 100 * nP[3]).toNumber() + "%", 227, 386, 26, 4, 1, 1.0, 0);
+            F.px(dc, OUT_L[win] + " " + Math.round(_pr[win] * 100 * nP[3]).toNumber() + "%", 227, 371, 4, 1, 0);
             // caption: inference time while the pass runs, then a witty verdict
             var cap = "Inferenz " + (9 + ((d.wakeN * 7) % 8)) + " ms";
             var n = cap.length();
@@ -448,7 +624,7 @@ class FaceNeuro extends Face {
             }
             dc.setColor(G.mix(C[0], C[3], nP[3] * 0.9), -1);
             var w = F.pxW(cap, 2);
-            F.px(dc, cap.substring(0, n), 227 - w / 2, 408, 2, 0, 0);
+            F.px(dc, cap.substring(0, n), 227 - w / 2, 409, 2, 0, 0);
         }
     }
 

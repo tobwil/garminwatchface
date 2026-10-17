@@ -254,9 +254,9 @@ class FaceCoach extends Face {
                 var by = 150 + b * 90 + Math.cos(tt * 0.4 + b) * 14;
                 var bc = b == 1 ? 0xD65DB1 : acc;
                 var bg = glassBg(by);
-                for (var r = 0; r < 8; r++) {
-                    dc.setColor(G.mix(bg, bc, 0.06 + r * 0.035), -1);
-                    dc.fillCircle(bx, by, 84 - r * 9);
+                for (var r = 0; r < 6; r++) {
+                    dc.setColor(G.mix(bg, bc, 0.06 + r * 0.045), -1);
+                    dc.fillCircle(bx, by, 80 - r * 12);
                 }
             }
         }
@@ -382,23 +382,22 @@ class FaceCoach extends Face {
                     bw = 74;
                     h = 30;
                 } else {
+                    // grow with the typed text (width of the widest typed line, rows typed so far)
+                    var left = shown;
+                    var rows = 1;
                     var mw = 0;
                     for (var k = 0; k < nl; k++) {
-                        var lw = F.pxW(lines[k] as String, 2);
-                        if (lw > mw) {
-                            mw = lw;
-                        }
-                    }
-                    bw = mw + 24;
-                    // grow with the typed lines
-                    var left = shown;
-                    var rows = 0;
-                    for (var k = 0; k < nl; k++) {
-                        if (left > 0 || k == 0) {
+                        var len = (lines[k] as String).length();
+                        var n = left < len ? left : len;
+                        if (n > 0) {
                             rows = k + 1;
+                            if (n * 12 - 2 > mw) {
+                                mw = n * 12 - 2;
+                            }
                         }
-                        left -= (lines[k] as String).length();
+                        left -= len;
                     }
+                    bw = mw + 24 > 74 ? mw + 24 : 74;
                     h = rows * LH - 6 + 24;
                 }
                 var bx = 76;
@@ -518,9 +517,11 @@ class FaceCoach extends Face {
             dc.setColor(0x8A8A8A, -1);
             F.st(dc, ts, 227 + o[0], 186 + o[1], 64, 2, 1, 1.0, 0);
         }
-        var m = _cMsg;
-        if (m.length() > 19) {
-            m = m.substring(0, 18) + "...";
+        // first words of the last message, cut at a word boundary
+        var ml = wrap(_cMsg, 20, 20);
+        var m = ml[0] as String;
+        if (ml.size() > 1) {
+            m += "...";
         }
         dc.setColor(G.dim(fg, 0.55), -1);
         dc.fillCircle(227 + o[0] - F.pxW(m, 2) / 2.0 - 12, 263 + o[1], 4);

@@ -229,7 +229,8 @@ class FaceCipher extends Face {
         var st = d.cfg.style;
         var acc = d.accent;
         var live = a.live;
-        var ms = live ? a.t : 99999;
+        // touch & hold (bonus): re-encrypt and run the decryption again
+        var ms = live ? (a.tap < a.t ? a.tap : a.t) : 99999;
         var q = prog(ms);
         var done = q >= 1;
         var dg = digs(d);
@@ -450,6 +451,10 @@ class FaceCipher extends Face {
                 }
             }
         }
+    }
+
+    function tap(x as Number, y as Number, d as D) as Boolean {
+        return true;
     }
 
     function aod(dc as Dc, d as D) as Void {

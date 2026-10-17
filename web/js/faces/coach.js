@@ -205,9 +205,9 @@ export default {
         const bx = 227 + (b - 1) * 120 + Math.sin(tt * 0.5 + b * 2.1) * 18;
         const by = 150 + b * 90 + Math.cos(tt * 0.4 + b) * 14;
         const bc = b === 1 ? 0xd65db1 : acc;
-        for (let r = 0; r < 8; r++) {
-          dc.setColor(G.mix(glassBg(by), bc, 0.06 + r * 0.035), -1);
-          dc.fillCircle(bx, by, 84 - r * 9);
+        for (let r = 0; r < 6; r++) {
+          dc.setColor(G.mix(glassBg(by), bc, 0.06 + r * 0.045), -1);
+          dc.fillCircle(bx, by, 80 - r * 12);
         }
       }
     }
@@ -314,12 +314,15 @@ export default {
         let bw, h;
         if (typing) { bw = 74; h = 30; }
         else {
-          let mw = 0;
-          for (let k = 0; k < nl; k++) mw = Math.max(mw, F.pxW(lines[k], 2));
-          bw = mw + 24;
-          // grow with the typed lines
-          let left = shown, rows = 0;
-          for (let k = 0; k < nl; k++) { if (left > 0 || k === 0) rows = k + 1; left -= lines[k].length; }
+          // grow with the typed text (width of the widest typed line, rows typed so far)
+          let left = shown, rows = 1, mw = 0;
+          for (let k = 0; k < nl; k++) {
+            const len = lines[k].length;
+            const n = left < len ? left : len;
+            if (n > 0) { rows = k + 1; mw = Math.max(mw, n * 12 - 2); }
+            left -= len;
+          }
+          bw = Math.max(74, mw + 24);
           h = rows * LH - 6 + 24;
         }
         const bx = 76;
@@ -421,8 +424,9 @@ export default {
       dc.setColor(0x8a8a8a, -1);
       F.st(dc, ts, 227 + o[0], 186 + o[1], 64, 2, 1, 1.0, 0);
     }
-    let m = cMsg;
-    if (m.length > 19) m = m.substring(0, 18) + "...";
+    // first words of the last message, cut at a word boundary
+    const ml = wrap(cMsg, 20, 20);
+    const m = ml.length > 1 ? ml[0] + "..." : ml[0];
     dc.setColor(G.dim(fg, 0.55), -1);
     dc.fillCircle(227 + o[0] - F.pxW(m, 2) / 2 - 12, 263 + o[1], 4);
     dc.setColor(0x6a6a6a, -1);

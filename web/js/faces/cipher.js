@@ -191,7 +191,8 @@ export default {
     const st = d.cfg.style;
     const acc = d.accent;
     const live = a.live;
-    const ms = live ? a.t : 99999;
+    // touch & hold (bonus): re-encrypt and run the decryption again
+    const ms = live ? (a.tap < a.t ? a.tap : a.t) : 99999;
     const q = prog(ms);
     const done = q >= 1;
     const dg = digs(d);
@@ -373,6 +374,8 @@ export default {
       }
     }
   },
+
+  tap(x, y, d) { return true; },
 
   aod(dc, d) {
     const o = St.shift(d);

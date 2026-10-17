@@ -100,7 +100,7 @@ function edgeA(L, i) { return L === 0 ? U[i] : L === 1 ? H1[i] : H2[i]; }
 function nodeV(L, i) { return L === 0 ? A0[i] : L === 1 ? (H1[i] + 1) / 2 : L === 2 ? (H2[i] + 1) / 2 : PR[i]; }
 
 // path of an edge into PX/PY; returns point count (style-dependent wiring)
-function path(st, L, i, j, e, tt) {
+function path(st, L, i, j, e, tt, s) {
   const x1 = LX[L] , y1 = ny(L, i), x2 = LX[L + 1], y2 = ny(L + 1, j);
   PX[0] = x1; PY[0] = y1;
   if (st === 2) {
@@ -109,19 +109,16 @@ function path(st, L, i, j, e, tt) {
     PX[1] = mx; PY[1] = y1; PX[2] = mx; PY[2] = y2; PX[3] = x2; PY[3] = y2;
     return 4;
   }
-  if (st === 3) {
-    // wavy dendrite, gently breathing
+  if (st === 3 && s >= 0.3) {
+    // strong edges: wavy dendrite (S-curve), gently breathing; weak ones stay straight
     const dx = x2 - x1, dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
-    const amp = 5 * Math.cos(tt / 900 + e * 0.7);
-    for (let k = 1; k < 5; k++) {
-      const f = k / 5;
-      const o = amp * Math.sin(f * 6.283);
-      PX[k] = x1 + dx * f - (dy / len) * o;
-      PY[k] = y1 + dy * f + (dx / len) * o;
-    }
-    PX[5] = x2; PY[5] = y2;
-    return 6;
+    const o = 5 * Math.cos(tt / 900 + e * 0.7);
+    const nx = (-dy / len) * o, nyy = (dx / len) * o;
+    PX[1] = x1 + dx / 3 + nx; PY[1] = y1 + dy / 3 + nyy;
+    PX[2] = x1 + (2 * dx) / 3 - nx; PY[2] = y1 + (2 * dy) / 3 - nyy;
+    PX[3] = x2; PY[3] = y2;
+    return 4;
   }
   PX[1] = x2; PY[1] = y2;
   return 2;
@@ -182,11 +179,12 @@ export default {
     const win = forward(d);
 
     // ---- background
-    dc.setColor(C[0], -1);
-    dc.fillCircle(227, 227, 227);
+    // (big fills are expensive on the watch: few, cheap layers)
     if (st === 2) {
-      for (let g = 11; g < 454; g += 24) {
-        dc.setColor((g - 11) % 96 === 48 ? 0x173a68 : 0x10294d, -1);
+      dc.setColor(C[0], -1);
+      dc.fillCircle(227, 227, 227);
+      for (let g = 3; g < 454; g += 32) {
+        dc.setColor((g - 3) % 128 === 64 ? 0x173a68 : 0x10294d, -1);
         dc.drawLine(g, 0, g, 454);
         dc.drawLine(0, g, 454, g);
       }
@@ -195,16 +193,15 @@ export default {
       for (let c = 0; c < 4; c++) {
         const x = 227 + 150 * Math.sin(c * 2.1 + tt / 9000);
         const y = 227 + 150 * Math.cos(c * 1.7 + tt / 11000);
-        for (let k = 0; k < 3; k++) {
-          dc.setColor(G.mix(C[0], 0x22100a, (k + 1) / 3), -1);
-          dc.fillCircle(x, y, (46 + c * 9) * (1 - k * 0.22));
-        }
+        dc.setColor(0x21100a, -1);
+        dc.setPenWidth(2);
+        dc.drawCircle(x, y, 40 + c * 8);
+        dc.setColor(0x1a0b07, -1);
+        dc.fillCircle(x + 6, y - 4, 9 + c * 2);
       }
     } else {
-      for (let k = 0; k < 5; k++) {
-        dc.setColor(G.mix(C[0], 0x150e30, (k + 1) / 5), -1);
-        dc.fillCircle(227, 252, 190 - 34 * k);
-      }
+      dc.setColor(0x0c0819, -1);
+      dc.fillCircle(227, 252, 170);
     }
 
     // ---- intro schedule: layer reveal (nodes) and edge growth
@@ -223,7 +220,7 @@ export default {
             const w = edgeW(L, i, j);
             const s = G.clamp(Math.abs(w * edgeA(L, i)) / (L === 2 ? 1.6 : 1.0), 0, 1);
             const col = w >= 0 ? C[1] : C[2];
-            const n = path(st, L, i, j, e, tt);
+            const n = path(st, L, i, j, e, tt, s);
             dc.setColor(G.mix(C[0], col, 0.16 + 0.7 * s), -1);
             dc.setPenWidth(s > 0.62 ? 2 : 1);
             drawPath(dc, n, ep);
@@ -264,7 +261,7 @@ export default {
         const pos = L === 0 ? P[i] > 0 : L === 1 ? H1[i] >= 0 : L === 2 ? H2[i] >= 0 : true;
         let col = L === 3 ? (isWin ? C[6] : C[3]) : pos ? C[1] : C[2];
         const known = L > 0 || KN[i];
-        const br = G.clamp((0.3 + 0.7 * v) * np + fl * 0.3, 0, 1);
+        const br = G.clamp((0.3 + 0.7 * v) * np, 0, 1);
         let r = L === 0 ? 5 + 4 * v : L === 3 ? 6 + 5 * v : 6;
         r = r * G.spring(np);
         if (st === 2) {
@@ -294,6 +291,13 @@ export default {
               dc.fillCircle(x, y, r * 0.4);
             }
           }
+        }
+        if (fl > 0 && np >= 1) {
+          // arrival flash ring
+          dc.setColor(G.mix(C[0], col, fl), -1);
+          dc.setPenWidth(2);
+          if (st === 2) dc.drawRectangle(x - r - 3, y - r - 3, 2 * r + 7, 2 * r + 7);
+          else dc.drawCircle(x, y, r + 3);
         }
         if (isWin && np >= 1) {
           dc.setColor(C[6], -1);
@@ -325,15 +329,8 @@ export default {
     // ---- time + date
     const tp = G.easeInOut(p * 1.35);
     const ts = G.timeStr(d);
-    if (st === 1) {
-      dc.setColor(G.dim(d.accent, 0.35), -1);
-      F.st(dc, ts, 227, 98, 74, 13, 1, tp, 0);
-    } else if (st === 3) {
-      dc.setColor(0x4a2414, -1);
-      F.st(dc, ts, 227, 98, 74, 14, 1, tp, 0);
-    }
     dc.setColor(C[4], -1);
-    F.st(dc, ts, 227, 98, 74, st === 2 ? 4 : st === 3 ? 7 : 5, 1, tp, 0);
+    F.st(dc, ts, 227, 98, 74, st === 2 ? 4 : st === 3 ? 7 : 6, 1, tp, 0);
     if (st === 2) {
       // dimension line under the time
       dc.setColor(C[3], -1);
@@ -349,9 +346,9 @@ export default {
     // ---- forecast
     if (nP[3] > 0) {
       dc.setColor(G.mix(C[0], C[3], nP[3]), -1);
-      F.px(dc, "FORM-PROGNOSE", 227, 352, 2, 1, 0);
+      F.px(dc, "FORM-PROGNOSE", 227, 350, 2, 1, 0);
       dc.setColor(G.mix(C[0], C[6], nP[3]), -1);
-      F.st(dc, OUT_L[win] + " " + Math.round(PR[win] * 100 * nP[3]) + "%", 227, 386, 26, 4, 1, 1.0, 0);
+      F.px(dc, OUT_L[win] + " " + Math.round(PR[win] * 100 * nP[3]) + "%", 227, 371, 4, 1, 0);
       // caption: inference time while the pass runs, then a witty verdict
       let cap = "Inferenz " + (9 + ((d.wakeN * 7) % 8)) + " ms";
       let n = cap.length;
@@ -361,7 +358,7 @@ export default {
       }
       dc.setColor(G.mix(C[0], C[3], nP[3] * 0.9), -1);
       const w = F.pxW(cap, 2);
-      F.px(dc, cap.substring(0, n), 227 - w / 2, 408, 2, 0, 0);
+      F.px(dc, cap.substring(0, n), 227 - w / 2, 409, 2, 0, 0);
     }
   },
 
