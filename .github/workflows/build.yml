@@ -79,9 +79,15 @@ jobs:
           npm ci --no-audit --no-fund
           node tools/bundle.mjs
 
+      # Pull requests only check that everything builds; the downloads are kept for
+      # main and manual runs, briefly, so the account's artifact storage stays free.
+      # A full storage quota must not turn a successful build red.
       - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
         with:
           name: facelab-watchfaces
+          retention-days: 14
           path: |
             web/prg/*.prg
             site/FaceLab.html
@@ -90,4 +96,5 @@ jobs:
         if: github.event.inputs.face_code != ''
         with:
           name: facelab-custom
+          retention-days: 14
           path: custom/*.prg

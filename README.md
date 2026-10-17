@@ -114,6 +114,25 @@ Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten
 </tr>
 </table>
 
+### Ein Tag im Zeitraffer
+
+Viele Designs leben mit dem echten Tag: Sonnenstand, Dämmerung, Nacht und Mond berechnet die Uhr selbst aus Datum und Standort. So sehen sie von 0 bis 24 Uhr aus (eine Viertelstunde pro Bild):
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/SUN.webp" width="180" alt="Daylight im Tagesverlauf"><br><b>Daylight</b><br><sub>Sonnenbogen, Dämmerung, Goldene Stunde, nachts der Mond</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/RIDER.webp" width="180" alt="Pixel Rider im Tagesverlauf"><br><b>Pixel Rider</b><br><sub>Himmel, Sonne und Sterne folgen dem echten Sonnenstand</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/STERNE.webp" width="180" alt="Sternenhimmel im Tagesverlauf"><br><b>Sternenhimmel</b><br><sub>Der Himmel dreht sich, tagsüber blau, nachts Sternbilder</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/WETTER.webp" width="180" alt="Wetterfenster im Tagesverlauf"><br><b>Wetterfenster</b><br><sub>Tag und Nacht vor dem Fenster, die Katze schläft nachts</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/AQUA.webp" width="180" alt="Aquarium im Tagesverlauf"><br><b>Aquarium</b><br><sub>Nachts wird das Becken dunkel und die Fische leuchten</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/ORBIT.webp" width="180" alt="Orbit im Tagesverlauf"><br><b>Orbit</b><br><sub>Planeten für Stunde und Minute ziehen ihre Bahnen</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/SKELETT.webp" width="180" alt="Skelett im Tagesverlauf"><br><b>Skelett</b><br><sub>Zeiger und Räderwerk im Zeitraffer</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/day/BUDDY.webp" width="180" alt="Pixel Buddy im Tagesverlauf"><br><b>Pixel Buddy</b><br><sub>Schläft nachts mit Mütze, wacht morgens auf</sub></td>
+</tr>
+</table>
+
 <details>
 <summary><b>Alle Varianten ansehen</b> (jedes Design hat drei)</summary>
 
@@ -350,8 +369,8 @@ cp dist/*.prg web/prg/ && node tools/bundle.mjs                  # Studio → si
 byte-identische Ergebnisse wie mit Garmins offiziellen Gerätedateien liefert. Wer den SDK-Manager nutzt,
 kann stattdessen das offizielle FR970-Gerät installieren.
 
-Die GitHub Action `.github/workflows/build.yml` baut bei jedem Push alle Watchfaces und das Studio und
-stellt sie als Artefakt bereit. Manuell gestartet („Run workflow“) nimmt sie optional einen Face-Code
+Die GitHub Action `.github/workflows/build.yml` baut bei jedem Push und Pull Request alle Watchfaces und das
+Studio. Bei Pushes auf `main` stellt sie beides 14 Tage lang als Artefakt bereit. Manuell gestartet („Run workflow“) nimmt sie optional einen Face-Code
 entgegen und liefert genau dieses Watchface.
 
 Neue Designs: siehe [`docs/FACE_GUIDE.md`](docs/FACE_GUIDE.md).
