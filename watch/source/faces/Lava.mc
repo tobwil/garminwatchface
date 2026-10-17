@@ -148,8 +148,8 @@ class FaceLava extends Face {
         var p = a.intro;
         // light level: the lamp switches on during the intro
         var l = 0.2 + 0.8 * G.easeInOut(p * 1.25);
+        var lc = st == 1 ? acc : (st == 2 ? 0x5FE6D2 : 0x2EF2FF); // label colour
         // outside temperature -> wax speed (cold = lazy, warm = lively)
-        var lc = st == 1 ? acc : (st == 2 ? 0x5FE6D2 : 0x2EF2FF);
         var tc = d.temp == -99 ? 16 : d.temp;
         var sp = G.clamp((tc + 5) / 35.0, 0.0, 1.0);
         var per = 34000 - 22000 * sp;

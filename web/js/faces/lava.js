@@ -113,8 +113,8 @@ const face = {
     const p = a.intro;
     // light level: the lamp switches on during the intro
     const L = 0.2 + 0.8 * G.easeInOut(p * 1.25);
+    const lc = st === 1 ? acc : st === 2 ? 0x5fe6d2 : 0x2ef2ff; // label colour
     // outside temperature -> wax speed (cold = lazy, warm = lively)
-    const lc = st === 1 ? acc : st === 2 ? 0x5fe6d2 : 0x2ef2ff;
     const tc = d.temp === -99 ? 16 : d.temp;
     const sp = G.clamp((tc + 5) / 35.0, 0, 1);
     const per = 34000 - 22000 * sp;
