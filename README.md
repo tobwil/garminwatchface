@@ -384,3 +384,8 @@ Studio. Bei Pushes auf `main` stellt sie beides 14 Tage lang als Artefakt bereit
 entgegen und liefert genau dieses Watchface.
 
 Neue Designs: siehe [`docs/FACE_GUIDE.md`](docs/FACE_GUIDE.md).
+
+## Lizenz
+
+[MIT](LICENSE) – frei nutzen, ändern und weitergeben, auch kommerziell, solange der Lizenzhinweis erhalten bleibt.
+Garmin, Forerunner und Connect IQ sind Marken von Garmin Ltd.; FaceLab ist ein unabhängiges Projekt.

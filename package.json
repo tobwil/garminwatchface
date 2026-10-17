@@ -1,6 +1,7 @@
 {
   "name": "facelab",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "fonts": "node tools/fontgen.mjs",
