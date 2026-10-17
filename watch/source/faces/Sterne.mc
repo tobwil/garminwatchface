@@ -69,7 +69,9 @@ class FaceSterne extends Face {
     const CH3 = 0.9659258;
     const K3 = 300;
     const CY3 = 255;
-    const NA = 44;   // aurora rays
+    const NA = 36;      // aurora rays
+    const NT = 30;      // far shore trees
+    const CHUNK = 40;   // stars re-projected per frame (rolling update, see sky())
     const CS = [
         0, 7, 7, 7, 14, 5, 19, 5, 24, 5,
         29, 6, 35, 8, 43, 6, 49, 6, 55, 5,
@@ -78,13 +80,19 @@ class FaceSterne extends Face {
         117, 6, 123, 5, 128, 9, 137, 4
     ];
 
-    // ---- catalogue, decoded once: magnitude, right ascension (deg), sin/cos declination
+    // ---- catalogue, decoded once: magnitude, sin/cos declination
     hidden var _mag as Array;
-    hidden var _sra as Array;
     hidden var _sde as Array;
     hidden var _cde as Array;
-    // ---- per-minute sky cache (screen positions of the resting sky)
-    hidden var _K = -1;
+    // ---- sky state. Star positions are re-projected in rolling chunks of CHUNK stars per frame
+    // whenever the minute (or style) changes, so no single frame does the whole catalogue.
+    hidden var _kc = -1;
+    hidden var _kd = -1;
+    hidden var _ptr = 0;
+    hidden var _cnt = 0;
+    hidden var _c0 = 0;
+    hidden var _cl = 0;
+    hidden var _lst = 0.0;
     hidden var _sx as Array;
     hidden var _sy as Array;
     hidden var _su as Array;
@@ -98,16 +106,19 @@ class FaceSterne extends Face {
     hidden var _moY = 0.0;
     hidden var _moU = 0.0;
     hidden var _el = 0.0;
-    // ---- per-minute paint cache for the resting frame (intro finished)
-    hidden var _PK = -1;
-    hidden var _sc as Array;
-    hidden var _sf as Array;
+    // ---- paint state: star palette (4 colour classes x 16 levels on the sky colour), per-star
+    // palette index + brightness, Milky Way colours, constellation labels
+    hidden var _spal as Array;
+    hidden var _spb = -1;
+    hidden var _sci as Array;
+    hidden var _sff as Array;
     hidden var _mwc as Array;
+    hidden var _lk = -2;
     hidden var _nlb = 0;
-    hidden var _lbx = [0, 0, 0, 0] as Array;
-    hidden var _lby = [0, 0, 0, 0] as Array;
-    hidden var _lbw = [0, 0, 0, 0] as Array;
-    hidden var _lbi = [0, 0, 0, 0] as Array;
+    hidden var _lbx = [0, 0, 0] as Array;
+    hidden var _lby = [0, 0, 0] as Array;
+    hidden var _lbw = [0, 0, 0] as Array;
+    hidden var _lbi = [0, 0, 0] as Array;
     // per-frame (intro-animated) positions
     hidden var _rx as Array;
     hidden var _ry as Array;
@@ -120,12 +131,17 @@ class FaceSterne extends Face {
     hidden var _arh = null;
     hidden var _as = null;
     hidden var _af = null;
+    hidden var _trx = null;
+    hidden var _trb = null;
+    hidden var _trw = null;
+    hidden var _trh = null;
     hidden var _ap as Array;
     hidden var _apk = -1.0;
     hidden var _apb = -1;
+    // reusable polygon buffers
     hidden var _lake = null;
-    hidden var _trees = null;
-    hidden var _near = null;
+    hidden var _tri = null;
+    hidden var _pb = null;
     hidden var _fps = 8;
     hidden var _px = 0.0;
     hidden var _py = 0.0;
@@ -138,7 +154,6 @@ class FaceSterne extends Face {
         var ns = ST.size();
         var nm = MW.size();
         _mag = new [ns];
-        _sra = new [ns];
         _sde = new [ns];
         _cde = new [ns];
         _sx = new [ns];
@@ -146,16 +161,15 @@ class FaceSterne extends Face {
         _su = new [ns];
         _rx = new [ns];
         _ry = new [ns];
-        _sc = new [ns];
-        _sf = new [ns];
+        _sci = new [ns];
+        _sff = new [ns];
         for (var i = 0; i < ns; i++) {
             var v = ST[i];
             _mag[i] = ((v >> 2) & 127) / 10.0 - 2;
-            _sra[i] = (v >> 20) * 0.375;
             var de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
             _sde[i] = Math.sin(de);
             _cde[i] = Math.cos(de);
-            _sx[i] = 0.0; _sy[i] = 0.0; _su[i] = 0.0; _rx[i] = 0.0; _ry[i] = 0.0; _sc[i] = -1; _sf[i] = 0.0;
+            _sx[i] = 0.0; _sy[i] = 0.0; _su[i] = -1.0; _rx[i] = 0.0; _ry[i] = 0.0; _sci[i] = -1; _sff[i] = 0.0;
         }
         _wx = new [nm];
         _wy = new [nm];
@@ -164,6 +178,7 @@ class FaceSterne extends Face {
         for (var i = 0; i < nm; i++) {
             _wx[i] = 0.0; _wy[i] = 0.0; _wu[i] = 0.0; _mwc[i] = 0; _mwc[nm + i] = 0;
         }
+        _spal = new [64];
         _ap = new [64];
     }
 
@@ -220,49 +235,87 @@ class FaceSterne extends Face {
         return st == 2 ? 192 : 196;
     }
 
-    hidden function sky(d as D, st) as Void {
+    // Sky for the current minute: sun, moon and Milky Way at once, the stars in rolling chunks
+    // (all of them when `all`). _c0/_cl = the stars re-projected in this call.
+    hidden function sky(d as D, st, all) as Void {
         var R = radius(st);
         var key = ((d.year % 10) * 400 + d.doy) * 5760 + d.mins * 4 + st;
-        if (key == _K) {
+        var ns = ST.size();
+        _cl = 0;
+        if (key != _kc) {
+            if (_kc == -1 || (_kc & 3) != (key & 3)) {
+                all = true;
+            }
+            _kc = key;
+            _cnt = 0;
+            var lat = d.locOk ? d.lat : 52.52;
+            var lon = d.locOk ? d.lon : 13.4;
+            _sp = Math.sin(lat * RAD);
+            _cp = Math.cos(lat * RAD);
+            var sec = d.unix - 946728000;
+            var nd = sec / 86400;
+            if (sec < 0 && nd * 86400 != sec) {
+                nd -= 1;
+            }
+            var fr = (sec - nd * 86400) / 86400.0;
+            _lst = wrap(280.46061837 + 0.98564736629 * nd + 360.98564736629 * fr + lon);
+            var nm = MW.size();
+            for (var i = 0; i < nm; i++) {
+                var v = MW[i];
+                var de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
+                proj(_lst - (v >> 20) * 0.375, Math.sin(de), Math.cos(de), st, R);
+                _wx[i] = _px; _wy[i] = _py; _wu[i] = _pu;
+            }
+            var n = nd + fr;
+            // sun (low precision ephemeris)
+            var g = wrap(357.528 + 0.9856003 * n);
+            var ls = wrap(280.46 + 0.9856474 * n) + 1.915 * Math.sin(g * RAD) + 0.02 * Math.sin(2 * g * RAD);
+            projEcl(ls, 0, _lst, st, R);
+            _sunX = _px; _sunY = _py; _sunU = _pu;
+            _el = Math.asin(G.clamp(_pu, -1.0, 1.0)) / RAD;
+            // moon (main periodic terms)
+            var l0 = wrap(218.316 + 13.176396 * n);
+            var mm = wrap(134.963 + 13.064993 * n);
+            var ff = wrap(93.272 + 13.22935 * n);
+            projEcl(l0 + 6.289 * Math.sin(mm * RAD), 5.128 * Math.sin(ff * RAD), _lst, st, R);
+            _moX = _px; _moY = _py; _moU = _pu;
+        }
+        if (_cnt >= ns) {
             return;
         }
-        _K = key;
-        var lat = d.locOk ? d.lat : 52.52;
-        var lon = d.locOk ? d.lon : 13.4;
-        _sp = Math.sin(lat * RAD);
-        _cp = Math.cos(lat * RAD);
-        var sec = d.unix - 946728000;
-        var nd = sec / 86400;
-        if (sec < 0 && nd * 86400 != sec) {
-            nd -= 1;
+        var cnt = all ? ns - _cnt : (ns - _cnt < CHUNK ? ns - _cnt : CHUNK);
+        _c0 = _ptr;
+        _cl = cnt;
+        var lst = _lst;
+        var sp = _sp;
+        var cp = _cp;
+        for (var k = 0; k < cnt; k++) {
+            var i = _ptr;
+            var h = (lst - (ST[i] >> 20) * 0.375) * RAD;
+            var sh = Math.sin(h);
+            var ch = Math.cos(h);
+            var sd = _sde[i];
+            var cd = _cde[i];
+            var e = -cd * sh;
+            var n = cp * sd - sp * cd * ch;
+            var u = sp * sd + cp * cd * ch;
+            if (st == 3) {
+                var dd = n * CH3 + u * SH3;
+                var kk = K3 / (dd > -0.9 ? 1 + dd : 0.1);
+                _sx[i] = CX + kk * e;
+                _sy[i] = CY3 - kk * (u * CH3 - n * SH3);
+            } else {
+                var kk = R / (u > -0.95 ? 1 + u : 0.05);
+                _sx[i] = CX - kk * e;
+                _sy[i] = CX - kk * n;
+            }
+            _su[i] = u;
+            _ptr = _ptr + 1 >= ns ? 0 : _ptr + 1;
         }
-        var fr = (sec - nd * 86400) / 86400.0;
-        var lst = wrap(280.46061837 + 0.98564736629 * nd + 360.98564736629 * fr + lon);
-        var ns = ST.size();
-        for (var i = 0; i < ns; i++) {
-            proj(lst - _sra[i], _sde[i], _cde[i], st, R);
-            _sx[i] = _px; _sy[i] = _py; _su[i] = _pu;
+        _cnt += cnt;
+        if (_cnt >= ns) {
+            _kd = _kc;
         }
-        var nm = MW.size();
-        for (var i = 0; i < nm; i++) {
-            var v = MW[i];
-            var de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
-            proj(lst - (v >> 20) * 0.375, Math.sin(de), Math.cos(de), st, R);
-            _wx[i] = _px; _wy[i] = _py; _wu[i] = _pu;
-        }
-        var n = nd + fr;
-        // sun (low precision ephemeris)
-        var g = wrap(357.528 + 0.9856003 * n);
-        var ls = wrap(280.46 + 0.9856474 * n) + 1.915 * Math.sin(g * RAD) + 0.02 * Math.sin(2 * g * RAD);
-        projEcl(ls, 0, lst, st, R);
-        _sunX = _px; _sunY = _py; _sunU = _pu;
-        _el = Math.asin(G.clamp(_pu, -1.0, 1.0)) / RAD;
-        // moon (main periodic terms)
-        var l0 = wrap(218.316 + 13.176396 * n);
-        var mm = wrap(134.963 + 13.064993 * n);
-        var ff = wrap(93.272 + 13.22935 * n);
-        projEcl(l0 + 6.289 * Math.sin(mm * RAD), 5.128 * Math.sin(ff * RAD), lst, st, R);
-        _moX = _px; _moY = _py; _moU = _pu;
     }
 
     hidden function hy(x) {
@@ -271,37 +324,19 @@ class FaceSterne extends Face {
         return _hz[j] + (_hz[j + 1] - _hz[j]) * (f - j);
     }
 
-    // spruce outline with n drooping branch tiers (base centre x, b; half width w; height h)
-    hidden function pinePts(x, b, w, h, n) as Array {
-        var pts = new [4 * n + 1];
-        for (var k = 0; k < n; k++) {
-            var yk = b - (h * k * 0.9) / n;
-            var wk = w * (1 - k / n.toFloat());
-            var yn = yk - (h * 0.5) / n;
-            pts[k * 2] = [x - wk, yk];
-            pts[k * 2 + 1] = [x - wk * 0.32, yn];
-            pts[4 * n - k * 2] = [x + wk, yk];
-            pts[4 * n - k * 2 - 1] = [x + wk * 0.32, yn];
-        }
-        pts[2 * n] = [x, b - h];
-        return pts;
-    }
-
-    // style 3: horizon table, aurora ray geometry and landscape polygons (static, built once)
+    // style 3: horizon table, aurora ray geometry and far trees (static, built once)
     hidden function panoInit() as Void {
         if (_hz != null) {
             return;
         }
         var hz = new [58];
+        // horizon (alt 0) point for screen x: solve K3 sin a - X CH3 cos a = X for the azimuth a
         for (var j = 0; j < 58; j++) {
-            hz[j] = CY3.toFloat();
-        }
-        for (var az = -100; az <= 100; az++) {
-            projA(az, 0, 3, 0);
-            var j = Math.floor(_px / 8.0 + 0.5).toNumber();
-            if (j >= 0 && j < 58) {
-                hz[j] = _py;
-            }
+            var X = j * 8 - CX;
+            var rr = Math.sqrt(K3 * K3 + X * X * CH3 * CH3);
+            var az = Math.atan2(X * CH3, K3) + Math.asin(G.clamp(X / rr, -1.0, 1.0));
+            var k = K3 / (1 + Math.cos(az) * CH3);
+            hz[j] = CY3 + k * Math.cos(az) * SH3;
         }
         _hz = hz;
         _abx = new [NA];
@@ -312,7 +347,7 @@ class FaceSterne extends Face {
         _as = new [NA];
         _af = new [NA];
         for (var i = 0; i < NA; i++) {
-            var az = -77.4 + i * 3.6;
+            var az = -77 + i * 4.4;
             projA(az, 4, 3, 0);
             _abx[i] = _px; _aby[i] = _py;
             projA(az, 14, 3, 0);
@@ -322,43 +357,45 @@ class FaceSterne extends Face {
             _as[i] = 0.0;
             _af[i] = 0.0;
         }
-        // lake below the horizon
-        var lk = new [32];
-        for (var j = 0; j < 29; j++) {
-            lk[j] = [j * 16, _hz[j * 2]];
-        }
-        lk[29] = [456, _hz[57]];
-        lk[30] = [456, 456];
-        lk[31] = [0, 456];
-        _lake = lk;
-        // far shore: four polygons of ten trees each, standing on a 4 px shore strip
-        var trees = new [4];
+        _trx = new [NT];
+        _trb = new [NT];
+        _trw = new [NT];
+        _trh = new [NT];
         var s = 4242;
-        for (var g = 0; g < 4; g++) {
-            var pts = new [32];
-            var x0 = 0;
-            var x1 = 0;
-            for (var i = 0; i < 10; i++) {
-                s = G.rnd(s);
-                var x = 4 + (g * 10 + i) * 11.4 + (s % 6);
-                var h = 10 + (s % 23) + ((x - CX).abs() > 150 ? 8 : 0);
-                var w = 5 + (s % 3);
-                var b = hy(x) + 1;
-                if (i == 0) {
-                    x0 = g == 0 ? -2 : x - w;
-                }
-                x1 = (g == 3 && i == 9) ? 456 : x + w;
-                pts[i * 3] = [x - w, b];
-                pts[i * 3 + 1] = [x, b - h];
-                pts[i * 3 + 2] = [x + w, b];
-            }
-            pts[30] = [x1, hy(x1) + 4];
-            pts[31] = [x0, hy(x0) + 4];
-            trees[g] = pts;
+        for (var i = 0; i < NT; i++) {
+            s = G.rnd(s);
+            var x = 4 + i * 15.2 + (s % 7);
+            _trx[i] = x;
+            _trh[i] = 12 + (s % 24) + ((x - CX).abs() > 150 ? 8 : 0);
+            _trw[i] = 6 + (s % 3);
+            _trb[i] = hy(x) + 1;
         }
-        _trees = trees;
-        // near spruces framing the view
-        _near = [pinePts(30, 430, 58, 270, 7), pinePts(78, 450, 34, 190, 5), pinePts(424, 430, 58, 280, 7), pinePts(380, 452, 32, 170, 5)];
+        _lake = new [32];
+        for (var j = 0; j < 32; j++) {
+            _lake[j] = [0, 0];
+        }
+        _tri = [[0, 0], [0, 0], [0, 0]];
+        _pb = new [29];
+        for (var j = 0; j < 29; j++) {
+            _pb[j] = [0, 0];
+        }
+    }
+
+    // spruce with n drooping branch tiers into the reusable buffer (base centre x, b; half width w; height h)
+    hidden function pine(dc as Dc, x, b, w, h, n) as Void {
+        var pb = _pb;
+        for (var k = 0; k < n; k++) {
+            var yk = b - (h * k * 0.9) / n;
+            var wk = w * (1 - k / n.toFloat());
+            var yn = yk - (h * 0.5) / n;
+            pb[k * 2][0] = x - wk; pb[k * 2][1] = yk;
+            pb[k * 2 + 1][0] = x - wk * 0.32; pb[k * 2 + 1][1] = yn;
+            pb[4 * n - k * 2][0] = x + wk; pb[4 * n - k * 2][1] = yk;
+            pb[4 * n - k * 2 - 1][0] = x + wk * 0.32; pb[4 * n - k * 2 - 1][1] = yn;
+        }
+        pb[2 * n][0] = x;
+        pb[2 * n][1] = b - h;
+        dc.fillPolygon(n == 7 ? pb : pb.slice(0, 4 * n + 1));
     }
 
     // sky colours [zenith, horizon] for a sun elevation and style
@@ -434,72 +471,31 @@ class FaceSterne extends Face {
         return y >= 262 && y < 318 && x > 72 && x < 382;
     }
 
-    // brightness factor of star i at intro threshold thr (0 = not drawn)
-    hidden function starF(st, i, x, y, thr, vis, tw) {
-        var mag = _mag[i];
-        if (mag > thr) {
-            return 0.0;
-        }
-        var f = G.clamp(thr - mag, 0.0, 1.0) * vis * G.clamp(1.25 - mag * 0.13, 0.45, 1.0);
-        if (_su[i] < 0.12) {
-            f = f * (0.45 + _su[i] * 4.5);
-        }
-        if (under(st, x, y, tw)) {
-            f = f * 0.55;
-        }
-        return f;
-    }
-
-    // one star in colour c (already mixed into the sky colour bg)
-    hidden function star(dc as Dc, st, x, y, mag, c, bg) as Void {
-        dc.setColor(c, -1);
-        if (st == 2) {
-            // printed chart: ink dots sized by magnitude
-            var r = 4.4 - mag * 0.75;
-            if (r >= 2.2) {
-                dc.fillCircle(x, y, r);
-            } else {
-                var s = r >= 1.5 ? 3 : 2;
-                dc.fillRectangle(x - 1, y - 1, s, s);
-            }
-        } else if (mag < 0.6) {
-            dc.setColor(G.mix(bg, c, 0.22), -1);
+    // a bright star (mag < 1.6) from palette entry pi = class * 16 + level
+    hidden function star(dc as Dc, x, y, mag, pi) as Void {
+        var q = pi % 16;
+        var b = pi - q;
+        if (mag < 0.6) {
+            dc.setColor(_spal[b + (q * 0.22 + 0.5).toNumber()], -1);
             dc.fillCircle(x, y, 7);
-            dc.setColor(G.mix(bg, c, 0.5), -1);
+            dc.setColor(_spal[b + (q * 0.5 + 0.5).toNumber()], -1);
             dc.fillRectangle(x - 9, y, 19, 1);
             dc.fillRectangle(x, y - 9, 1, 19);
-            dc.setColor(c, -1);
+            dc.setColor(_spal[pi], -1);
             dc.fillCircle(x, y, 3.2);
-        } else if (mag < 1.6) {
-            dc.setColor(G.mix(bg, c, 0.4), -1);
+        } else {
+            dc.setColor(_spal[b + (q * 0.4 + 0.5).toNumber()], -1);
             dc.fillRectangle(x - 4, y, 9, 1);
             dc.fillRectangle(x, y - 4, 1, 9);
-            dc.setColor(c, -1);
+            dc.setColor(_spal[pi], -1);
             dc.fillCircle(x, y, 2.4);
-        } else if (mag < 2.6) {
-            dc.fillRectangle(x - 1, y - 1, 3, 3);
-        } else {
-            dc.fillRectangle(x - 1, y - 1, 2, 2);
         }
     }
 
-    hidden function starCol(st, i, f, bg) as Number {
-        return G.mix(bg, st == 2 ? INK : STAR_COL[ST[i] & 3], f);
-    }
-
-    hidden function mwCol(st, pass, i, bg, k) as Number {
-        var nm = MW.size();
-        var w = ((MW[i] & 511) + (MW[(i + 1) % nm] & 511)) / 200.0;
-        if (st == 2) {
-            return G.mix(bg, 0xCFCFC4, (pass == 0 ? 0.5 : 0.85) * w * k);
-        }
-        return G.mix(bg, st == 3 ? 0x24343E : 0x2A3658, (pass == 0 ? 0.45 : 0.7) * w * k);
-    }
-
-    // constellation labels for the resting sky: below each figure, no overlaps, max 4
+    // constellation labels for the resting sky: below each figure, no overlaps, max 3
     hidden function labels(st, R, tw) as Void {
         _nlb = 0;
-        for (var c = 0; c < CN.size() && _nlb < 4; c++) {
+        for (var c = 0; c < CN.size() && _nlb < 3; c++) {
             var nmc = CN[c] as String;
             if (nmc.length() == 0) {
                 continue;
@@ -566,10 +562,10 @@ class FaceSterne extends Face {
         return G.clamp(0.42 + 0.7 * G.noise(az * 0.045 + t * 0.00032), 0.04, 1.0) * e;
     }
 
-    // aurora over the northern horizon (style 3): dense rays from bright green (low) to violet (high).
+    // aurora over the northern horizon (style 3): rays from bright green (low) to violet (high).
     // refl: mirror image in the lake (dimmer, broken by ripples), reuses the main pass' rays
     hidden function aurora(dc as Dc, t, k, refl) as Void {
-        dc.setPenWidth(refl ? 4 : 6);
+        dc.setPenWidth(refl ? 5 : 8);
         var o = refl ? 32 : 0;
         for (var i = 0; i < NA; i++) {
             var s;
@@ -578,8 +574,8 @@ class FaceSterne extends Face {
                 s = _as[i];
                 fine = _af[i];
             } else {
-                s = auS(-77.4 + i * 3.6, t);
-                fine = 0.62 + 0.38 * G.noise(i * 1.09 + t * 0.0013);
+                s = auS(-77 + i * 4.4, t);
+                fine = 0.62 + 0.38 * G.noise(i * 1.41 + t * 0.0013);
                 _as[i] = s;
                 _af[i] = fine;
             }
@@ -593,12 +589,11 @@ class FaceSterne extends Face {
             var ux = _aux[i] * L;
             var uy = _auy[i] * L;
             if (refl) {
-                var h2 = _arh[i];
-                for (var j = 0; j < 3; j++) {
-                    var y0 = h2 - (by + uy * j * 0.2) + 6 + j * 3;
-                    dc.setColor(_ap[j * 8 + q], -1);
-                    dc.drawLine(bx + ux * j * 0.2, y0, bx + ux * (j * 0.2 + 0.12), y0 - uy * 0.12);
-                }
+                var yr = _arh[i] - by + 6;
+                dc.setColor(_ap[q], -1);
+                dc.drawLine(bx, yr, bx + ux * 0.12, yr - uy * 0.12);
+                dc.setColor(_ap[8 + q], -1);
+                dc.drawLine(bx + ux * 0.2, yr - uy * 0.2 + 3, bx + ux * 0.32, yr - uy * 0.32 + 3);
                 continue;
             }
             var x0 = bx;
@@ -623,7 +618,7 @@ class FaceSterne extends Face {
         if (st == 3) {
             panoInit();
         }
-        sky(d, st);
+        sky(d, st, false);
         var EL = _el;
         var dark = G.clamp((-EL - 2) / 12.0, 0.0, 1.0);
         var sc = skyCols(st, EL);
@@ -639,22 +634,49 @@ class FaceSterne extends Face {
         var th = st == 3 ? 76 : 84;
         var tw = F.stW(ts, th) / 2 + 14;
         var vis = st == 2 ? 1.0 : 0.16 + 0.84 * dark;
-        var mwk = (st == 2 ? 1 : dark) * e;
         var ns = ST.size();
         var nm = MW.size();
 
-        // ---- resting frame: colours + labels once per minute
-        if (rest && _PK != _K) {
-            _PK = _K;
-            for (var i = 0; i < ns; i++) {
-                var f = _su[i] > 0 ? starF(st, i, _sx[i], _sy[i], 6, vis, tw) : 0.0;
-                _sf[i] = f;
-                _sc[i] = f > 0.02 ? starCol(st, i, f, bg) : -1;
+        // ---- paint state: palettes when the sky colour changes, star levels for the re-projected chunk
+        if (_spb != bg * 4 + st) {
+            _spb = bg * 4 + st;
+            for (var c = 0; c < 4; c++) {
+                var x = st == 2 ? INK : STAR_COL[c];
+                for (var q = 0; q < 16; q++) {
+                    _spal[c * 16 + q] = G.mix(bg, x, q / 15.0);
+                }
             }
+            var mwk = st == 2 ? 1 : dark;
             for (var i = 0; i < nm; i++) {
-                _mwc[i] = mwCol(st, 0, i, bg, mwk);
-                _mwc[nm + i] = mwCol(st, 1, i, bg, mwk);
+                var w = ((MW[i] & 511) + (MW[(i + 1) % nm] & 511)) / 200.0;
+                if (st == 2) {
+                    _mwc[i] = G.mix(bg, 0xCFCFC4, 0.5 * w * mwk);
+                    _mwc[nm + i] = G.mix(bg, 0xCFCFC4, 0.85 * w * mwk);
+                } else {
+                    var x = st == 3 ? 0x24343E : 0x2A3658;
+                    _mwc[i] = G.mix(bg, x, 0.45 * w * mwk);
+                    _mwc[nm + i] = G.mix(bg, x, 0.7 * w * mwk);
+                }
             }
+        }
+        for (var k = 0; k < _cl; k++) {
+            var i = (_c0 + k) % ns;
+            var f = 0.0;
+            if (_su[i] > 0) {
+                f = vis * G.clamp(1.25 - _mag[i] * 0.13, 0.45, 1.0);
+                if (_su[i] < 0.12) {
+                    f = f * (0.45 + _su[i] * 4.5);
+                }
+                if (under(st, _sx[i], _sy[i], tw)) {
+                    f = f * 0.55;
+                }
+            }
+            _sff[i] = f;
+            var q = (f * 15 + 0.5).toNumber();
+            _sci[i] = q > 0 ? (ST[i] & 3) * 16 + q : -1;
+        }
+        if (rest && _lk != _kd) {
+            _lk = _kd;
             labels(st, R, tw);
         }
 
@@ -726,30 +748,24 @@ class FaceSterne extends Face {
         }
 
         // ---- Milky Way
-        if (mwk > 0.05) {
+        if (st == 2 || dark > 0.05) {
             for (var pass = 0; pass < 2; pass++) {
                 dc.setPenWidth(pass == 0 ? 30 : 12);
                 for (var i = 0; i < nm; i++) {
-                    var j = (i + 1) % nm;
+                    var j = i + 1 < nm ? i + 1 : 0;
                     if (_wu[i] < -0.2 || _wu[j] < -0.2) {
                         continue;
                     }
-                    dc.setColor(rest ? _mwc[pass * nm + i] : mwCol(st, pass, i, bg, mwk), -1);
-                    var x0 = _wx[i];
-                    var y0 = _wy[i] + lift;
-                    var x1 = _wx[j];
-                    var y1 = _wy[j] + lift;
-                    if (!rest && st != 3) {
-                        var ax = x0 - CX;
-                        var ay = y0 - CX;
-                        var bx = x1 - CX;
-                        var by = y1 - CX;
-                        x0 = CX + ax * cr - ay * sr;
-                        y0 = CX + ax * sr + ay * cr;
-                        x1 = CX + bx * cr - by * sr;
-                        y1 = CX + bx * sr + by * cr;
+                    dc.setColor(_mwc[pass * nm + i], -1);
+                    if (rest || st == 3) {
+                        dc.drawLine(_wx[i], _wy[i] + lift, _wx[j], _wy[j] + lift);
+                    } else {
+                        var ax = _wx[i] - CX;
+                        var ay = _wy[i] - CX;
+                        var bx = _wx[j] - CX;
+                        var by = _wy[j] - CX;
+                        dc.drawLine(CX + ax * cr - ay * sr, CX + ax * sr + ay * cr, CX + bx * cr - by * sr, CX + bx * sr + by * cr);
                     }
-                    dc.drawLine(x0, y0, x1, y1);
                 }
             }
         }
@@ -798,40 +814,58 @@ class FaceSterne extends Face {
                 if (_su[sa] <= 0 || _su[sb] <= 0) {
                     continue;
                 }
-                var x0 = rx[sa];
-                var y0 = ry[sa];
-                dc.drawLine(x0, y0, x0 + (rx[sb] - x0) * lp, y0 + (ry[sb] - y0) * lp);
+                if (rest) {
+                    dc.drawLine(rx[sa], ry[sa], rx[sb], ry[sb]);
+                } else {
+                    dc.drawLine(rx[sa], ry[sa], rx[sa] + (rx[sb] - rx[sa]) * lp, ry[sa] + (ry[sb] - ry[sa]) * lp);
+                }
             }
         }
 
-        // ---- stars (brightest first during the intro; twinkling when awake)
+        // ---- stars (brightest first during the intro; the bright ones twinkle while awake)
         var thr = -1.5 + 7.5 * G.ease(p * 1.3);
-        var tw2 = st != 2 && a.live && rest;
+        var twk = st != 2 && a.live && rest;
         for (var i = 0; i < ns; i++) {
-            if (_su[i] <= 0) {
+            var pi = _sci[i];
+            if (pi < 0 || _su[i] <= 0) {
                 continue;
             }
-            var c;
-            if (rest) {
-                c = _sc[i];
-                if (c == -1) {
+            var mag = _mag[i];
+            if (!rest) {
+                if (mag > thr) {
                     continue;
                 }
-                if (tw2 && _mag[i] < 2) {
-                    c = starCol(st, i, _sf[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)), bg);
-                }
-            } else {
-                var f = starF(st, i, rx[i], ry[i], thr, vis, tw);
-                if (f <= 0.02) {
+                var q = (_sff[i] * G.clamp(thr - mag, 0.0, 1.0) * 15 + 0.5).toNumber();
+                if (q <= 0) {
                     continue;
                 }
-                c = starCol(st, i, f, bg);
+                pi = (ST[i] & 3) * 16 + q;
+            } else if (twk && mag < 2) {
+                pi = (ST[i] & 3) * 16 + (_sff[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)) * 15 + 0.5).toNumber();
             }
-            star(dc, st, rx[i], ry[i], _mag[i], c, bg);
+            if (st != 2 && mag < 1.6) {
+                star(dc, rx[i], ry[i], mag, pi);
+            } else {
+                dc.setColor(_spal[pi], -1);
+                if (st == 2) {
+                    // ink dots sized by magnitude (small ones as two crossed rectangles: round and cheap)
+                    var r = 4.4 - mag * 0.75;
+                    if (r >= 3) {
+                        dc.fillCircle(rx[i], ry[i], r);
+                    } else if (r >= 2.2) {
+                        dc.fillRectangle(rx[i] - 2, ry[i] - 1, 5, 3);
+                        dc.fillRectangle(rx[i] - 1, ry[i] - 2, 3, 5);
+                    } else {
+                        dc.fillRectangle(rx[i] - 1, ry[i] - 1, r >= 1.5 ? 3 : 2, r >= 1.5 ? 3 : 2);
+                    }
+                } else {
+                    dc.fillRectangle(rx[i] - 1, ry[i] - 1, mag < 2.6 ? 3 : 2, mag < 2.6 ? 3 : 2);
+                }
+            }
         }
         // Pleiades (star 48 = Alcyone)
         if (_su[48] > 0 && thr > 3) {
-            dc.setColor(G.mix(bg, st == 2 ? INK : 0xCFE0FF, (st == 2 ? 0.7 : 0.6) * vis), -1);
+            dc.setColor(_spal[(10 * vis).toNumber()], -1);
             dc.fillRectangle(rx[48] - 5, ry[48] - 3, 2, 2);
             dc.fillRectangle(rx[48] + 3, ry[48] - 4, 2, 2);
             dc.fillRectangle(rx[48] - 3, ry[48] + 3, 2, 2);
@@ -931,8 +965,23 @@ class FaceSterne extends Face {
         // ---- landscape (3) / rim with compass (1, 2)
         var day = EL > 0;
         if (st == 3) {
+            // lake: shore strip (offset copy of the water polygon), water, depth bands
+            var lk = _lake;
+            for (var j = 0; j < 29; j++) {
+                lk[j][0] = j * 16;
+                lk[j][1] = _hz[j * 2] - 1;
+            }
+            lk[29][0] = 456; lk[29][1] = _hz[57] - 1;
+            lk[30][0] = 456; lk[30][1] = 456;
+            lk[31][0] = 0; lk[31][1] = 456;
+            var tc = G.mix(0x010302, 0x10261E, G.clamp((EL + 6) / 12.0, 0.0, 1.0));
+            dc.setColor(tc, -1);
+            dc.fillPolygon(lk);
+            for (var j = 0; j < 30; j++) {
+                lk[j][1] = lk[j][1] + 5;
+            }
             dc.setColor(wt, -1);
-            dc.fillPolygon(_lake);
+            dc.fillPolygon(lk);
             var lb = G.mix(zen, 0x000000, 0.7);
             for (var k = 0; k < 8; k++) {
                 dc.setColor(G.mix(wt, lb, (k + 1) / 8.0), -1);
@@ -950,14 +999,24 @@ class FaceSterne extends Face {
                     dc.fillRectangle(mx - w / 2, h0 + 8 + k * 9, w, 2);
                 }
             }
-            dc.setColor(G.mix(0x010302, 0x10261E, G.clamp((EL + 6) / 12.0, 0.0, 1.0)), -1);
-            for (var k = 0; k < 4; k++) {
-                dc.fillPolygon(_trees[k]);
+            // far shore forest
+            dc.setColor(tc, -1);
+            var tri = _tri;
+            for (var i = 0; i < NT; i++) {
+                var x = _trx[i];
+                var b = _trb[i];
+                var w = _trw[i];
+                tri[0][0] = x - w; tri[0][1] = b;
+                tri[1][0] = x; tri[1][1] = b - _trh[i];
+                tri[2][0] = x + w; tri[2][1] = b;
+                dc.fillPolygon(tri);
             }
+            // near spruces framing the view
             dc.setColor(0x000000, -1);
-            for (var k = 0; k < 4; k++) {
-                dc.fillPolygon(_near[k]);
-            }
+            pine(dc, 30, 430, 58, 270, 7);
+            pine(dc, 78, 450, 34, 190, 5);
+            pine(dc, 424, 430, 58, 280, 7);
+            pine(dc, 380, 452, 32, 170, 5);
             dc.setColor(G.mix(wt, 0x8FD8C0, 0.5), -1);
             F.px(dc, "N", CX, hy(CX) + 10, 2, 1, 0);
             F.px(dc, "NW", 101, hy(101) + 10, 2, 1, 0);
@@ -972,18 +1031,18 @@ class FaceSterne extends Face {
             dc.setPenWidth(st == 2 ? 2 : 1);
             dc.drawCircle(CX, CX, R + 1);
             dc.setPenWidth(1);
-            // azimuth scale every 5° (unit vector rotated step by step, no trig per tick)
-            var c5 = Math.cos(5 * RAD);
-            var s5 = Math.sin(5 * RAD);
+            // azimuth scale every 10° (unit vector rotated step by step, no trig per tick)
+            var c10 = 0.98480775;
+            var s10 = 0.17364818;
             var ux = 0.0;
             var uy = -1.0;
-            for (var k = 0; k < 72; k++) {
-                if (k % 18 != 0) {
-                    var r2 = R + (k % 6 == 0 ? 11 : 6);
+            for (var k = 0; k < 36; k++) {
+                if (k % 9 != 0) {
+                    var r2 = R + (k % 3 == 0 ? 11 : 6);
                     dc.drawLine(CX + ux * (R + 3), CX + uy * (R + 3), CX + ux * r2, CX + uy * r2);
                 }
-                var nx = ux * c5 - uy * s5;
-                uy = uy * c5 + ux * s5;
+                var nx = ux * c10 - uy * s10;
+                uy = uy * c10 + ux * s10;
                 ux = nx;
             }
             // seconds pointer on the printed chart's cover
@@ -1033,7 +1092,7 @@ class FaceSterne extends Face {
         if (st == 3) {
             panoInit();
         }
-        sky(d, st);
+        sky(d, st, true);
         var hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
         var ts = hh + ":" + G.pad2(d.m);
         var th = st == 3 ? 76 : 84;

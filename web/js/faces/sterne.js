@@ -66,44 +66,52 @@ const INK = 0x1b2238;
 const PAPER = 0xece3cb;
 // style 3 panorama: looking north, view centre 15° above the horizon
 const SH3 = 0.258819, CH3 = 0.9659258, K3 = 300, CY3 = 255;
-const NA = 44; // aurora rays
-const NT = 40; // far shore trees
+const NA = 36; // aurora rays
+const NT = 30; // far shore trees
+const CHUNK = 40; // stars re-projected per frame (rolling update, see sky())
 const AUC = [0x86ffc0, 0x3ee69a, 0x179a78, 0x6a40c0];
 const AUA = [1.0, 0.86, 0.62, 0.46];
 
-// ---- catalogue, decoded once: magnitude, right ascension (deg), sin/cos declination
-const MAG = [], SRA = [], SDE = [], CDE = [];
+// ---- catalogue, decoded once: magnitude, sin/cos declination
+const MAG = [], SDE = [], CDE = [];
 for (let i = 0; i < NS; i++) {
   const v = ST[i];
   MAG.push(((v >> 2) & 127) / 10.0 - 2);
-  SRA.push((v >> 20) * 0.375);
   const de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
   SDE.push(Math.sin(de));
   CDE.push(Math.cos(de));
 }
 
-// ---- per-minute sky cache (screen positions of the resting sky)
-let K = -1;
-const SX = new Array(NS).fill(0), SY = new Array(NS).fill(0), SU = new Array(NS).fill(0);
+// ---- sky state. Star positions are re-projected in rolling chunks of CHUNK stars per frame
+// whenever the minute (or style) changes, so no single frame does the whole catalogue.
+let KC = -1, KD = -1, PTR = 0, CNT = 0, C0 = 0, CL = 0, LST = 0;
+const SX = new Array(NS).fill(0), SY = new Array(NS).fill(0), SU = new Array(NS).fill(-1);
 const WX = new Array(NM).fill(0), WY = new Array(NM).fill(0), WU = new Array(NM).fill(0);
 let SUNX = 0, SUNY = 0, SUNU = 0, MOX = 0, MOY = 0, MOU = 0, EL = 0;
-// ---- per-minute paint cache for the resting frame (intro finished): star colours,
-// Milky Way colours, constellation label positions
-let PK = -1;
-const SC = new Array(NS).fill(-1), SF = new Array(NS).fill(0);
+// ---- paint state: star palette (4 colour classes x 16 levels on the sky colour), per-star
+// palette index + brightness, Milky Way colours, constellation labels
+const SPAL = new Array(64).fill(0);
+let SPB = -1;
+const SCI = new Array(NS).fill(-1), SFF = new Array(NS).fill(0);
 const MWC = new Array(NM * 2).fill(0);
-let NLB = 0;
-const LBX = [0, 0, 0, 0], LBY = [0, 0, 0, 0], LBW = [0, 0, 0, 0], LBI = [0, 0, 0, 0];
+let LK = -2, NLB = 0;
+const LBX = [0, 0, 0], LBY = [0, 0, 0], LBW = [0, 0, 0], LBI = [0, 0, 0];
 // per-frame (intro-animated) positions
 const RX = new Array(NS).fill(0), RY = new Array(NS).fill(0);
-// style 3 static geometry (built once): horizon y every 8 px, aurora rays, landscape polygons
+// style 3 static geometry (built once): horizon y every 8 px, aurora rays, far trees
 let HZ = null;
 const ABX = new Array(NA).fill(0), ABY = new Array(NA).fill(0), AUX = new Array(NA).fill(0), AUY = new Array(NA).fill(0);
 const ARH = new Array(NA).fill(0); // 2 x horizon y under each ray (mirror line)
 const AS = new Array(NA).fill(0), AF = new Array(NA).fill(0); // per-frame ray strength / shimmer
 const AP = new Array(64).fill(0); // aurora palettes: sky + lake, 4 bands x 8 levels
 let APK = -1, APB = -1;
-let LAKE = null, TREES = null, NEAR = null;
+const TRX = new Array(NT).fill(0), TRB = new Array(NT).fill(0), TRW = new Array(NT).fill(0), TRH = new Array(NT).fill(0);
+// reusable polygon buffers
+const LAKE = [];
+for (let j = 0; j < 32; j++) LAKE.push([0, 0]);
+const TRI = [[0, 0], [0, 0], [0, 0]];
+const PB = [];
+for (let j = 0; j < 29; j++) PB.push([0, 0]);
 let FPS = 8;
 let px = 0, py = 0, pu = 0;
 let sp = 0, cp = 1;
@@ -150,42 +158,68 @@ function projEcl(lam, bet, lst, st, R) {
 
 function radius(st) { return st === 2 ? 192 : 196; }
 
-function sky(d, st) {
+// Sky for the current minute: sun, moon and Milky Way at once, the stars in rolling chunks
+// (all of them when `all`). C0/CL = the stars re-projected in this call.
+function sky(d, st, all) {
   const R = radius(st);
   const key = ((d.year % 10) * 400 + d.doy) * 5760 + d.mins * 4 + st;
-  if (key === K) return;
-  K = key;
-  const lat = d.locOk ? d.lat : 52.52;
-  const lon = d.locOk ? d.lon : 13.4;
-  sp = Math.sin(lat * RAD);
-  cp = Math.cos(lat * RAD);
-  const sec = d.unix - 946728000;
-  const nd = Math.floor(sec / 86400);
-  const fr = (sec - nd * 86400) / 86400.0;
-  const lst = wrap(280.46061837 + 0.98564736629 * nd + 360.98564736629 * fr + lon);
-  for (let i = 0; i < NS; i++) {
-    proj(lst - SRA[i], SDE[i], CDE[i], st, R);
-    SX[i] = px; SY[i] = py; SU[i] = pu;
+  CL = 0;
+  if (key !== KC) {
+    if (KC === -1 || (KC & 3) !== (key & 3)) all = true;
+    KC = key;
+    CNT = 0;
+    const lat = d.locOk ? d.lat : 52.52;
+    const lon = d.locOk ? d.lon : 13.4;
+    sp = Math.sin(lat * RAD);
+    cp = Math.cos(lat * RAD);
+    const sec = d.unix - 946728000;
+    const nd = Math.floor(sec / 86400);
+    const fr = (sec - nd * 86400) / 86400.0;
+    LST = wrap(280.46061837 + 0.98564736629 * nd + 360.98564736629 * fr + lon);
+    for (let i = 0; i < NM; i++) {
+      const v = MW[i];
+      const de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
+      proj(LST - (v >> 20) * 0.375, Math.sin(de), Math.cos(de), st, R);
+      WX[i] = px; WY[i] = py; WU[i] = pu;
+    }
+    const n = nd + fr;
+    // sun (low precision ephemeris)
+    const g = wrap(357.528 + 0.9856003 * n);
+    const ls = wrap(280.46 + 0.9856474 * n) + 1.915 * Math.sin(g * RAD) + 0.02 * Math.sin(2 * g * RAD);
+    projEcl(ls, 0, LST, st, R);
+    SUNX = px; SUNY = py; SUNU = pu;
+    EL = Math.asin(G.clamp(pu, -1, 1)) / RAD;
+    // moon (main periodic terms)
+    const l0 = wrap(218.316 + 13.176396 * n);
+    const mm = wrap(134.963 + 13.064993 * n);
+    const ff = wrap(93.272 + 13.22935 * n);
+    projEcl(l0 + 6.289 * Math.sin(mm * RAD), 5.128 * Math.sin(ff * RAD), LST, st, R);
+    MOX = px; MOY = py; MOU = pu;
   }
-  for (let i = 0; i < NM; i++) {
-    const v = MW[i];
-    const de = (((v >> 9) & 2047) / 10.0 - 90) * RAD;
-    proj(lst - (v >> 20) * 0.375, Math.sin(de), Math.cos(de), st, R);
-    WX[i] = px; WY[i] = py; WU[i] = pu;
+  if (CNT >= NS) return;
+  const cnt = all ? NS - CNT : Math.min(CHUNK, NS - CNT);
+  C0 = PTR;
+  CL = cnt;
+  for (let k = 0; k < cnt; k++) {
+    const i = PTR;
+    const h = (LST - (ST[i] >> 20) * 0.375) * RAD;
+    const sh = Math.sin(h), ch = Math.cos(h), sd = SDE[i], cd = CDE[i];
+    const e = -cd * sh, n = cp * sd - sp * cd * ch, u = sp * sd + cp * cd * ch;
+    if (st === 3) {
+      const dd = n * CH3 + u * SH3;
+      const kk = K3 / (dd > -0.9 ? 1 + dd : 0.1);
+      SX[i] = CX + kk * e;
+      SY[i] = CY3 - kk * (u * CH3 - n * SH3);
+    } else {
+      const kk = R / (u > -0.95 ? 1 + u : 0.05);
+      SX[i] = CX - kk * e;
+      SY[i] = CX - kk * n;
+    }
+    SU[i] = u;
+    PTR = PTR + 1 >= NS ? 0 : PTR + 1;
   }
-  const n = nd + fr;
-  // sun (low precision ephemeris)
-  const g = wrap(357.528 + 0.9856003 * n);
-  const ls = wrap(280.46 + 0.9856474 * n) + 1.915 * Math.sin(g * RAD) + 0.02 * Math.sin(2 * g * RAD);
-  projEcl(ls, 0, lst, st, R);
-  SUNX = px; SUNY = py; SUNU = pu;
-  EL = Math.asin(G.clamp(pu, -1, 1)) / RAD;
-  // moon (main periodic terms)
-  const l0 = wrap(218.316 + 13.176396 * n);
-  const mm = wrap(134.963 + 13.064993 * n);
-  const ff = wrap(93.272 + 13.22935 * n);
-  projEcl(l0 + 6.289 * Math.sin(mm * RAD), 5.128 * Math.sin(ff * RAD), lst, st, R);
-  MOX = px; MOY = py; MOU = pu;
+  CNT += cnt;
+  if (CNT >= NS) KD = KC;
 }
 
 function hy(x) {
@@ -194,70 +228,48 @@ function hy(x) {
   return HZ[j] + (HZ[j + 1] - HZ[j]) * (f - j);
 }
 
-// spruce outline with n drooping branch tiers (base centre x, b; half width w; height h)
-function pinePts(x, b, w, h, n) {
-  const pts = [];
-  for (let k = 0; k < n; k++) {
-    const yk = b - (h * k * 0.9) / n, wk = w * (1 - k / n);
-    pts.push([x - wk, yk]);
-    pts.push([x - wk * 0.32, yk - (h * 0.5) / n]);
-  }
-  pts.push([x, b - h]);
-  for (let k = n - 1; k >= 0; k--) {
-    const yk = b - (h * k * 0.9) / n, wk = w * (1 - k / n);
-    pts.push([x + wk * 0.32, yk - (h * 0.5) / n]);
-    pts.push([x + wk, yk]);
-  }
-  return pts;
-}
-
-// style 3: horizon table, aurora ray geometry and landscape polygons (static, built once)
+// style 3: horizon table, aurora ray geometry and far trees (static, built once)
 function panoInit() {
   if (HZ !== null) return;
   HZ = new Array(58).fill(CY3);
-  for (let az = -100; az <= 100; az++) {
-    projA(az, 0, 3, 0);
-    const j = Math.floor(px / 8.0 + 0.5);
-    if (j >= 0 && j < 58) HZ[j] = py;
+  // horizon (alt 0) point for screen x: solve K3 sin a - X CH3 cos a = X for the azimuth a
+  for (let j = 0; j < 58; j++) {
+    const X = j * 8 - CX;
+    const rr = Math.sqrt(K3 * K3 + X * X * CH3 * CH3);
+    const az = Math.atan2(X * CH3, K3) + Math.asin(G.clamp(X / rr, -1, 1));
+    const k = K3 / (1 + Math.cos(az) * CH3);
+    HZ[j] = CY3 + k * Math.cos(az) * SH3;
   }
   for (let i = 0; i < NA; i++) {
-    const az = -77.4 + i * 3.6;
+    const az = -77 + i * 4.4;
     projA(az, 4, 3, 0);
     ABX[i] = px; ABY[i] = py;
     projA(az, 14, 3, 0);
     AUX[i] = (px - ABX[i]) / 10.0; AUY[i] = (py - ABY[i]) / 10.0;
     ARH[i] = 2 * hy(ABX[i]);
   }
-  // lake below the horizon
-  LAKE = [];
-  for (let j = 0; j < 58; j += 2) LAKE.push([j * 8, HZ[j]]);
-  LAKE.push([456, HZ[57]]);
-  LAKE.push([456, 456]);
-  LAKE.push([0, 456]);
-  // far shore: four polygons of ten trees each, standing on a 4 px shore strip
-  TREES = [];
   let s = 4242;
-  for (let g = 0; g < 4; g++) {
-    const pts = [];
-    let x0 = 0, x1 = 0;
-    for (let i = 0; i < 10; i++) {
-      s = G.rnd(s);
-      const x = 4 + (g * 10 + i) * 11.4 + (s % 6);
-      const h = 10 + (s % 23) + (Math.abs(x - CX) > 150 ? 8 : 0);
-      const w = 5 + (s % 3);
-      const b = hy(x) + 1;
-      if (i === 0) x0 = g === 0 ? -2 : x - w;
-      x1 = g === 3 && i === 9 ? 456 : x + w;
-      pts.push([x - w, b]);
-      pts.push([x, b - h]);
-      pts.push([x + w, b]);
-    }
-    pts.push([x1, hy(x1) + 4]);
-    pts.push([x0, hy(x0) + 4]);
-    TREES.push(pts);
+  for (let i = 0; i < NT; i++) {
+    s = G.rnd(s);
+    const x = 4 + i * 15.2 + (s % 7);
+    TRX[i] = x;
+    TRH[i] = 12 + (s % 24) + (Math.abs(x - CX) > 150 ? 8 : 0);
+    TRW[i] = 6 + (s % 3);
+    TRB[i] = hy(x) + 1;
   }
-  // near spruces framing the view
-  NEAR = [pinePts(30, 430, 58, 270, 7), pinePts(78, 450, 34, 190, 5), pinePts(424, 430, 58, 280, 7), pinePts(380, 452, 32, 170, 5)];
+}
+
+// spruce with n drooping branch tiers into the reusable buffer PB (base centre x, b; half width w; height h)
+function pine(dc, x, b, w, h, n) {
+  for (let k = 0; k < n; k++) {
+    const yk = b - (h * k * 0.9) / n, wk = w * (1 - k / n), yn = yk - (h * 0.5) / n;
+    PB[k * 2][0] = x - wk; PB[k * 2][1] = yk;
+    PB[k * 2 + 1][0] = x - wk * 0.32; PB[k * 2 + 1][1] = yn;
+    PB[4 * n - k * 2][0] = x + wk; PB[4 * n - k * 2][1] = yk;
+    PB[4 * n - k * 2 - 1][0] = x + wk * 0.32; PB[4 * n - k * 2 - 1][1] = yn;
+  }
+  PB[2 * n][0] = x; PB[2 * n][1] = b - h;
+  dc.fillPolygon(n === 7 ? PB : PB.slice(0, 4 * n + 1));
 }
 
 // sky colours [zenith, horizon] for a sun elevation and style
@@ -309,54 +321,30 @@ function under(st, x, y, tw) {
   return y >= 262 && y < 318 && x > 72 && x < 382;
 }
 
-// brightness factor of star i at intro threshold thr (0 = not drawn)
-function starF(st, i, x, y, thr, vis, tw) {
-  const mag = MAG[i];
-  if (mag > thr) return 0;
-  let f = G.clamp(thr - mag, 0, 1) * vis * G.clamp(1.25 - mag * 0.13, 0.45, 1);
-  if (SU[i] < 0.12) f = f * (0.45 + SU[i] * 4.5); // horizon extinction
-  if (under(st, x, y, tw)) f = f * 0.55;
-  return f;
-}
-
-// one star in colour c (already mixed into the sky colour bg)
-function star(dc, st, x, y, mag, c, bg) {
-  dc.setColor(c, -1);
-  if (st === 2) {
-    // printed chart: ink dots sized by magnitude
-    const r = 4.4 - mag * 0.75;
-    if (r >= 2.2) dc.fillCircle(x, y, r);
-    else { const s = r >= 1.5 ? 3 : 2; dc.fillRectangle(x - 1, y - 1, s, s); }
-  } else if (mag < 0.6) {
-    dc.setColor(G.mix(bg, c, 0.22), -1);
+// a bright star (mag < 1.6) from palette entry pi = class * 16 + level
+function star(dc, x, y, mag, pi) {
+  const b = pi - (pi % 16), q = pi % 16;
+  if (mag < 0.6) {
+    dc.setColor(SPAL[b + Math.floor(q * 0.22 + 0.5)], -1);
     dc.fillCircle(x, y, 7);
-    dc.setColor(G.mix(bg, c, 0.5), -1);
+    dc.setColor(SPAL[b + Math.floor(q * 0.5 + 0.5)], -1);
     dc.fillRectangle(x - 9, y, 19, 1);
     dc.fillRectangle(x, y - 9, 1, 19);
-    dc.setColor(c, -1);
+    dc.setColor(SPAL[pi], -1);
     dc.fillCircle(x, y, 3.2);
-  } else if (mag < 1.6) {
-    dc.setColor(G.mix(bg, c, 0.4), -1);
+  } else {
+    dc.setColor(SPAL[b + Math.floor(q * 0.4 + 0.5)], -1);
     dc.fillRectangle(x - 4, y, 9, 1);
     dc.fillRectangle(x, y - 4, 1, 9);
-    dc.setColor(c, -1);
+    dc.setColor(SPAL[pi], -1);
     dc.fillCircle(x, y, 2.4);
-  } else if (mag < 2.6) dc.fillRectangle(x - 1, y - 1, 3, 3);
-  else dc.fillRectangle(x - 1, y - 1, 2, 2);
+  }
 }
 
-function starCol(st, i, f, bg) { return G.mix(bg, st === 2 ? INK : STAR_COL[ST[i] & 3], f); }
-
-function mwCol(st, pass, i, bg, k) {
-  const w = ((MW[i] & 511) + (MW[(i + 1) % NM] & 511)) / 200.0;
-  if (st === 2) return G.mix(bg, 0xcfcfc4, (pass === 0 ? 0.5 : 0.85) * w * k);
-  return G.mix(bg, st === 3 ? 0x24343e : 0x2a3658, (pass === 0 ? 0.45 : 0.7) * w * k);
-}
-
-// constellation labels for the resting sky: below each figure, no overlaps, max 4
+// constellation labels for the resting sky: below each figure, no overlaps, max 3
 function labels(st, R, tw) {
   NLB = 0;
-  for (let c = 0; c < CN.length && NLB < 4; c++) {
+  for (let c = 0; c < CN.length && NLB < 3; c++) {
     if (CN[c].length === 0) continue;
     const s0 = CS[c * 2], n = CS[c * 2 + 1];
     let sx = 0, sy = 0, ok = true;
@@ -390,17 +378,17 @@ function auS(az, t) {
   return G.clamp(0.42 + 0.7 * G.noise(az * 0.045 + t * 0.00032), 0.04, 1) * e;
 }
 
-// aurora over the northern horizon (style 3): dense rays from bright green (low) to violet (high).
+// aurora over the northern horizon (style 3): rays from bright green (low) to violet (high).
 // refl: mirror image in the lake (dimmer, broken by ripples), reuses the main pass' rays
 function aurora(dc, t, k, refl) {
-  dc.setPenWidth(refl ? 4 : 6);
+  dc.setPenWidth(refl ? 5 : 8);
   const o = refl ? 32 : 0;
   for (let i = 0; i < NA; i++) {
     let s, fine;
     if (refl) { s = AS[i]; fine = AF[i]; }
     else {
-      s = auS(-77.4 + i * 3.6, t);
-      fine = 0.62 + 0.38 * G.noise(i * 1.09 + t * 0.0013);
+      s = auS(-77 + i * 4.4, t);
+      fine = 0.62 + 0.38 * G.noise(i * 1.41 + t * 0.0013);
       AS[i] = s; AF[i] = fine;
     }
     if (s < 0.06) continue;
@@ -408,12 +396,11 @@ function aurora(dc, t, k, refl) {
     const L = (6 + 40 * s) * (0.8 + 0.2 * fine) * k;
     const bx = ABX[i], by = ABY[i], ux = AUX[i] * L, uy = AUY[i] * L;
     if (refl) {
-      const h2 = ARH[i];
-      for (let j = 0; j < 3; j++) {
-        const y0 = h2 - (by + uy * j * 0.2) + 6 + j * 3;
-        dc.setColor(AP[j * 8 + q], -1);
-        dc.drawLine(bx + ux * j * 0.2, y0, bx + ux * (j * 0.2 + 0.12), y0 - uy * 0.12);
-      }
+      const y0 = ARH[i] - by + 6;
+      dc.setColor(AP[q], -1);
+      dc.drawLine(bx, y0, bx + ux * 0.12, y0 - uy * 0.12);
+      dc.setColor(AP[8 + q], -1);
+      dc.drawLine(bx + ux * 0.2, y0 - uy * 0.2 + 3, bx + ux * 0.32, y0 - uy * 0.32 + 3);
       continue;
     }
     let x0 = bx, y0 = by;
@@ -436,7 +423,7 @@ export default {
     const p = a.intro;
     const R = radius(st);
     if (st === 3) panoInit();
-    sky(d, st);
+    sky(d, st, false);
     const dark = G.clamp((-EL - 2) / 12.0, 0, 1);
     const sc = skyCols(st, EL);
     const zen = sc[0], hor = sc[1];
@@ -450,19 +437,37 @@ export default {
     const th = st === 3 ? 76 : 84;
     const tw = F.stW(ts, th) / 2 + 14;
     const vis = st === 2 ? 1 : 0.16 + 0.84 * dark;
-    const mwk = (st === 2 ? 1 : dark) * e;
 
-    // ---- resting frame: colours + labels once per minute
-    if (rest && PK !== K) {
-      PK = K;
-      for (let i = 0; i < NS; i++) {
-        const f = SU[i] > 0 ? starF(st, i, SX[i], SY[i], 6, vis, tw) : 0;
-        SF[i] = f;
-        SC[i] = f > 0.02 ? starCol(st, i, f, bg) : -1;
+    // ---- paint state: palettes when the sky colour changes, star levels for the re-projected chunk
+    if (SPB !== bg * 4 + st) {
+      SPB = bg * 4 + st;
+      for (let c = 0; c < 4; c++) {
+        const x = st === 2 ? INK : STAR_COL[c];
+        for (let q = 0; q < 16; q++) SPAL[c * 16 + q] = G.mix(bg, x, q / 15.0);
       }
-      for (let i = 0; i < NM; i++) { MWC[i] = mwCol(st, 0, i, bg, mwk); MWC[NM + i] = mwCol(st, 1, i, bg, mwk); }
-      labels(st, R, tw);
+      const mwk = st === 2 ? 1 : dark;
+      for (let i = 0; i < NM; i++) {
+        const w = ((MW[i] & 511) + (MW[(i + 1) % NM] & 511)) / 200.0;
+        if (st === 2) { MWC[i] = G.mix(bg, 0xcfcfc4, 0.5 * w * mwk); MWC[NM + i] = G.mix(bg, 0xcfcfc4, 0.85 * w * mwk); }
+        else {
+          const x = st === 3 ? 0x24343e : 0x2a3658;
+          MWC[i] = G.mix(bg, x, 0.45 * w * mwk); MWC[NM + i] = G.mix(bg, x, 0.7 * w * mwk);
+        }
+      }
     }
+    for (let k = 0; k < CL; k++) {
+      const i = (C0 + k) % NS;
+      let f = 0;
+      if (SU[i] > 0) {
+        f = vis * G.clamp(1.25 - MAG[i] * 0.13, 0.45, 1);
+        if (SU[i] < 0.12) f = f * (0.45 + SU[i] * 4.5); // horizon extinction
+        if (under(st, SX[i], SY[i], tw)) f = f * 0.55;
+      }
+      SFF[i] = f;
+      const q = Math.floor(f * 15 + 0.5);
+      SCI[i] = q > 0 ? (ST[i] & 3) * 16 + q : -1;
+    }
+    if (rest && LK !== KD) { LK = KD; labels(st, R, tw); }
 
     // ---- intro: the dome turns into place (1, 2) / the sky rises (3)
     const rot = st === 3 ? 0 : -50 * (1 - e);
@@ -516,20 +521,18 @@ export default {
     }
 
     // ---- Milky Way
-    if (mwk > 0.05) {
+    if (st === 2 || dark > 0.05) {
       for (let pass = 0; pass < 2; pass++) {
         dc.setPenWidth(pass === 0 ? 30 : 12);
         for (let i = 0; i < NM; i++) {
-          const j = (i + 1) % NM;
+          const j = i + 1 < NM ? i + 1 : 0;
           if (WU[i] < -0.2 || WU[j] < -0.2) continue;
-          dc.setColor(rest ? MWC[pass * NM + i] : mwCol(st, pass, i, bg, mwk), -1);
-          let x0 = WX[i], y0 = WY[i] + lift, x1 = WX[j], y1 = WY[j] + lift;
-          if (!rest && st !== 3) {
-            const ax = x0 - CX, ay = y0 - CX, bx = x1 - CX, by = y1 - CX;
-            x0 = CX + ax * cr - ay * sr; y0 = CX + ax * sr + ay * cr;
-            x1 = CX + bx * cr - by * sr; y1 = CX + bx * sr + by * cr;
+          dc.setColor(MWC[pass * NM + i], -1);
+          if (rest || st === 3) dc.drawLine(WX[i], WY[i] + lift, WX[j], WY[j] + lift);
+          else {
+            const ax = WX[i] - CX, ay = WY[i] - CX, bx = WX[j] - CX, by = WY[j] - CX;
+            dc.drawLine(CX + ax * cr - ay * sr, CX + ax * sr + ay * cr, CX + bx * cr - by * sr, CX + bx * sr + by * cr);
           }
-          dc.drawLine(x0, y0, x1, y1);
         }
       }
     }
@@ -571,31 +574,43 @@ export default {
       for (let i = 0; i < NL; i++) {
         const sa = LN[i] >> 8, sb = LN[i] & 255;
         if (SU[sa] <= 0 || SU[sb] <= 0) continue;
-        const x0 = rx[sa], y0 = ry[sa];
-        dc.drawLine(x0, y0, x0 + (rx[sb] - x0) * lp, y0 + (ry[sb] - y0) * lp);
+        if (rest) dc.drawLine(rx[sa], ry[sa], rx[sb], ry[sb]);
+        else dc.drawLine(rx[sa], ry[sa], rx[sa] + (rx[sb] - rx[sa]) * lp, ry[sa] + (ry[sb] - ry[sa]) * lp);
       }
     }
 
-    // ---- stars (brightest first during the intro; twinkling when awake)
+    // ---- stars (brightest first during the intro; the bright ones twinkle while awake)
     const thr = -1.5 + 7.5 * G.ease(p * 1.3);
-    const tw2 = st !== 2 && a.live && rest;
+    const twk = st !== 2 && a.live && rest;
     for (let i = 0; i < NS; i++) {
-      if (SU[i] <= 0) continue;
-      let c;
-      if (rest) {
-        c = SC[i];
-        if (c === -1) continue;
-        if (tw2 && MAG[i] < 2) c = starCol(st, i, SF[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)), bg);
-      } else {
-        const f = starF(st, i, rx[i], ry[i], thr, vis, tw);
-        if (f <= 0.02) continue;
-        c = starCol(st, i, f, bg);
+      let pi = SCI[i];
+      if (pi < 0 || SU[i] <= 0) continue;
+      const mag = MAG[i];
+      if (!rest) {
+        if (mag > thr) continue;
+        const q = Math.floor(SFF[i] * G.clamp(thr - mag, 0, 1) * 15 + 0.5);
+        if (q <= 0) continue;
+        pi = (ST[i] & 3) * 16 + q;
+      } else if (twk && mag < 2) {
+        pi = (ST[i] & 3) * 16 + Math.floor(SFF[i] * (0.8 + 0.2 * G.noise(t * 0.004 + i * 1.37)) * 15 + 0.5);
       }
-      star(dc, st, rx[i], ry[i], MAG[i], c, bg);
+      if (st !== 2 && mag < 1.6) star(dc, rx[i], ry[i], mag, pi);
+      else {
+        dc.setColor(SPAL[pi], -1);
+        if (st === 2) {
+          // ink dots sized by magnitude (small ones as two crossed rectangles: round and cheap)
+          const r = 4.4 - mag * 0.75;
+          if (r >= 3) dc.fillCircle(rx[i], ry[i], r);
+          else if (r >= 2.2) {
+            dc.fillRectangle(rx[i] - 2, ry[i] - 1, 5, 3);
+            dc.fillRectangle(rx[i] - 1, ry[i] - 2, 3, 5);
+          } else dc.fillRectangle(rx[i] - 1, ry[i] - 1, r >= 1.5 ? 3 : 2, r >= 1.5 ? 3 : 2);
+        } else dc.fillRectangle(rx[i] - 1, ry[i] - 1, mag < 2.6 ? 3 : 2, mag < 2.6 ? 3 : 2);
+      }
     }
     // Pleiades (star 48 = Alcyone)
     if (SU[48] > 0 && thr > 3) {
-      dc.setColor(G.mix(bg, st === 2 ? INK : 0xcfe0ff, (st === 2 ? 0.7 : 0.6) * vis), -1);
+      dc.setColor(SPAL[Math.floor(10 * vis)], -1);
       dc.fillRectangle(rx[48] - 5, ry[48] - 3, 2, 2);
       dc.fillRectangle(rx[48] + 3, ry[48] - 4, 2, 2);
       dc.fillRectangle(rx[48] - 3, ry[48] + 3, 2, 2);
@@ -680,6 +695,15 @@ export default {
     // ---- landscape (3) / rim with compass (1, 2)
     const day = EL > 0;
     if (st === 3) {
+      // lake: shore strip (offset copy of the water polygon), water, depth bands
+      for (let j = 0; j < 29; j++) { LAKE[j][0] = j * 16; LAKE[j][1] = HZ[j * 2] - 1; }
+      LAKE[29][0] = 456; LAKE[29][1] = HZ[57] - 1;
+      LAKE[30][0] = 456; LAKE[30][1] = 456;
+      LAKE[31][0] = 0; LAKE[31][1] = 456;
+      const tc = G.mix(0x010302, 0x10261e, G.clamp((EL + 6) / 12.0, 0, 1));
+      dc.setColor(tc, -1);
+      dc.fillPolygon(LAKE);
+      for (let j = 0; j < 30; j++) LAKE[j][1] = LAKE[j][1] + 5;
       dc.setColor(wt, -1);
       dc.fillPolygon(LAKE);
       const lb = G.mix(zen, 0x000000, 0.7);
@@ -697,10 +721,21 @@ export default {
           dc.fillRectangle(mx - w / 2, h0 + 8 + k * 9, w, 2);
         }
       }
-      dc.setColor(G.mix(0x010302, 0x10261e, G.clamp((EL + 6) / 12.0, 0, 1)), -1);
-      for (let k = 0; k < 4; k++) dc.fillPolygon(TREES[k]);
+      // far shore forest
+      dc.setColor(tc, -1);
+      for (let i = 0; i < NT; i++) {
+        const x = TRX[i], b = TRB[i], w = TRW[i];
+        TRI[0][0] = x - w; TRI[0][1] = b;
+        TRI[1][0] = x; TRI[1][1] = b - TRH[i];
+        TRI[2][0] = x + w; TRI[2][1] = b;
+        dc.fillPolygon(TRI);
+      }
+      // near spruces framing the view
       dc.setColor(0x000000, -1);
-      for (let k = 0; k < 4; k++) dc.fillPolygon(NEAR[k]);
+      pine(dc, 30, 430, 58, 270, 7);
+      pine(dc, 78, 450, 34, 190, 5);
+      pine(dc, 424, 430, 58, 280, 7);
+      pine(dc, 380, 452, 32, 170, 5);
       dc.setColor(G.mix(wt, 0x8fd8c0, 0.5), -1);
       F.px(dc, "N", CX, hy(CX) + 10, 2, 1, 0);
       F.px(dc, "NW", 101, hy(101) + 10, 2, 1, 0);
@@ -715,16 +750,16 @@ export default {
       dc.setPenWidth(st === 2 ? 2 : 1);
       dc.drawCircle(CX, CX, R + 1);
       dc.setPenWidth(1);
-      // azimuth scale every 5° (unit vector rotated step by step, no trig per tick)
-      const c5 = Math.cos(5 * RAD), s5 = Math.sin(5 * RAD);
+      // azimuth scale every 10° (unit vector rotated step by step, no trig per tick)
+      const c10 = 0.98480775, s10 = 0.17364818;
       let ux = 0, uy = -1;
-      for (let k = 0; k < 72; k++) {
-        if (k % 18 !== 0) {
-          const r2 = R + (k % 6 === 0 ? 11 : 6);
+      for (let k = 0; k < 36; k++) {
+        if (k % 9 !== 0) {
+          const r2 = R + (k % 3 === 0 ? 11 : 6);
           dc.drawLine(CX + ux * (R + 3), CX + uy * (R + 3), CX + ux * r2, CX + uy * r2);
         }
-        const nx = ux * c5 - uy * s5;
-        uy = uy * c5 + ux * s5;
+        const nx = ux * c10 - uy * s10;
+        uy = uy * c10 + ux * s10;
         ux = nx;
       }
       // seconds pointer on the printed chart's cover
@@ -769,7 +804,7 @@ export default {
     const o = St.shift(d);
     const ox = o[0], oy = o[1];
     if (st === 3) panoInit();
-    sky(d, st);
+    sky(d, st, true);
     const hh = d.is24 ? G.pad2(d.h) : "" + G.hour(d);
     const ts = hh + ":" + G.pad2(d.m);
     const th = st === 3 ? 76 : 84;

@@ -7,6 +7,92 @@ function S(rows) {
 }
 function flipV(def) { return { w: def.w, h: def.h, rows: [...def.rows].reverse() }; }
 
+// ---- tiny voxel renderer for the isometric diorama (style 3). A unit voxel is drawn as a 4x4 cell
+// cube (top diamond, left and right face); x runs to the lower right, y to the lower left, z up.
+// Palette: 0 grass, 1 grass light, 2 earth left, 3 earth right, 4 roof, 5 roof right, 6 wall left,
+// 7 wall right, 8 window, 9 door, a chimney, b rock dark, c roof step, d path, e leaves, f leaves dark,
+// g trunk, h rock, i flowers, j water
+const VW = 60, VH = 76, OX = 28, OY = 26;
+function voxGrid() {
+  const g = [];
+  for (let y = 0; y < VH; y++) g.push(new Array(VW).fill("."));
+  return g;
+}
+function cube(g, x, y, z, top, left, right) {
+  const sx = OX + (x - y) * 2, sy = OY + (x + y) - z * 2;
+  const put = (cx, cy, c) => { if (cy >= 0 && cy < VH && cx >= 0 && cx < VW && c !== null) g[cy][cx] = c; };
+  put(sx + 1, sy, top); put(sx + 2, sy, top);
+  put(sx, sy + 1, top); put(sx + 1, sy + 1, top); put(sx + 2, sy + 1, top); put(sx + 3, sy + 1, top);
+  put(sx, sy + 2, left); put(sx + 1, sy + 2, left); put(sx + 2, sy + 2, right); put(sx + 3, sy + 2, right);
+  put(sx + 1, sy + 3, left); put(sx + 2, sy + 3, right);
+}
+function render(vox) {
+  vox.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]) || a[2] - b[2]);
+  const g = voxGrid();
+  for (const v of vox) cube(g, v[0], v[1], v[2], v[3], v[4], v[5]);
+  // trim empty rows/cols
+  let y0 = 0, y1 = VH - 1, x0 = 0, x1 = VW - 1;
+  const rowE = (y) => g[y].every((c) => c === ".");
+  const colE = (x) => g.every((r) => r[x] === ".");
+  while (rowE(y0)) y0++;
+  while (rowE(y1)) y1--;
+  while (colE(x0)) x0++;
+  while (colE(x1)) x1--;
+  return { w: x1 - x0 + 1, h: y1 - y0 + 1, rows: g.slice(y0, y1 + 1).map((r) => r.slice(x0, x1 + 1).join("")) };
+}
+function hash(x, y) { return ((x * 73856093) ^ (y * 19349663)) & 1023; }
+function vox() {
+  const v = [];
+  const N = 12;
+  const inIsland = (x, y) => !((x === 0 || x === N - 1) && (y === 0 || y === N - 1));
+  const path = (x, y) => x === 4 && y >= 6;
+  const pond = (x, y) => (x === 8 || x === 9) && (y === 8 || y === 9);
+  for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) {
+    if (!inIsland(x, y)) continue;
+    v.push([x, y, 0, "2", "2", "3"]);
+    let top = (hash(x, y) & 7) === 0 ? "1" : "0";
+    if (path(x, y)) top = "d";
+    if (pond(x, y)) top = "j";
+    if ((x === 1 && y === 8) || (x === 9 && y === 4) || (x === 2 && y === 10) || (x === 7 && y === 10)) top = "i";
+    v.push([x, y, 1, top, "2", "3"]);
+  }
+  // floating rock underneath, tapering down
+  for (let z = -1; z >= -8; z--) {
+    const m = Math.floor(-z * 0.6);
+    for (let x = m; x < N - m; x++) for (let y = m; y < N - m; y++) {
+      if ((hash(x * 3 - z, y + z) & 3) === 0 && (x === m || y === m || x === N - m - 1 || y === N - m - 1)) continue;
+      v.push([x, y, z, "h", "h", "b"]);
+    }
+  }
+  // cottage: walls x 2..6, y 2..5, z 2..5
+  for (let x = 2; x <= 6; x++) for (let y = 2; y <= 5; y++) for (let z = 2; z <= 5; z++) {
+    let L = "6", Rf = "7";
+    if (y === 5 && (z === 3 || z === 4) && (x === 2 || x === 6)) L = "8";
+    if (y === 5 && x === 4 && z <= 3) L = "9";
+    if (x === 6 && (z === 3 || z === 4) && y === 3) Rf = "8";
+    v.push([x, y, z, "6", L, Rf]);
+  }
+  // gable roof along x: steps down toward +y / -y
+  const roof = [[6, 1, 6], [7, 2, 5], [8, 3, 4]]; // z, y0, y1
+  for (const r of roof) for (let x = 1; x <= 7; x++) for (let y = r[1]; y <= r[2]; y++) v.push([x, y, r[0], "4", "c", "5"]);
+  // chimney
+  for (let z = 8; z <= 10; z++) v.push([3, 3, z, "a", "a", "b"]);
+  return render(v);
+}
+
+// tree for the diorama (drawn separately so it can sway): f = frame 0/1
+function voxTree(f) {
+  const v = [];
+  for (let z = 2; z <= 3; z++) v.push([1, 1, z, "g", "g", "g"]);
+  const L = [[0, 0, 4], [1, 0, 4], [2, 0, 4], [0, 1, 4], [1, 1, 4], [2, 1, 4], [0, 2, 4], [1, 2, 4], [2, 2, 4],
+    [0, 1, 5], [1, 0, 5], [1, 1, 5], [1, 2, 5], [2, 1, 5], [1, 1, 6]];
+  for (const l of L) {
+    const dx = f === 1 && l[2] >= 5 ? 1 : 0;
+    v.push([l[0] + dx, l[1] - dx, l[2], "e", "e", "f"]);
+  }
+  return render(v);
+}
+
 export default {
   // ---- cat seen from behind, sitting on the sill, looking out
   // 0 outline, 1 fur, 2 fur light (lit side), 3 stripes
@@ -466,73 +552,8 @@ export default {
     "33333333..",
   ]),
 
-  // ---- diorama (style 3): isometric cottage on a floating block of earth.
-  // 0 grass top, 1 grass light, 2 earth left, 3 earth right, 4 roof left, 5 roof right, 6 wall left,
-  // 7 wall right, 8 window, 9 door, a chimney, b outline/dark, c roof ridge (snow), d path stones
-  ISLAND: S([
-    "......................00......................",
-    "....................000000....................",
-    "..................0000000000..................",
-    "................00000100000000................",
-    "..............000000000000010000..............",
-    "............0000001000000000000000............",
-    "..........00000000000000000100000000..........",
-    "........000010000000000000000000000000........",
-    "......0000000000000000d00000000000100000......",
-    "....00000000000100000ddd0000000000000000000...",
-    "..000000000000000000ddd000000000010000000000..",
-    "000000010000000000ddd0000000000000000000000000",
-    "2200000000000000ddd00000000000000000000000033.",
-    "222200000000000ddd000000000000000000000003333.",
-    "2222220000000000000000000000000000000033333..",
-    "22222222000000000000000000000000000033333....",
-    ".2222222220000000000000000000000003333333....",
-    "...22222222200000000000000000000333333.......",
-    ".....222222222000000000000000333333..........",
-    "......22222222220000000000033333.............",
-    ".......222222222220000000333333..............",
-    "........222222222222000333333................",
-    ".........2222222222223333333.................",
-    "..........222222222223333....................",
-    "...........2222222223333.....................",
-    "............22222223333......................",
-    ".............222223333.......................",
-    "..............2222333........................",
-    "...............22333.........................",
-    "................233..........................",
-    ".................3...........................",
-  ]),
-  HOUSE: S([
-    "...........a.................",
-    "..........aab................",
-    "........c.aab................",
-    ".......c4caab................",
-    "......c444c5b55..............",
-    ".....c44444c55555............",
-    "....c4444444c5555555.........",
-    "...c444444444c555555555......",
-    "..c44444444444c555555555.....",
-    ".c4444444444444c555555555....",
-    "c444444444444444c5555555.....",
-    "b66666666666666bb7777777.....",
-    "b66886666688666b77777777.....",
-    "b66886666688666b77887777.....",
-    "b66666666666666b77887777.....",
-    "b66666999666666b77777777.....",
-    "b66666999666666b7777777......",
-    "b66666999666666b77777........",
-    ".bbbbb999bbbbbbbb7...........",
-  ]),
-  // little pine for the diorama: 0 dark, 1 light, 2 trunk
-  PINE: S([
-    "...0...",
-    "..010..",
-    "..000..",
-    ".01100.",
-    ".00000.",
-    "0110000",
-    "0000000",
-    "...2...",
-    "...2...",
-  ]),
+  // ---- diorama (style 3): voxel cottage on a floating island, see vox() below
+  DIORAMA: vox(false),
+  DIO_TREE_A: voxTree(0),
+  DIO_TREE_B: voxTree(1),
 };
