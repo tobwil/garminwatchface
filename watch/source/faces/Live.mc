@@ -46,8 +46,8 @@ class FaceLive extends Face {
         return false;
     }
 
-    // the Aura style and the tips bring their own breathing guide
-    function breathes() as Boolean {
+    // the coach brings its own tips, breathing guide and wind-down hint: no assistant cards
+    function speaks() as Boolean {
         return true;
     }
 

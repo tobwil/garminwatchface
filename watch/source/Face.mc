@@ -57,8 +57,9 @@ class Face {
         return true;
     }
 
-    // true when the design has its own breathing guide, so the assistant skips its breathing card
-    function breathes() as Boolean {
+    // true when the design speaks for itself (its own tips, breathing guide, bedtime), so the
+    // assistant shows none of its cards over it
+    function speaks() as Boolean {
         return false;
     }
 

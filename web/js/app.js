@@ -152,9 +152,8 @@ function wake() {
   cachedData = null;
   state.wakeAt = performance.now();
   // the assistant decides on every raise whether it has something to say
-  state.assist = Assist.pick(dataFor(state.key, cfgOf(state.key), now()));
-  // designs with their own breathing guide don't get the assistant's breathing card
-  if (state.assist === 1 && FACES[state.key].breathes) state.assist = 0;
+  // (not over designs that speak for themselves, and then it remembers nothing as shown)
+  state.assist = FACES[state.key].speaks ? 0 : Assist.pick(dataFor(state.key, cfgOf(state.key), now()));
   state.dirty = true;
 }
 

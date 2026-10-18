@@ -734,8 +734,8 @@ function beat(t, bpm) {
 export default {
   fps: 15,
   reveal() { return false; },
-  // Mo leads a breathing exercise himself when you are tense
-  breathes: true,
+  // Mo is the assistant here: his bubble, breathing exercise and bedtime nap replace the cards
+  speaks: true,
 
   // static layer: background, time, contact shadow, date, battery. Keyed by the minute and the plan
   // of this raise (scene and side depend on the state and d.wakeN).
