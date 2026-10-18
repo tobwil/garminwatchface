@@ -78,6 +78,10 @@ async function frames(key, style, times, secs) {
     out.width = out.height = 454;
     const o = out.getContext("2d");
     const res = [];
+    // pre-rendered images (bmp.js) load asynchronously: draw once and wait for them
+    const { Bmp } = await import("./js/engine/bmp.js");
+    render(ctx, face, buildData(cfg, {}, new Date(2026, 9, 16, 0, 0, secs[0])), { ...animState(times[0], cfg), live: true }, false);
+    while (Bmp.pending() > 0) await new Promise((r) => setTimeout(r, 20));
     for (let i = 0; i < times.length; i++) {
       const t = times[i];
       const now = new Date(2026, 9, 16, 0, 0, secs[i]);

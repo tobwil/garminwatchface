@@ -12,6 +12,7 @@
 // ?face=MONO&style=1&h=10&m=2&t=99999&aod=0&sim={json}&cfg={json}&date=2026-10-18
 import { prepCanvas, render, animState } from "./js/engine/render.js";
 import { buildData, DEFAULT_CFG } from "./js/engine/model.js";
+import { Bmp } from "./js/engine/bmp.js";
 const q = new URLSearchParams(location.search);
 const meta = await (await fetch("faces.json")).json();
 const fm = meta.faces.find((f) => f.key === (q.get("face") || "MONO"));
@@ -27,7 +28,11 @@ const ctx = prepCanvas(document.getElementById("c"), 454);
 const t = +(q.get("t") ?? 99999);
 // tap=<ms since tap>&tx=<x>&ty=<y> simulates a screen tap (face.tap is called first)
 if (q.get("tap") && face.tap) face.tap(+(q.get("tx") ?? 227), +(q.get("ty") ?? 227), d);
-render(ctx, face, d, { ...animState(t, cfg), live: q.get("live") === "1", ...(q.get("tap") ? { tap: +q.get("tap") } : {}) }, q.get("aod") === "1");
+const go = () => render(ctx, face, d, { ...animState(t, cfg), live: q.get("live") === "1", ...(q.get("tap") ? { tap: +q.get("tap") } : {}) }, q.get("aod") === "1");
+go();
+// pre-rendered images load asynchronously: wait for them, then draw again
+while (Bmp.pending() > 0) await new Promise((r) => setTimeout(r, 20));
+go();
 document.title = "ready";
 </script>
 </body>

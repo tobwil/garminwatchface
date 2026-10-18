@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 71 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 76 fertigen Designs, die du live
 ansehen, anpassen und mit einem Klick per USB auf die Uhr übertragen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store, ohne Zusatzprogramm.
 
@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 71 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 76 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 71 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 76 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -66,8 +66,25 @@ Heben gibt es die typische Animation.
 
 ### AMOLED
 
-Gemacht für das AMOLED-Display: Schwarz ist hier wirklich aus, Farben leuchten. Diese Designs bestehen fast
-nur aus Licht auf Schwarz – und sparen dabei Akku.
+Gemacht für das AMOLED-Display: Schwarz ist hier wirklich aus, Farben leuchten.
+
+**Fotorealistisch:** Diese Designs werden nicht aus Linien und Flächen gezeichnet, sondern aus
+vorgerenderten Bildern zusammengesetzt (gebürstetes Metall, polierte Kanten, Leuchtmasse, Nebel). Die Uhr
+dreht sie mit bilinearer Filterung, färbt sie ein und lässt Licht per GPU additiv leuchten.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/MANU.webp" width="180" alt="Manufaktur"><br><b>Manufaktur</b><br><sub>Automatikuhr mit Sonnenschliff, facettierten Indizes und Dauphine-Zeigern; Gangreserve = Akku, Hilfszifferblätter für Body Battery und Schritte, nachts leuchtet die Leuchtmasse</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/COCKPIT.webp" width="180" alt="Cockpit"><br><b>Cockpit</b><br><sub>Hinterleuchtetes Kombiinstrument: Drehzahl = Puls, Tank = Body Battery, Temperatur = Stress, Kontrollleuchten, Nadel-Sweep beim Heben</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/TOURB.webp" width="180" alt="Tourbillon"><br><b>Tourbillon</b><br><sub>Skelettiertes Werk mit Genfer Streifen, Perlage, Rubinen und gebläuten Schrauben; Räder, Käfig und Unruh laufen live</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/DEEP.webp" width="180" alt="Tiefer Raum"><br><b>Tiefer Raum</b><br><sub>Teleskopblick in einen Nebel: Beugungssterne funkeln, Sternschnuppe beim Heben, der Nebel leuchtet mit der Body Battery</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/WORK.webp" width="180" alt="Arbeitstag"><br><b>Arbeitstag</b><br><sub>Fürs Büro: große Uhrzeit, der Arbeitstag als Leiste mit dem nächsten Kalendertermin („in 38 min“), Wetter, Body Battery und Nachrichten</sub></td>
+</tr>
+</table>
+
+Dazu Licht auf Schwarz, das Akku spart:
 
 <table>
 <tr>
@@ -540,6 +557,26 @@ Und die Pixel-Geschichten durch ihren Tag:
 
 <img src="docs/media/styles/PLAN.webp" width="560" alt="Was geht heute?: Varianten">
 
+**Arbeitstag**: Graphit · Navy · Hell
+
+<img src="docs/media/styles/WORK.webp" width="560" alt="Arbeitstag: Varianten">
+
+**Manufaktur**: Mitternacht · Fumé · Racing
+
+<img src="docs/media/styles/MANU.webp" width="560" alt="Manufaktur: Varianten">
+
+**Cockpit**: Rot · Eisblau · Amber
+
+<img src="docs/media/styles/COCKPIT.webp" width="560" alt="Cockpit: Varianten">
+
+**Tourbillon**: Rhodium · Gold · Schwarz
+
+<img src="docs/media/styles/TOURB.webp" width="560" alt="Tourbillon: Varianten">
+
+**Tiefer Raum**: Hubble · Webb · Orion
+
+<img src="docs/media/styles/DEEP.webp" width="560" alt="Tiefer Raum: Varianten">
+
 **Pixel-Garten**: Garten · Nacht · Gameboy
 
 <img src="docs/media/styles/GARDEN.webp" width="560" alt="Pixel-Garten: Varianten">
@@ -616,6 +653,10 @@ site/           gebündeltes Studio (eine HTML-Datei)
   eine statische Ebene (einmal pro Minute in eine Bitmap gerendert, in einem eigenen Timer-Callback) von den
   bewegten Teilen, die pro Frame darübergezeichnet werden. Beim Heben wird die Ebene wie ein alter
   Röhrenmonitor eingeblendet; die Bildrate passt sich an die gemessene Zeichenzeit an.
+* **Fotorealistische Designs:** Arbeitstag, Manufaktur, Cockpit, Tourbillon und Tiefer Raum bestehen aus Bildern, die
+  `tools/render/*.py` vorab in hoher Qualität rendert (3-fach überabgetastet, für das 16-Bit-Display
+  gedithert). Sie liegen komprimiert in der `.prg`; die Uhr setzt sie mit `drawBitmap2` (Drehung,
+  bilineare Filterung, Einfärben) und additivem GPU-Blending zusammen.
 * **Ein Design pro Watchface:** Watchfaces haben auf der FR970 nur 128 KB Speicher. Jedes Design wird
   deshalb als eigenes schlankes Watchface gebaut (Engine + ein Design: 46–84 KB im Simulator gemessen).
 * **USB-Übertragung im Browser:** Das Studio spricht per WebUSB direkt das MTP-Protokoll der Uhr
@@ -629,7 +670,8 @@ site/           gebündeltes Studio (eine HTML-Datei)
   deinen Signier-Schlüssel: Behalte sie für dich und nutze für eine Veröffentlichung im Connect IQ
   Store einen separaten Schlüssel.
 * **Daten:** Body Battery, Stress, Schlafscore, Erholungszeit, VO2max (Lauf/Rad), Wochen-km Rad/Lauf,
-  Trainingsstatus, Rennprognosen, Atemfrequenz, SpO2 kommen über die Connect-IQ-„Complications“;
+  Trainingsstatus, Rennprognosen, Atemfrequenz, SpO2 und die Uhrzeit des nächsten Kalendertermins kommen
+  über die Connect-IQ-„Complications“;
   Herzfrequenz-/Body-Battery-/Stress-Verläufe über `SensorHistory`; Sonne und Mond werden auf der Uhr
   selbst berechnet (NOAA-Formeln).
 

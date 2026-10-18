@@ -61,15 +61,20 @@ import f58 from "./kiesel.js";
 import f59 from "./ktext.js";
 import f60 from "./kanalog.js";
 import f61 from "./kroll.js";
-import f62 from "./neon.js";
-import f63 from "./fireworks.js";
-import f64 from "./plasma.js";
-import f65 from "./werk.js";
-import f66 from "./blackhole.js";
-import f67 from "./form.js";
-import f68 from "./innen.js";
-import f69 from "./befund.js";
-import f70 from "./plan.js";
+import f62 from "./work.js";
+import f63 from "./manu.js";
+import f64 from "./cockpit.js";
+import f65 from "./tourb.js";
+import f66 from "./deep.js";
+import f67 from "./neon.js";
+import f68 from "./fireworks.js";
+import f69 from "./plasma.js";
+import f70 from "./werk.js";
+import f71 from "./blackhole.js";
+import f72 from "./form.js";
+import f73 from "./innen.js";
+import f74 from "./befund.js";
+import f75 from "./plan.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -133,13 +138,18 @@ export const FACES = {
   KTEXT: f59,
   KANALOG: f60,
   KROLL: f61,
-  NEON: f62,
-  FIREWORK: f63,
-  PLASMA: f64,
-  WERK: f65,
-  HOLE: f66,
-  FORM: f67,
-  INNEN: f68,
-  BEFUND: f69,
-  PLAN: f70,
+  WORK: f62,
+  MANU: f63,
+  COCKPIT: f64,
+  TOURB: f65,
+  DEEP: f66,
+  NEON: f67,
+  FIREWORK: f68,
+  PLASMA: f69,
+  WERK: f70,
+  HOLE: f71,
+  FORM: f72,
+  INNEN: f73,
+  BEFUND: f74,
+  PLAN: f75,
 };

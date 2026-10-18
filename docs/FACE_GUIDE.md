@@ -89,7 +89,7 @@ week (ISO week, Monday = index 0, future days `-1`) `dayIdx` (today 0..6), `wkSt
 `src` (= `d.cfg.src`: progress source for challenge faces — 0 climbed metres `floorsWeek*3`, 1 weekly bike km `wkBike/1000` vs `cfg.bikeGoal`, 2 training days vs `dayGoal`);
 body `hr rhr hrMax hrHist[60 over 2h, oldest first] bb bbHist[48 over 24h] stress stressHist[48 over 24h] sleep recov(min) vo2b vo2r wkBike(m) wkRun(m) tStatus(string) p5k p10k pHM pM(sec) resp spo2`;
 env `temp(°C, -99 unknown) cond wind windDeg rain hiT loT alt pres lat lon locOk sunrise sunset (minutes of day, float, -1) moon(0..1)`;
-device `batt battDays charging notif phone dnd alarms metric`;
+device `batt battDays charging notif phone dnd alarms metric`, calendar `nextEv` (time of the next event, minutes of day, -1 none; the title is not available);
 config `d.cfg.style (1..3) d.cfg.ftp d.cfg.kg d.cfg.climb (0 Alpe 1071m/21 Kehren, 1 Ventoux 1610m, 2 Stelvio 1808m/48 Kehren, 3 Everest 8848m) d.cfg.quest (0..2) d.cfg.bikeGoal (km/Woche)`, `d.accent`, `d.dcol` (data colour);
 slots: 3 user-chosen data fields – **JS** `d.slots[i].lbl / .val / .raw`, **Monkey C** `d.slots[i][:lbl] / [:val] / [:raw]` (`lbl` short German uppercase label, `val` formatted string, `raw` number or -1).
 History arrays can contain `-1` gaps and may be empty on the watch – always guard.
@@ -129,6 +129,29 @@ into a cached bitmap) and the **moving parts** (drawn over the cached bitmap eve
 * Faces whose shared preamble is heavy (game logic) should opt out instead of running it twice.
 * Check with `node tools/cachecheck.mjs KEY`: the cached render must match a full render (only edge
   anti-aliasing may differ).
+
+## Pre-rendered images (photo-real faces)
+
+For high-end looks (WORK, MANU, COCKPIT, TOURB, DEEP) the parts are rendered offline and only
+composited on the watch. `tools/render/<face>.py` (numpy + Pillow, 3x supersampled, RGB565-dithered,
+helpers in `tools/render/common.py`) writes `web/img/<KEY>/<id>.png|jpg` (copied into the watch
+resources by `tools/build.py`, kept compressed in the .prg), `web/js/img/<face>.js` (the same images as
+data URIs plus metrics `M`) and `watch/source/gen/Img<Face>.mc` (the metrics for Monkey C). The images
+are committed, so building never needs the renderer.
+
+* Load: JS `Bmp.load(IMG.x)` (bmp.js) / MC `WatchUi.loadResource(Rez.Drawables.x)`. Images needed in
+  every frame stay in member variables; big ones (dials, 454x454) are loaded per static redraw only.
+* Draw: `dc.drawBitmap(x, y, b)`, `dc.drawBitmap2(x, y, b, {transform, tintColor, filterMode})` with
+  `AffineTransform` (`rotate(rad)`, `translate`, `scale`; the last call acts first on the image): turning
+  a hand around its pivot = `rotate(a)`, then `translate(-pivotX, -pivotY)`, drawn at the pivot's screen
+  position, `FILTER_MODE_BILINEAR`. Omit `tintColor` (MC) instead of passing -1. `tintColor` multiplies.
+* `dc.setBlendMode(BLEND_MODE_ADDITIVE)` adds light (glows, lume, backlight; black = no change), always
+  reset to `BLEND_MODE_DEFAULT`.
+* Source rectangles of `drawBitmap2` do not work reliably on the watch: draw glyphs or wheel cells through
+  `setClip` + `drawBitmap` with an offset instead (glyph strips: `common.glyph_strip`).
+* Moving parts that run *under* other parts (wheels under bridges) get a cropped overlay of what lies
+  above them, drawn right after them.
+* Return `reveal() false` (no CRT reveal) — a photo-real face should simply be there.
 
 ## Always-on (`aod`)
 AMOLED low-power mode: black, **< 10 % of pixels lit**, no animation, thin strokes, dimmed colours,

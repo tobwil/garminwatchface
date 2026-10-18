@@ -119,6 +119,7 @@ export const SIM_DEFAULTS = {
   resp: 14, spo2: 97, temp: 14, cond: 1, wind: 4.2, windDeg: 250, rain: 20, hiT: 17, loT: 8,
   batt: 76, battDays: 9, notif: 3, phone: true, alt: 212, pres: 101520,
   lat: 50.11, lon: 8.68, metric: true, is24: true, trainDays: 3, glances: 23, wakeN: 1234,
+  nextEv: 840, // next calendar event (minutes since midnight, -1 none)
 };
 
 const DOW = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -162,6 +163,7 @@ export function buildData(cfg, sim, now) {
     p5k: s.p5k, p10k: s.p10k, pHM: s.pHM, pM: s.pM, resp: s.resp, spo2: s.spo2,
     temp: s.temp, cond: s.cond, wind: s.wind, windDeg: s.windDeg, rain: s.rain, hiT: s.hiT, loT: s.loT,
     batt: s.batt, battDays: s.battDays, charging: false, notif: s.notif, phone: s.phone, dnd: false, alarms: 1,
+    nextEv: s.nextEv,
     alt: s.alt, pres: s.pres, metric: s.metric,
     lat: s.lat, lon: s.lon, locOk: true,
     cfg: { ...cfg },

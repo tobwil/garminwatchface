@@ -2016,6 +2016,149 @@
       }
     },
     {
+      "key": "WORK",
+      "cls": "FaceWork",
+      "file": "Work.mc",
+      "js": "work.js",
+      "name": "Arbeitstag",
+      "tags": [
+        "klassisch",
+        "daten"
+      ],
+      "blurb": "Ruhig und schnell ablesbar für den Alltag: große Uhrzeit, der Arbeitstag von 7 bis 19 Uhr als Leiste mit dem nächsten Kalendertermin („in 38 min“), dazu Wetter, Body Battery und Nachrichten in Glaskacheln.",
+      "styles": [
+        "Graphit",
+        "Navy",
+        "Hell"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "5AC8FA",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      },
+      "libs": [
+        "season"
+      ]
+    },
+    {
+      "key": "MANU",
+      "cls": "FaceManu",
+      "file": "Manu.mc",
+      "js": "manu.js",
+      "name": "Manufaktur",
+      "tags": [
+        "amoled",
+        "klassisch"
+      ],
+      "blurb": "Fotorealistische Automatikuhr: gebürstetes Sonnenschliff-Zifferblatt, facettierte Indizes, Dauphine-Zeiger mit Schatten, Sekundenzeiger mit 8 Schlägen pro Sekunde. Gangreserve = Akku, Hilfszifferblätter für Body Battery und Schritte – nachts leuchtet die Leuchtmasse.",
+      "styles": [
+        "Mitternacht",
+        "Fumé",
+        "Racing"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "E8443A",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      }
+    },
+    {
+      "key": "COCKPIT",
+      "cls": "FaceCockpit",
+      "file": "Cockpit.mc",
+      "js": "cockpit.js",
+      "name": "Cockpit",
+      "tags": [
+        "amoled",
+        "daten"
+      ],
+      "blurb": "Hinterleuchtetes Sportwagen-Kombiinstrument: Drehzahlmesser = Puls, Tank = Body Battery, Temperatur = Stress, Kontrollleuchten für Akku, Nachrichten, Bluetooth und „Motorkontrolle“. Beim Heben schwingt die Nadel wie beim Motorstart.",
+      "styles": [
+        "Rot",
+        "Eisblau",
+        "Amber"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FF5A1E",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      }
+    },
+    {
+      "key": "TOURB",
+      "cls": "FaceTourb",
+      "file": "Tourb.mc",
+      "js": "tourb.js",
+      "name": "Tourbillon",
+      "tags": [
+        "amoled",
+        "klassisch"
+      ],
+      "blurb": "Ein skelettiertes, von Hand finissiertes Werk: Genfer Streifen, Perlage, polierte Kanten, Rubine, gebläute Schrauben. Die Goldräder laufen unter den Brücken, der Tourbillon-Käfig dreht sich einmal pro Minute, die Unruh erwacht beim Heben.",
+      "styles": [
+        "Rhodium",
+        "Gold",
+        "Schwarz"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "3A5AD8",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      }
+    },
+    {
+      "key": "DEEP",
+      "cls": "FaceDeep",
+      "file": "Deep.mc",
+      "js": "deep.js",
+      "name": "Tiefer Raum",
+      "tags": [
+        "amoled",
+        "wild"
+      ],
+      "blurb": "Ein Blick wie durch ein Weltraumteleskop: leuchtende Nebel mit Staubbändern, tausende Sterne, helle Sterne mit Beugungsspitzen. Der Nebel leuchtet so hell wie deine Body Battery, Sterne funkeln, beim Heben zieht eine Sternschnuppe vorbei.",
+      "styles": [
+        "Hubble",
+        "Webb",
+        "Orion"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "8AD8FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      }
+    },
+    {
       "key": "NEON",
       "cls": "FaceNeon",
       "file": "Neon.mc",

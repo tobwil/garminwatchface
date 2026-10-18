@@ -47,6 +47,7 @@ class D {
     var sunrise = -1.0; var sunset = -1.0; var moon = 0.0;
     // device
     var batt = 0; var battDays = -1; var charging = false; var notif = 0; var phone = false; var dnd = false; var alarms = 0;
+    var nextEv = -1; // next calendar event, minutes since midnight (-1 none)
     var metric = true;
     // config
     var cfg as Cfg;
@@ -320,6 +321,30 @@ class D {
         v = cv(16); if (v != null) { pres = v.toNumber(); }
         v = cv(38); if (v != null) { temp = v.toNumber(); }
         v = cv(18); if (v != null && hr < 0) { hr = v.toNumber(); }
+        v = cv(12); nextEv = v != null ? clockMins(v.toString()) : -1;
+    }
+
+    // "14:00", "2:00 PM" -> minutes since midnight, -1 if there is no time in it
+    static function clockMins(s as String) as Number {
+        var c = s.toCharArray();
+        var i = s.find(":");
+        if (i == null || i < 1 || i + 2 >= c.size()) {
+            return -1;
+        }
+        var h = 0;
+        var f = 1;
+        for (var k = i - 1; k >= 0 && k >= i - 2 && c[k] >= '0' && c[k] <= '9'; k--) {
+            h += (c[k].toNumber() - 48) * f;
+            f *= 10;
+        }
+        var m = (c[i + 1].toNumber() - 48) * 10 + (c[i + 2].toNumber() - 48);
+        var u = s.toUpper();
+        if (u.find("PM") != null && h < 12) {
+            h += 12;
+        } else if (u.find("AM") != null && h == 12) {
+            h = 0;
+        }
+        return h * 60 + m;
     }
 
     hidden function readWeather() as Void {
