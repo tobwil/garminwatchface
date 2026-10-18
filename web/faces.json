@@ -2439,6 +2439,41 @@
           22
         ]
       }
+    },
+    {
+      "key": "LIVE",
+      "cls": "FaceLive",
+      "file": "Live.mc",
+      "js": "live.js",
+      "name": "Live-Coach",
+      "tags": [
+        "ki",
+        "daten",
+        "interaktiv"
+      ],
+      "blurb": "Was passiert gerade in deinem Körper? Der Live-Coach kombiniert Puls, Ruhepuls, Bewegung, Stress- und Body-Battery-Trend zu einem Zustand – „Anspannung im Sitzen“, „Lädt gerade auf“, „Nachbrenner“ – sagt locker, warum, und gibt einen Tipp. Beim Hinschauen tickt der Puls live, mit Atemübung zum Mitmachen.",
+      "styles": [
+        "Kiesel",
+        "Kiesel Weiß",
+        "Aura"
+      ],
+      "uses": [],
+      "sprites": [
+        "kiesel"
+      ],
+      "libs": [
+        "now"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "55AAFF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
     }
   ]
 }
