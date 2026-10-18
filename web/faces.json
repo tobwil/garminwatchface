@@ -2474,6 +2474,38 @@
           22
         ]
       }
+    },
+    {
+      "key": "MO",
+      "cls": "FaceMo",
+      "file": "Mo.mc",
+      "js": "mo.js",
+      "name": "Mo",
+      "tags": [
+        "interaktiv",
+        "ki",
+        "wild"
+      ],
+      "blurb": "Mo, ein flauschiges Robbenbaby, wohnt auf deiner Uhrzeit: Er sitzt auf den Ziffern und lässt die Beine baumeln, lugt hinter der 4 hervor, schläft nachts quer über der Zeit, turnt am Doppelpunkt oder schiebt eine Ziffer zurecht. Seine Laune kommt live aus deinem Körper – nervös bei Stress, müde bei leerem Akku, mit Stirnband nach dem Sport – und in der Sprechblase sagt er dir, was los ist.",
+      "styles": [
+        "Nacht",
+        "Dämmerung",
+        "Kiesel"
+      ],
+      "uses": [],
+      "libs": [
+        "now"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB089",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
     }
   ]
 }
