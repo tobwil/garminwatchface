@@ -63,6 +63,10 @@ import f60 from "./neon.js";
 import f61 from "./fireworks.js";
 import f62 from "./plasma.js";
 import f63 from "./blackhole.js";
+import f64 from "./form.js";
+import f65 from "./innen.js";
+import f66 from "./befund.js";
+import f67 from "./plan.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -128,4 +132,8 @@ export const FACES = {
   FIREWORK: f61,
   PLASMA: f62,
   HOLE: f63,
+  FORM: f64,
+  INNEN: f65,
+  BEFUND: f66,
+  PLAN: f67,
 };

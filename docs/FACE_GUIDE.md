@@ -37,6 +37,12 @@ In Monkey C use the literal `-1` for transparent and `Graphics.ARC_CLOCKWISE` et
 `rnd(seed)` (Park–Miller next seed), `rf(seed)` (0..1), `noise(x)` (-1..1 smooth),
 `pad2(n), num(n)` ("12.345"), `hm(min)` ("2:05"), `race(sec)`, `hour(d)`, `timeStr(d)`, `fix1(v)` ("3.4").
 
+**Shared libraries** (`web/js/engine/<name>.js` / `watch/source/lib/<Name>.mc`): code only some designs
+need is copied into a watch face only when its faces.json entry lists it, e.g. `"libs": ["insight"]`.
+`IN` / `Insight` draws conclusions from the health data: `ready(d)` (readiness 0..100 plus the points each
+of Body Battery, sleep, calm and recovery adds or costs), `state(d, R)` (topfit … gestresst), `worst(r)`,
+`reason(d, k)`, `advice(st)`, `stress2h(d)`, `bbRate(d)`, `avg`, `delta`, `condName(cond)`.
+
 **F** (`fonts.js` / `Fonts.mc`) – procedural fonts, identical pixels on web and watch:
 * `F.st(dc, txt, x, y, h, pen, just, prog, slant)` monoline vector text. `y` = vertical centre,
   `h` = cap height px, `pen` = stroke width, `just` 0 left / 1 centre / 2 right, `prog` 0..1 draws

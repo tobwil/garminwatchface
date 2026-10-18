@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 64 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 68 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 64 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 68 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -58,7 +58,7 @@ Heben gibt es die typische Animation.
 <table>
 <tr>
 <td align="center" valign="top" width="25%"><img src="docs/media/KIESEL.webp" width="180" alt="Kiesel"><br><b>Kiesel</b><br><sub>TicToc-Layout: Datum, Haarlinien, große runde Ziffern, Schritte mit Raster-Balken, Akku und Bluetooth</sub></td>
-<td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, die Zeilen gleiten von rechts herein</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, oben ein Datenfeld nach Wahl, die Zeilen gleiten von rechts herein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KANALOG.webp" width="180" alt="Kiesel Analog"><br><b>Kiesel Analog</b><br><sub>Simple Analog: kräftige Striche, roter Sekundenzeiger, Datum im Kästchen, Zeiger drehen ein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KROLL.webp" width="180" alt="Kiesel Rolle"><br><b>Kiesel Rolle</b><br><sub>Ziffernwalzen, die beim Heben wie ein Spielautomat rotieren und nacheinander einrasten</sub></td>
 </tr>
@@ -128,6 +128,23 @@ nur aus Licht auf Schwarz – und sparen dabei Akku.
 <td align="center" valign="top" width="25%"><img src="docs/media/BLICK.webp" width="180" alt="Blick-Zähler"><br><b>Blick-Zähler</b><br><sub>Zählt, wie oft du heute auf die Uhr schaust: Abzeichen, Vergleich mit gestern</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/CIPHER.webp" width="180" alt="Geheimcode"><br><b>Geheimcode</b><br><sub>Uhrzeit binär, als Morsecode oder römisch – nach ein paar Sekunden entschlüsselt sie sich</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/NEBEL.webp" width="180" alt="Nebel"><br><b>Nebel</b><br><sub>Beschlagenes Display: ein Finger wischt die Uhrzeit frei, dann zieht der Nebel wieder zu</sub></td>
+</tr>
+</table>
+
+### Gesundheit verstehen
+
+Diese Designs ziehen Schlüsse aus deinen Gesundheitsdaten und sagen in Klartext, was sie bedeuten. Alle
+nutzen dieselbe nachvollziehbare Rechnung: Die Tagesform ist ein gewichteter Mittelwert aus Body Battery
+(40 %), Schlafscore (25 %), Ruhe = 100 − Stress der letzten 2 Stunden (20 %) und Erholung (15 %); jeder
+Faktor zeigt, wie viele Punkte er bringt oder kostet. Daraus folgt die Verfassung (topfit, solide, müde,
+erschöpft, gestresst), und nach ihr richten sich Farben, Wetter und Szenen.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/FORM.webp" width="180" alt="Tagesform"><br><b>Tagesform</b><br><sub>Score aus Body Battery, Schlaf, Stress und Erholung – jeder Faktor mit Plus/Minus, dazu Rat und Hauptgrund</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/INNEN.webp" width="180" alt="Innenwetter"><br><b>Innenwetter</b><br><sub>Deine Verfassung als Wetter: Sonne, Nebel, Regen, Gewitter, Regenbogen – und daneben das Wetter draußen</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/BEFUND.webp" width="180" alt="Befund"><br><b>Befund</b><br><sub>Puls, Body Battery und Stress als Kurven, zu jeder ein Befund in Klartext, unten das Fazit</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/PLAN.webp" width="180" alt="Was geht heute?"><br><b>Was geht heute?</b><br><sub>Trainingsempfehlung als Szene: Ruhetag, Entspannen, Spaziergang, Rad locker bis Intervalle, bei Regen die Rolle</sub></td>
 </tr>
 </table>
 
@@ -484,6 +501,22 @@ Und die Pixel-Geschichten durch ihren Tag:
 **Schwarzes Loch**: Gargantua · Quasar · Akzent
 
 <img src="docs/media/styles/HOLE.webp" width="560" alt="Schwarzes Loch: Varianten">
+
+**Tagesform**: Nacht · Tag · Minimal
+
+<img src="docs/media/styles/FORM.webp" width="560" alt="Tagesform: Varianten">
+
+**Innenwetter**: Wiese · Pastell · Gameboy
+
+<img src="docs/media/styles/INNEN.webp" width="560" alt="Innenwetter: Varianten">
+
+**Befund**: Monitor · Papier · Akzent
+
+<img src="docs/media/styles/BEFUND.webp" width="560" alt="Befund: Varianten">
+
+**Was geht heute?**: Hell · Nacht · Akzent
+
+<img src="docs/media/styles/PLAN.webp" width="560" alt="Was geht heute?: Varianten">
 
 </details>
 

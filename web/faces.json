@@ -1839,13 +1839,15 @@
         "klassisch",
         "ohnesport"
       ],
-      "blurb": "Die legendäre Pebble Text Watch auf Deutsch: „zehn / zweiund / vierzig“ in Bitmap-Schrift, die Stunde fett. Beim Heben gleiten die Zeilen nacheinander von rechts herein.",
+      "blurb": "Die legendäre Pebble Text Watch auf Deutsch: „zehn / zweiund / vierzig“ in Bitmap-Schrift, die Stunde fett. Oben ein Datenfeld nach Wahl (Standard: Schritte). Beim Heben gleiten die Zeilen nacheinander von rechts herein.",
       "styles": [
         "Weiß",
         "Schwarz",
         "Farbe"
       ],
-      "uses": [],
+      "uses": [
+        "slots"
+      ],
       "sprites": [
         "kiesel"
       ],
@@ -1854,8 +1856,8 @@
         "accent": "55AAFF",
         "dcol": "FFFFFF",
         "slots": [
-          23,
           2,
+          23,
           22
         ]
       }
@@ -2032,6 +2034,142 @@
       "defaults": {
         "style": 1,
         "accent": "3AE0A0",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "FORM",
+      "cls": "FaceForm",
+      "file": "Form.mc",
+      "js": "form.js",
+      "name": "Tagesform",
+      "tags": [
+        "daten",
+        "ki"
+      ],
+      "blurb": "Wie fit bist du heute – und warum? Ein Score aus Body Battery, Schlaf, Stress und Erholung, die vier Faktoren mit ihren Plus- und Minuspunkten, dazu Rat und Hauptgrund im Klartext. Die Farbwelt folgt deiner Verfassung.",
+      "styles": [
+        "Nacht",
+        "Tag",
+        "Minimal"
+      ],
+      "uses": [],
+      "sprites": [],
+      "libs": [
+        "insight"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3AB4FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "INNEN",
+      "cls": "FaceInnen",
+      "file": "Innen.mc",
+      "js": "innen.js",
+      "name": "Innenwetter",
+      "tags": [
+        "pixel",
+        "daten",
+        "ki"
+      ],
+      "blurb": "Deine Verfassung als Wetter: Sonne, wenn du topfit bist, Nebel nach kurzer Nacht, Regen bei leerem Akku, Gewitter bei Stress – und ein Regenbogen, sobald die Body Battery wieder lädt. Du stehst mittendrin, die Zeile darunter sagt warum und wie das Wetter draußen ist.",
+      "styles": [
+        "Wiese",
+        "Pastell",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [
+        "innen"
+      ],
+      "libs": [
+        "insight"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "E8503A",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "BEFUND",
+      "cls": "FaceBefund",
+      "file": "Befund.mc",
+      "js": "befund.js",
+      "name": "Befund",
+      "tags": [
+        "daten",
+        "ki"
+      ],
+      "blurb": "Ein Tagesbericht über deinen Körper: Puls der letzten zwei Stunden, Body Battery und Stress über 24 Stunden als Kurven, zu jeder ein Befund in Klartext („Sinkt, du kommst runter“, „Lädt +8/Std“, „3 Std Stress heute“) und unten das Fazit.",
+      "styles": [
+        "Monitor",
+        "Papier",
+        "Akzent"
+      ],
+      "uses": [],
+      "sprites": [],
+      "libs": [
+        "insight"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "3AB4FF",
+        "dcol": "FFFFFF",
+        "slots": [
+          23,
+          2,
+          22
+        ]
+      }
+    },
+    {
+      "key": "PLAN",
+      "cls": "FacePlan",
+      "file": "Plan.mc",
+      "js": "plan.js",
+      "name": "Was geht heute?",
+      "tags": [
+        "daten",
+        "ki",
+        "rad"
+      ],
+      "blurb": "Die Trainingsempfehlung für heute als kleine Szene: aus Verfassung, Erholungszeit, Trainingstagen der Woche, Wetter und Uhrzeit wird Ruhetag, Entspannen, Spaziergang, lockere Runde, Grundlage oder Intervalle – bei Regen, Frost oder Hitze auf der Rolle, spätabends Schlafen. Darunter die Gründe.",
+      "styles": [
+        "Hell",
+        "Nacht",
+        "Akzent"
+      ],
+      "uses": [
+        "days"
+      ],
+      "sprites": [
+        "plan"
+      ],
+      "libs": [
+        "insight"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "E8503A",
         "dcol": "FFFFFF",
         "slots": [
           23,

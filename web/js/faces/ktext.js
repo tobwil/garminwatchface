@@ -1,8 +1,9 @@
 // KTEXT — "Kiesel Text": the Pebble's famous Text Watch in German. The time as words on up to three
 // lines, the hour in bold ("zehn / zweiund / vierzig", "zehn / null / sieben", "zehn / uhr"), set in
 // the bitmap font. On every wrist raise the lines slide in from the right one after the other, like
-// the minute change on the Pebble. Date, battery and Bluetooth at the edge; otherwise as still as
-// e-paper. Styles: 1 Weiß, 2 Schwarz, 3 Farbe (Pebble Time palette).
+// the minute change on the Pebble. Above a data field of your choice (steps by default) and the
+// battery, below the date (with a crossed-out Bluetooth icon when the phone is gone); otherwise as still
+// as e-paper. Styles: 1 Weiß, 2 Schwarz, 3 Farbe (Pebble Time palette).
 // Mirrors watch/source/faces/Ktext.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
@@ -50,7 +51,7 @@ function pal(st, acc) {
 export default {
   fps: 0,
 
-  // static layer: background, date, battery, Bluetooth; the words slide in
+  // static layer: background, data field, battery, date, Bluetooth; the words slide in
   bgKey(d) { return d.doy * 1440 + d.mins; },
   reveal() { return false; },
 
@@ -64,11 +65,13 @@ export default {
       dc.fillRectangle(0, 0, 454, 454);
       dc.setColor(P[2], -1);
       dc.fillRectangle(187, 60, Math.round(80 * G.clamp(d.batt / 100, 0, 1)), 4);
-      SPR.draw(dc, SP.BT, 216, 76, 2, [-1, P[2]], false);
-      if (!d.phone) {
-        for (let i = 0; i < 7; i++) dc.fillRectangle(212 + i * 3, 74 + i * 3, 3, 3);
-      }
+      const s0 = d.slots[0];
+      if (s0.lbl) F.px(dc, s0.val + " " + s0.lbl.toLowerCase(), 227, 74, 2, 1, 0);
       F.px(dc, DOW[d.dow] + " " + d.day + "." + d.mon + ".", 227, 380, 2, 1, 0);
+      if (!d.phone) {
+        SPR.draw(dc, SP.BT, 220, 402, 2, [-1, P[2]], false);
+        for (let i = 0; i < 7; i++) dc.fillRectangle(216 + i * 3, 400 + i * 3, 3, 3);
+      }
     }
 
     if (!M) return;

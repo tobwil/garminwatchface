@@ -114,6 +114,9 @@ def stage(face):
     for spr in face.get("sprites", []):
         mod = "Spr" + spr[0].upper() + spr[1:] + ".mc"
         shutil.copy(os.path.join(wsrc, "gen", mod), os.path.join(src, "gen"))
+    # shared helpers only some designs need (watch/source/lib/<Name>.mc), e.g. "libs": ["insight"]
+    for lib in face.get("libs", []):
+        shutil.copy(os.path.join(wsrc, "lib", lib[0].upper() + lib[1:] + ".mc"), src)
 
     styles = face.get("styles", ["Standard"])
     uses = face.get("uses", [])
