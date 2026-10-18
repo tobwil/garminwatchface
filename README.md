@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 77 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 78 fertigen Designs, die du live
 ansehen, anpassen und mit einem Klick per USB auf die Uhr übertragen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store, ohne Zusatzprogramm.
 
@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 77 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 78 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 77 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 78 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -176,6 +176,22 @@ und erholt (in dieser Reihenfolge geprüft). Dazu sagt er locker, woran er es si
 bei jedem Blick in anderen Worten. Während du hinschaust, liest er den Puls jede Sekunde neu; im Stil
 *Aura* atmest du bei Anspannung mit einem Kreis mit (4 s ein, 6 s aus). Das ist eine Einschätzung aus
 den Sensordaten, keine Diagnose.
+
+### Avatar
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/MO.webp" width="180" alt="Mo"><br><b>Mo</b><br><sub>Ein flauschiges Robbenbaby wohnt auf deiner Uhrzeit und zeigt mit seiner Laune, wie es deinem Körper gerade geht</sub></td>
+</tr>
+</table>
+
+**Mo** wohnt auf deiner Uhrzeit. Bei jedem Blick spielt er eine andere Szene: Er sitzt auf den Ziffern
+und lässt die Beine baumeln, lugt hinter der Minute hervor, hängt am Doppelpunkt oder stampft die neue
+Minute fest. Nachts schläft er quer über der Zeit und rollt beim Heben gähnend zur Seite, nach dem
+Sport jubelt er mit Stirnband. Seine Laune kommt vom Live-Coach: Bei Anspannung sträubt sich sein Fell
+und er atmet mit dir (4 s ein, 6 s aus), bei leerem Akku ist er müde, beim Aufladen kuschelig, nach
+langem Sitzen hüpft er auffordernd. In der Sprechblase sagt er dir, was los ist. Sein Fell ist vorab
+gerendert (`tools/render/mo.py`), Augen, Blinzeln, Mund und Effekte zeichnet die Uhr live.
 
 ### Pixel-Geschichten
 
@@ -572,6 +588,10 @@ Und die Pixel-Geschichten durch ihren Tag:
 **Live-Coach**: Kiesel · Kiesel Weiß · Aura
 
 <img src="docs/media/styles/LIVE.webp" width="560" alt="Live-Coach: Varianten">
+
+**Mo**: Nacht · Dämmerung · Kiesel
+
+<img src="docs/media/styles/MO.webp" width="560" alt="Mo: Varianten">
 
 **Arbeitstag**: Graphit · Navy · Hell
 

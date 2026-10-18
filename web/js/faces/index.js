@@ -76,6 +76,7 @@ import f73 from "./innen.js";
 import f74 from "./befund.js";
 import f75 from "./plan.js";
 import f76 from "./live.js";
+import f77 from "./mo.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -154,4 +155,5 @@ export const FACES = {
   BEFUND: f74,
   PLAN: f75,
   LIVE: f76,
+  MO: f77,
 };
