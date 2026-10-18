@@ -124,8 +124,8 @@ class FaceMo extends Face {
         return false;
     }
 
-    // Mo leads a breathing exercise himself when you are tense
-    function breathes() as Boolean {
+    // Mo is the assistant here: his bubble, breathing exercise and bedtime nap replace the cards
+    function speaks() as Boolean {
         return true;
     }
 

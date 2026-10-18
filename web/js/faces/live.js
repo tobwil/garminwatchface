@@ -292,8 +292,8 @@ export default {
   // breathing aura move. The tip changes with every raise (d.wakeN) -> part of the key.
   bgKey(d) { return (d.doy * 1440 + d.mins) * 4 + (d.wakeN % 4); },
   reveal() { return false; },
-  // the Aura style and the tips bring their own breathing guide
-  breathes: true,
+  // the coach brings its own tips, breathing guide and wind-down hint: no assistant cards
+  speaks: true,
 
   draw(dc, d, a) {
     const S = !a.bg, M = !a.so; // draw the static / the moving parts

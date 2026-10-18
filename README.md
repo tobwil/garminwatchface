@@ -643,7 +643,8 @@ für das AMOLED-Display (Burn-in-Schutz inklusive).
 ## Der Assistent
 
 Alle Designs bringen einen kleinen Assistenten mit, der beim Handgelenk-Heben für ein paar Sekunden eine
-Karte über das Design legt – nur wenn es passt, und nie zu oft:
+Karte über das Design legt – nur wenn es passt, und nie zu oft. Ausnahme sind Live-Coach und Mo: Sie
+sprechen selbst (Tipps, Atemübung, Schlafenszeit), dort bleibt die Karte weg.
 
 * **Atmen:** Bei hohem Stress (aktuell ab 70 oder ab 60 im Schnitt der letzten 2 Stunden) führt ein
   Kreis durch einen ruhigen Atemzug (4 s ein, 4 s aus); höchstens alle 30 Minuten.
