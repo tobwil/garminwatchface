@@ -29,7 +29,8 @@ const bgCache = new WeakMap();
 
 function staticLayer(ctx, face, d, k) {
   const w = ctx.canvas.width;
-  const key = [k, d.cfg.style, d.accent, d.dcol, d.metric].join("|");
+  // d.simKey: the studio's simulated values (a moved slider redraws the layer within the minute)
+  const key = [k, d.cfg.style, d.accent, d.dcol, d.metric, d.simKey].join("|");
   let m = bgCache.get(face);
   if (!m) { m = new Map(); bgCache.set(face, m); }
   let c = m.get(w);

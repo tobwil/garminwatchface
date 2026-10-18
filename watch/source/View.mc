@@ -120,6 +120,9 @@ class FaceView extends WatchUi.WatchFace {
         _wake = System.getTimer();
         // the assistant decides on every raise whether it has something to say
         _card = !_sleeping && !_edit ? Assist.pick(d) : 0;
+        if (_card == 1 && face.breathes()) {
+            _card = 0;
+        }
         if (cfg.anim > 0 && !_sleeping && !_edit) {
             startTimer(period(20));
         }

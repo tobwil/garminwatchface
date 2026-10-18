@@ -57,6 +57,11 @@ class Face {
         return true;
     }
 
+    // true when the design has its own breathing guide, so the assistant skips its breathing card
+    function breathes() as Boolean {
+        return false;
+    }
+
     // Default static layer: draw() with a.so = true. Designs wrap their static blocks in
     // `if (!a.bg)` and their moving blocks in `if (!a.so)`.
     function bg(dc as Dc, d as D) as Void {

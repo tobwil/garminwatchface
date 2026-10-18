@@ -26,6 +26,10 @@ const SIMS = [
   ["recovH", "Erholungszeit", 0, 96, 1, " h"], ["wkBikeKm", "Rad diese Woche", 0, 600, 1, " km"], ["batt", "Akku", 0, 100, 1, " %"],
   ["temp", "Temperatur", -15, 38, 1, " °C"], ["trainDays", "Trainingstage diese Woche", 0, 7, 1, ""],
   ["glances", "Blicke auf die Uhr heute", 0, 300, 1, ""],
+  // movement and trends (Live-Coach)
+  ["mv10", "Schritte letzte 10 min", 0, 1500, 10, ""], ["idle", "Minuten ohne Bewegung", 0, 240, 1, " min"],
+  ["hrTrend", "Puls-Trend", -60, 60, 1, " /10 min"], ["stressTrend", "Stress-Trend", -40, 40, 1, " /30 min"],
+  ["bbTrend", "Body-Battery-Trend", -20, 20, 1, " /h"],
 ];
 
 // ------------------------------------------------------------------ storage (per viewer)
@@ -149,6 +153,8 @@ function wake() {
   state.wakeAt = performance.now();
   // the assistant decides on every raise whether it has something to say
   state.assist = Assist.pick(dataFor(state.key, cfgOf(state.key), now()));
+  // designs with their own breathing guide don't get the assistant's breathing card
+  if (state.assist === 1 && FACES[state.key].breathes) state.assist = 0;
   state.dirty = true;
 }
 
@@ -429,7 +435,10 @@ function bindInputs() {
   // simulator sliders
   const sim = $("sim");
   sim.innerHTML = "";
-  const defaults = { ...SIM_DEFAULTS, recovH: Math.round(SIM_DEFAULTS.recov / 60), wkBikeKm: Math.round(SIM_DEFAULTS.wkBike / 1000) };
+  // the trends start at the values of the default histories
+  const d0 = buildData(DEFAULT_CFG, {}, new Date());
+  const defaults = { ...SIM_DEFAULTS, recovH: Math.round(SIM_DEFAULTS.recov / 60), wkBikeKm: Math.round(SIM_DEFAULTS.wkBike / 1000),
+    hrTrend: d0.hr - d0.hrHist[54], stressTrend: d0.stress - d0.stressHist[46], bbTrend: d0.bb - d0.bbHist[45] };
   for (const [k, label, lo, hi, step, unit] of SIMS) {
     const row = document.createElement("div");
     row.className = "sim-row";
