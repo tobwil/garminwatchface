@@ -56,6 +56,8 @@ class D {
 
     hidden var _lastSlow = -1;
     hidden var _lastHist = -1;
+    hidden var _hrSec = -1;
+    hidden var _hrLive = -1;
 
     const DOW = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
     const MON = ["JAN", "FEB", "MÄR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEZ"];
@@ -190,6 +192,23 @@ class D {
                 hr = smp.heartRate;
             }
         }
+    }
+
+    // Live heart rate for designs that show it ticking (LIVE): re-reads the sensor at most once per
+    // second (cheap), falls back to the minute value. Only called by the designs that need it.
+    function hrNow() as Number {
+        if (s != _hrSec) {
+            _hrSec = s;
+            _hrLive = hr;
+            try {
+                var act = Activity.getActivityInfo();
+                if (act != null && act.currentHeartRate != null) {
+                    _hrLive = act.currentHeartRate as Number;
+                }
+            } catch (e) {
+            }
+        }
+        return _hrLive;
     }
 
     // Called once per wrist raise / face shown. Persists today's glance count.

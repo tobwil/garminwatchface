@@ -48,6 +48,19 @@ of Body Battery, sleep, calm and recovery adds or costs), `state(d, R)` (topfit 
 itself: `precip`, `fireworks`, `lights`, `balloons` (moving parts) and `snowCap`, `tree`, `pumpkin`, `eggs`,
 `heart` (static layer).
 
+`NW` / `Now` (`"libs": ["now"]`) says what is going on in the body *right now*: `judge(d)` → array `R`
+(state id `NS.*` / `Now.*` in priority order EFFORT, MOVING, AFTERBURN, WIND_DOWN, STRESS_SITTING, RESERVE,
+EASING, SITTING_LONG, CHARGING, CALM, plus the facts: hr, rhr, steps of 10 min, idle minutes, stress and its
+change per 30 min, Body Battery and its change per hour, hr change per 10 min, peaks; thresholds in the file
+header), `head(R)`, `reason(d, R)` (with the real numbers), `tip(d, R, d.wakeN)` (four variants), `trend(R, k)`
+(-1/0/1 for hr, stress, Body Battery), `breathe(st)`, `COL`, `SHORT`, `wrap(s, w)`. Movement comes from
+`tick(d)`, which the face calls in `draw` and `aod`: a ring of per-minute step samples (Storage key `nwR`,
+written at most every 10 min); in the studio the sliders "Schritte letzte 10 min" / "Minuten ohne Bewegung"
+stand in for it (`d.simMove`, web only), the trend sliders reshape the end of the histories.
+**Live heart rate**: `d.hrNow()` re-reads `Activity.getActivityInfo().currentHeartRate` at most once per
+second (the minute value `d.hr` stays as it is); call it only for a number that ticks while the face is
+awake. The studio lets it wobble by a beat or two from second to second.
+
 **Memory over days** (GARDEN, SAGA, WERK, DUNGEON): keep the state in `St` under a short face prefix, read
 it once per static redraw into a member/module variable (Storage reads are slow), judge the previous day
 when `year * 1000 + doy` changes (only if it really was yesterday, else the face waited for you) and write

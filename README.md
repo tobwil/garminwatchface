@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 76 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 77 fertigen Designs, die du live
 ansehen, anpassen und mit einem Klick per USB auf die Uhr übertragen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store, ohne Zusatzprogramm.
 
@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 76 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 77 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 76 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 77 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -163,7 +163,19 @@ erschöpft, gestresst), und nach ihr richten sich Farben, Wetter und Szenen.
 <td align="center" valign="top" width="25%"><img src="docs/media/BEFUND.webp" width="180" alt="Befund"><br><b>Befund</b><br><sub>Puls, Body Battery und Stress als Kurven, zu jeder ein Befund in Klartext, unten das Fazit</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/PLAN.webp" width="180" alt="Was geht heute?"><br><b>Was geht heute?</b><br><sub>Trainingsempfehlung als Szene: Ruhetag, Entspannen, Spaziergang, Rad locker bis Intervalle, bei Regen die Rolle</sub></td>
 </tr>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/LIVE.webp" width="180" alt="Live-Coach"><br><b>Live-Coach</b><br><sub>Was passiert gerade in deinem Körper? Zustand, Grund und Tipp aus Puls, Bewegung, Stress- und Body-Battery-Trend; der Puls tickt live</sub></td>
+</tr>
 </table>
+
+Der **Live-Coach** schaut nicht auf den Tag, sondern auf **jetzt**: Er kombiniert Puls und Ruhepuls,
+Schritte der letzten 10 Minuten, Minuten ohne Bewegung und die Trends von Puls, Stress und Body Battery
+zu einem von zehn Zuständen – Volle Belastung, In Bewegung, Nachbrenner, Zeit runterzufahren,
+Anspannung im Sitzen, Läuft auf Reserve, Spannung lässt nach, Lange gesessen, Lädt gerade auf, Ruhig
+und erholt (in dieser Reihenfolge geprüft). Dazu sagt er locker, woran er es sieht, und gibt einen Tipp,
+bei jedem Blick in anderen Worten. Während du hinschaust, liest er den Puls jede Sekunde neu; im Stil
+*Aura* atmest du bei Anspannung mit einem Kreis mit (4 s ein, 6 s aus). Das ist eine Einschätzung aus
+den Sensordaten, keine Diagnose.
 
 ### Pixel-Geschichten
 
@@ -556,6 +568,10 @@ Und die Pixel-Geschichten durch ihren Tag:
 **Was geht heute?**: Hell · Nacht · Akzent
 
 <img src="docs/media/styles/PLAN.webp" width="560" alt="Was geht heute?: Varianten">
+
+**Live-Coach**: Kiesel · Kiesel Weiß · Aura
+
+<img src="docs/media/styles/LIVE.webp" width="560" alt="Live-Coach: Varianten">
 
 **Arbeitstag**: Graphit · Navy · Hell
 

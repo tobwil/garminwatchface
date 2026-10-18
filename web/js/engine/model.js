@@ -120,6 +120,10 @@ export const SIM_DEFAULTS = {
   batt: 76, battDays: 9, notif: 3, phone: true, alt: 212, pres: 101520,
   lat: 50.11, lon: 8.68, metric: true, is24: true, trainDays: 3, glances: 23, wakeN: 1234,
   nextEv: 840, // next calendar event (minutes since midnight, -1 none)
+  // movement for the "now" lib (web only, the watch measures it): steps in the last 10 min, minutes
+  // without movement. The trends (hrTrend bpm / 10 min, stressTrend / 30 min, bbTrend / h) have no
+  // default: only when set they reshape the end of the histories, so other designs keep theirs.
+  mv10: 120, idle: 25,
 };
 
 const DOW = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -200,6 +204,21 @@ export function buildData(cfg, sim, now) {
     16: d.pres, 17: d.notif, 18: d.hr, 19: d.wkRun, 20: d.wkBike, 21: d.recov, 22: d.stress, 23: d.bb, 24: d.vo2r,
     25: d.vo2b, 26: d.tStatus, 27: d.p5k, 28: d.p10k, 29: d.pHM, 30: d.pM, 35: d.spo2, 36: d.resp, 38: d.temp === -99 ? -1 : d.temp, 42: d.sleep,
   };
+  // simulated trends: the last buckets of the histories follow the slider (only when it is set)
+  if (sim && sim.hrTrend !== undefined && d.hr > 0) {
+    for (let k = 1; k < 15; k++) d.hrHist[59 - k] = Math.round(G.clamp(d.hr - (sim.hrTrend * Math.min(k, 5)) / 5, 40, 200));
+  }
+  if (sim && sim.stressTrend !== undefined && d.stress >= 0) {
+    for (let k = 1; k < 4; k++) d.stressHist[47 - k] = Math.round(G.clamp(d.stress - sim.stressTrend * Math.min(k, 2), 0, 100));
+  }
+  if (sim && sim.bbTrend !== undefined && d.bb >= 0) {
+    for (let k = 1; k < 5; k++) d.bbHist[47 - k] = Math.round(G.clamp(d.bb - (sim.bbTrend * k) / 2, 0, 100));
+  }
+  d.simMove = [s.mv10, s.idle];
+  d.simKey = JSON.stringify(sim || {});
+  // live heart rate (D.hrNow() on the watch re-reads the sensor every second): wobbles a little
+  // around the simulated value from second to second
+  d.hrNow = () => (d.hr > 0 ? d.hr + Math.round(G.noise(d.s * 0.9 + d.m * 7.3) * 2.2) : -1);
   d.slots = cfg.slots.map((t) => fmtSlot(t, rawFor[t] === undefined ? -1 : rawFor[t], d.metric));
   return d;
 }
