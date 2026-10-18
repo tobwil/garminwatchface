@@ -46,17 +46,18 @@ export const CLIMBS = [
 export const DEFAULT_CFG = {
   style: 1, accent: 0xff5a1f, dcol: 0xffffff, slots: [23, 21, 20],
   ftp: 250, kg: 75, climb: 0, quest: 1, anim: 2, bikeGoal: 150, src: 0, dayGoal: 4,
+  bday: 0, bed: 1350, assist: 1, // personal: birthday MMDD (0 = none), usual bedtime (min), assistant on/off
 };
 
 export const SOURCES = ["Höhenmeter (Etagen)", "Rad-km der Woche", "Trainingstage der Woche"];
 
 const hex6 = (n) => (n >>> 0).toString(16).toUpperCase().padStart(6, "0").slice(-6);
 
-// FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>.<src>.<dayGoal>
-// (the last two fields are optional when decoding, for codes from the first studio version)
+// FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>.<src>.<dayGoal>.<bday>.<bed>.<assist>
+// (the fields after <bikeGoal> are optional when decoding, for codes from older studio versions)
 export function encodeCode(face, c) {
   return ["FL1", face, c.style, hex6(c.accent), hex6(c.dcol), c.slots.join("-"), c.ftp, c.kg, c.climb, c.quest, c.anim, c.bikeGoal,
-    c.src ?? 0, c.dayGoal ?? 4].join(".");
+    c.src ?? 0, c.dayGoal ?? 4, c.bday ?? 0, c.bed ?? 1350, c.assist ?? 1].join(".");
 }
 export function decodeCode(s) {
   const p = (s || "").trim().toUpperCase().split(".");
@@ -71,6 +72,8 @@ export function decodeCode(s) {
       slots: sl.slice(0, 3), ftp: n(p[6], 50, 600, 250), kg: n(p[7], 30, 200, 75), climb: n(p[8], 0, 3, 0),
       quest: n(p[9], 0, 2, 1), anim: n(p[10], 0, 2, 2), bikeGoal: n(p[11], 0, 2000, 150),
       src: p.length > 12 ? n(p[12], 0, 2, 0) : 0, dayGoal: p.length > 13 ? n(p[13], 1, 7, 4) : 4,
+      bday: p.length > 14 ? n(p[14], 0, 1231, 0) : 0, bed: p.length > 15 ? n(p[15], 0, 1439, 1350) : 1350,
+      assist: p.length > 16 ? n(p[16], 0, 1, 1) : 1,
     },
   };
 }

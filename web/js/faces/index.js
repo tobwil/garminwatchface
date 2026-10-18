@@ -40,33 +40,36 @@ import f37 from "./bauhaus.js";
 import f38 from "./sterne.js";
 import f39 from "./wetter.js";
 import f40 from "./farm.js";
-import f41 from "./camp.js";
-import f42 from "./moon.js";
-import f43 from "./map.js";
-import f44 from "./light.js";
-import f45 from "./train.js";
-import f46 from "./office.js";
-import f47 from "./climb.js";
-import f48 from "./race.js";
-import f49 from "./post.js";
-import f50 from "./bakery.js";
-import f51 from "./pxchrono.js";
-import f52 from "./ubahn.js";
-import f53 from "./bridge.js";
-import f54 from "./body.js";
-import f55 from "./station.js";
-import f56 from "./kiesel.js";
-import f57 from "./ktext.js";
-import f58 from "./kanalog.js";
-import f59 from "./kroll.js";
-import f60 from "./neon.js";
-import f61 from "./fireworks.js";
-import f62 from "./plasma.js";
-import f63 from "./blackhole.js";
-import f64 from "./form.js";
-import f65 from "./innen.js";
-import f66 from "./befund.js";
-import f67 from "./plan.js";
+import f41 from "./garden.js";
+import f42 from "./saga.js";
+import f43 from "./camp.js";
+import f44 from "./moon.js";
+import f45 from "./map.js";
+import f46 from "./light.js";
+import f47 from "./train.js";
+import f48 from "./office.js";
+import f49 from "./climb.js";
+import f50 from "./race.js";
+import f51 from "./post.js";
+import f52 from "./bakery.js";
+import f53 from "./pxchrono.js";
+import f54 from "./ubahn.js";
+import f55 from "./bridge.js";
+import f56 from "./body.js";
+import f57 from "./station.js";
+import f58 from "./kiesel.js";
+import f59 from "./ktext.js";
+import f60 from "./kanalog.js";
+import f61 from "./kroll.js";
+import f62 from "./neon.js";
+import f63 from "./fireworks.js";
+import f64 from "./plasma.js";
+import f65 from "./werk.js";
+import f66 from "./blackhole.js";
+import f67 from "./form.js";
+import f68 from "./innen.js";
+import f69 from "./befund.js";
+import f70 from "./plan.js";
 export const FACES = {
   MONO: f0,
   CHRONO: f1,
@@ -109,31 +112,34 @@ export const FACES = {
   STERNE: f38,
   WETTER: f39,
   FARM: f40,
-  CAMP: f41,
-  MOON: f42,
-  MAP: f43,
-  LIGHT: f44,
-  TRAIN: f45,
-  OFFICE: f46,
-  CLIMB: f47,
-  RACE: f48,
-  POST: f49,
-  BAKERY: f50,
-  PXCHRONO: f51,
-  UBAHN: f52,
-  BRIDGE: f53,
-  BODY: f54,
-  STATION: f55,
-  KIESEL: f56,
-  KTEXT: f57,
-  KANALOG: f58,
-  KROLL: f59,
-  NEON: f60,
-  FIREWORK: f61,
-  PLASMA: f62,
-  HOLE: f63,
-  FORM: f64,
-  INNEN: f65,
-  BEFUND: f66,
-  PLAN: f67,
+  GARDEN: f41,
+  SAGA: f42,
+  CAMP: f43,
+  MOON: f44,
+  MAP: f45,
+  LIGHT: f46,
+  TRAIN: f47,
+  OFFICE: f48,
+  CLIMB: f49,
+  RACE: f50,
+  POST: f51,
+  BAKERY: f52,
+  PXCHRONO: f53,
+  UBAHN: f54,
+  BRIDGE: f55,
+  BODY: f56,
+  STATION: f57,
+  KIESEL: f58,
+  KTEXT: f59,
+  KANALOG: f60,
+  KROLL: f61,
+  NEON: f62,
+  FIREWORK: f63,
+  PLASMA: f64,
+  WERK: f65,
+  HOLE: f66,
+  FORM: f67,
+  INNEN: f68,
+  BEFUND: f69,
+  PLAN: f70,
 };

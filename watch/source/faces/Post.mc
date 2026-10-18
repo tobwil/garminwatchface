@@ -8,6 +8,9 @@ import Toybox.Math;
 // still in his bag. At the step goal the round is done and he waves goodbye. In the evening the
 // windows and the street lamp light up and a cat strolls along the pavement; late at night most
 // windows go dark. The three data slots are posted on the advertising column.
+// The street lives with the year and the real weather (Season.mc): snow on the roofs and the pavement,
+// rain and snowfall, fairy lights under the eaves and wreaths on the doors in Advent, eggs at Easter,
+// pumpkins at Halloween, balloons on your birthday, fireworks on New Year's Eve.
 // Styles: 1 Stadt, 2 Dorf, 3 Gameboy. Mirrors web/js/faces/post.js.
 class FacePost extends Face {
     const HOUSES = 24;
@@ -102,6 +105,14 @@ class FacePost extends Face {
         }
         var evening = sc == 0 || sc == 3;
         var lampOn = k > 0 || evening;
+        // the year and the weather
+        var ev = Season.event(d);
+        var sn = Season.snowy(d) && st != 3;
+        var xmas = ev == Season.ADVENT || ev == Season.XMAS;
+        if (sn) {
+            P[18] = G.mix(0xE8EEF6, 0x050814, nf);
+            P[19] = G.mix(0xC8D0DC, 0x050814, nf);
+        }
 
         if (S) {
             // ---- sky and stars
@@ -124,6 +135,9 @@ class FacePost extends Face {
                 dc.fillRectangle(x, 96, w, 22);
                 dc.setColor(G.mix(P[12], 0, 0.3), -1);
                 dc.fillRectangle(x, 116, w, 4);
+                if (sn) {
+                    Season.snowCap(dc, x, 96, w);
+                }
                 dc.setColor(P[6 + h], -1);
                 dc.fillRectangle(x, 120, w, GY - 120);
                 if (st == 2) {
@@ -157,6 +171,17 @@ class FacePost extends Face {
                 dc.fillRectangle(x + 22, 290, 34, 50);
                 dc.setColor(P[9], -1);
                 dc.fillRectangle(x + 52, 296, 4, 4);
+                if (xmas) {
+                    // an Advent wreath on the door
+                    dc.setColor(0x1E7A3A, -1);
+                    dc.fillCircle(x + 39, 262, 11);
+                    dc.setColor(P[13 + h], -1);
+                    dc.fillCircle(x + 39, 262, 5);
+                    dc.setColor(0xD8302A, -1);
+                    dc.fillRectangle(x + 35, 270, 8, 5);
+                } else if (ev == Season.HALLOWEEN) {
+                    Season.pumpkin(dc, x + 84, GY, 1);
+                }
                 var num = hn - 1 + h;
                 if (num >= 1 && num <= HOUSES) {
                     dc.setColor(0xF4F4F4, -1);
@@ -214,13 +239,18 @@ class FacePost extends Face {
             dc.fillRectangle(0, GY + 22, 454, 6);
             dc.setColor(P[21], -1);
             dc.fillRectangle(0, GY + 28, 454, 454 - GY - 28);
+            if (ev == Season.EASTER) {
+                Season.eggs(dc, 276, GY + 18);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 140, 168, 1);
+            }
 
             // ---- time, date, caption
             dc.setColor(0x000000, -1);
             F.px(dc, G.timeStr(d), 229, 26, 5, 1, 0);
             dc.setColor(st == 3 ? 0x0F380F : P[22], -1);
             F.px(dc, G.timeStr(d), 227, 24, 5, 1, 0);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
+            F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
             var cap = sc == 0 ? "NACHTRUHE" : sc == 1 ? "HAUS " + hn + " VON " + HOUSES : sc == 2 ? "RUNDE GESCHAFFT!" : "FEIERABEND";
             var nl = d.notif > 0 ? d.notif : 0;
             var sub = sc == 1 ? nl + (nl == 1 ? " BRIEF DABEI" : " BRIEFE DABEI") : G.num(d.steps > 0 ? d.steps : 0) + " SCHRITTE";
@@ -263,6 +293,15 @@ class FacePost extends Face {
             var cp = [-1, P[38], k > 0 ? 0x8AFF6A : 0xFFD23A];
             Spr.draw(dc, p < 1 && (a.t / 160) % 2 == 1 ? SprPost.CAT_B : SprPost.CAT_A, cx, GY - 24, 4, cp, true);
         }
+        // ---- the year and the weather: lights, balloons, fireworks, rain and snow
+        if (xmas) {
+            Season.lights(dc, 0, 124, 340, 124, tt);
+        } else if (ev == Season.BIRTHDAY) {
+            Season.balloons(dc, HX[1] + 84, 268, tt);
+        } else if (ev == Season.NYE) {
+            Season.fireworks(dc, 40, 14, 370, 60, tt);
+        }
+        Season.precip(dc, d, 0, 0, 454, 374, tt);
     }
 
     function aod(dc as Dc, d as D) as Void {

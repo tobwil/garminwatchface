@@ -8,6 +8,9 @@ import Toybox.Math;
 // late at night; at weekends the office stays empty. The paper stack grows with the stress level,
 // empty coffee cups pile up as the Body Battery drains, the three data slots are written on the
 // whiteboard. Every wrist raise plays a short episode of the current scene.
+// The office lives with the year and the real weather (Season.mc): rain, snow and New Year's fireworks
+// in the window, fairy lights on the window and a little tree on the desk in Advent, eggs at Easter, a
+// pumpkin at Halloween, a heart on the whiteboard, balloons on your birthday.
 // Styles: 1 Großraum, 2 Homeoffice, 3 Gameboy. Mirrors web/js/faces/office.js.
 class FaceOffice extends Face {
     const FLOOR = 355;
@@ -92,6 +95,8 @@ class FaceOffice extends Face {
         var tt = live ? a.t : 0;
         var sc = scene(d);
         var lit = (sc >= 1 && sc <= 6) || sc == 8;
+        var ev = Season.event(d);
+        var xmas = ev == Season.ADVENT || ev == Season.XMAS;
         // lights off: dim the room (Gameboy keeps its four shades)
         var n0 = P0.size();
         var P = new [n0] as Array<Number>;
@@ -281,6 +286,16 @@ class FaceOffice extends Face {
 
             // ---- plant
             Spr.draw(dc, SprOffice.PLANT, 100, 250, 3, [-1, P[24], P[25], P[26]], false);
+            // ---- decorations for the special days
+            if (xmas) {
+                Season.tree(dc, 380, 296, 1);
+            } else if (ev == Season.EASTER) {
+                Season.eggs(dc, 84, 292);
+            } else if (ev == Season.HALLOWEEN) {
+                Season.pumpkin(dc, 116, 292, 1);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 374, 190, 1);
+            }
         }
 
         if (M) {
@@ -308,6 +323,16 @@ class FaceOffice extends Face {
                 dc.setColor(P[22], -1);
                 dc.fillRectangle(mx + 46, 350, 34, 6);
             }
+            // ---- weather and fireworks in the window, lights, balloons
+            Season.precip(dc, d, 66, 108, 128, 114, tt);
+            if (ev == Season.NYE) {
+                Season.fireworks(dc, 76, 112, 100, 50, tt);
+            }
+            if (xmas) {
+                Season.lights(dc, 60, 100, 200, 100, tt);
+            } else if (ev == Season.BIRTHDAY) {
+                Season.balloons(dc, 388, 296, tt);
+            }
         }
 
         if (!S) {
@@ -317,7 +342,7 @@ class FaceOffice extends Face {
         dc.setColor(P[22], -1);
         F.px(dc, CAP[sc], 227, 372, 2, 1, 0);
         dc.setColor(G.mix(P[22], P[1], 0.45), -1);
-        F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 394, 2, 1, 0);
+        F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 394, 2, 1, 0);
     }
 
     function aod(dc as Dc, d as D) as Void {

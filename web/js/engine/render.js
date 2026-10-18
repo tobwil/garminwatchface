@@ -1,7 +1,9 @@
 // Renders a face onto a canvas exactly like FaceView.onUpdate() on the watch.
+import { Bmp } from "./bmp.js";
 import { Dc } from "./dc.js";
 import { defaultAod } from "./st.js";
 import { G } from "./gfx.js";
+import { Assist, DUR } from "./assist.js";
 
 export const SIZE = 454;
 export const INTRO_MS = 1400;
@@ -47,13 +49,16 @@ function staticLayer(ctx, face, d, k) {
     if (face.aa) bdc.setAntiAlias(face.aa());
     if (face.bg) face.bg(bdc, d);
     else face.draw(bdc, d, { t: 0, intro: 1, live: false, ms: 0, tap: 999999, bg: false, so: true });
-    c.key = key;
+    o.globalCompositeOperation = "source-over";
+    // images still loading: draw the layer again next frame
+    c.key = Bmp.pending() > 0 ? null : key;
   }
   return c.cv;
 }
 
-// a = { t, intro, live }; a.bg is set here when the cached static layer was drawn
-export function render(ctx, face, d, a, aod) {
+// a = { t, intro, live }; a.bg is set here when the cached static layer was drawn. assist: the
+// assistant card to draw over the design (0 = none), see assist.js
+export function render(ctx, face, d, a, aod, assist) {
   ctx.save();
   ctx.setTransform(ctx.__base);
   ctx.fillStyle = "#000";
@@ -91,6 +96,10 @@ export function render(ctx, face, d, a, aod) {
         dc.setColor(G.dim(G.mix(0xffffff, d.accent, 0.35), 1 - rv * 0.6), -1);
         dc.fillRectangle(0, 226 - h, SIZE, 2);
         dc.fillRectangle(0, 226 + h, SIZE, 2);
+      }
+      if (assist > 0 && a.t < DUR[assist]) {
+        dc.clearClip();
+        Assist.draw(dc, d, assist, a.t);
       }
     }
   } catch (e) {

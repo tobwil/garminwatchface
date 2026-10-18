@@ -3,11 +3,14 @@
 // after tray of rolls out of it, the shelves fill up, the shop opens and customers come in (the door
 // bell rings on every wrist raise) until in the evening everything is sold and he sweeps the floor
 // of the closed shop. The three data slots are chalked on the board as the day's offer.
+// The bakery celebrates the year (season.js): fairy lights over the shelves and a tree in Advent, eggs
+// on the counter at Easter, a pumpkin at Halloween, a heart on Valentine's Day, balloons on your birthday.
 // Styles: 1 Backstube, 2 Café, 3 Gameboy. Mirrors watch/source/faces/Bakery.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/bakery.js";
 
 const SP = encodeAll(S);
@@ -89,6 +92,8 @@ export default {
     const tt = live ? a.t : 0;
     const sc = scene(d);
     const n = stock(d, sc);
+    const ev = SE.event(d);
+    const xmas = ev === EV.ADVENT || ev === EV.XMAS;
     const fire = sc === 1;
 
     if (S) {
@@ -165,13 +170,18 @@ export default {
         dc.setColor(0xc0392b, -1);
         F.px(dc, "ZU", 362, CT - 24, 2, 1, 0);
       }
+      // ---- decorations for the special days
+      if (xmas) SE.tree(dc, 150, CT, 1);
+      else if (ev === EV.EASTER) SE.eggs(dc, 104, CT);
+      else if (ev === EV.HALLOWEEN) SE.pumpkin(dc, 130, CT, 1);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 244, 200, 1);
 
       // ---- time, date, caption
       dc.setColor(G.mix(P[0], 0, 0.6), -1);
       F.px(dc, G.timeStr(d), 229, 26, 5, 1, 0);
       dc.setColor(st === 3 ? 0x0f380f : 0x3a2414, -1);
       F.px(dc, G.timeStr(d), 227, 24, 5, 1, 0);
-      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
+      F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
       dc.setColor(P[15], -1);
       F.px(dc, CAP[sc], 227, 398, 2, 1, 0);
       const sub = sc === 0 ? "BACKSTART 3:00" : sc === 1 ? "OFEN 230°" : sc === 2 ? n + " STÜCK DA" : "ALLES VERKAUFT!";
@@ -238,6 +248,9 @@ export default {
       dc.setColor(P[19], -1);
       dc.fillRectangle(x + 46 + sw + 8, FEET - 6, 20, 6);
     }
+    // ---- lights over the shelves, balloons on the counter
+    if (xmas) SE.lights(dc, 290, 184, 430, 184, tt);
+    else if (ev === EV.BIRTHDAY) SE.balloons(dc, 120, CT, tt);
   },
 
   aod(dc, d) {

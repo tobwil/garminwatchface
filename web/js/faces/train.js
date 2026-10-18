@@ -3,12 +3,16 @@
 // station. On every wrist raise the train rolls in and stops with a hiss of brake steam; at the goal
 // it stands at the station platform. After dark it runs as the night train with its lamp lit, under
 // the real sky. The three data slots are on the timetable board.
+// The line lives with the year and the real weather (season.js): snowy hills and a snowed-in station,
+// autumn-golden hills, rain or snow falling, fairy lights on the station in Advent and a tree by the
+// track, fireworks on New Year's Eve, eggs, a pumpkin, a heart or birthday balloons by the line.
 // Styles: 1 Dampf, 2 Nacht, 3 Gameboy. Mirrors watch/source/faces/Train.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { AST } from "../engine/astro.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/train.js";
 
 const SP = encodeAll(S);
@@ -105,6 +109,9 @@ export default {
     const el = AST.elev(d.doy, d.mins, d.lat, d.lon, d.tz);
     const k = st === 2 ? 2 : el > 6 ? 0 : el > -6 ? 1 : 2;
     const night = k === 2;
+    const ev = SE.event(d);
+    const xmas = ev === EV.ADVENT || ev === EV.XMAS;
+    const sn = st !== 3 && SE.snowy(d);
 
     if (S) {
       // ---- sky, sun / stars
@@ -122,17 +129,18 @@ export default {
 
       // ---- hills, meadow
       const dim = night && st !== 3 ? 0.55 : 0;
-      dc.setColor(G.mix(P[6], 0x050814, dim), -1);
+      const gold = st !== 3 && !sn && SE.season(d) === 3;
+      dc.setColor(G.mix(sn ? 0xc8d4e2 : gold ? 0xb89a4a : P[6], 0x050814, dim), -1);
       for (let x = 0; x < 454; x += 4) {
         const h = 50 + Math.round(26 * Math.sin(x / 60 + 2) + 14 * Math.sin(x / 23));
         dc.fillRectangle(x, 300 - h, 4, h);
       }
-      dc.setColor(G.mix(P[7], 0x050814, dim), -1);
+      dc.setColor(G.mix(sn ? 0xdce6f0 : gold ? 0x9a7a3a : P[7], 0x050814, dim), -1);
       for (let x = 0; x < 454; x += 4) {
         const h = 22 + Math.round(14 * Math.sin(x / 45) + 8 * Math.sin(x / 17 + 1));
         dc.fillRectangle(x, 304 - h, 4, h);
       }
-      dc.setColor(G.mix(P[8], 0x050814, dim), -1);
+      dc.setColor(G.mix(sn ? 0xeef4fa : P[8], 0x050814, dim), -1);
       dc.fillRectangle(0, 300, 454, 154);
 
       // ---- station at the goal, a signal on the way
@@ -149,6 +157,7 @@ export default {
         F.px(dc, "BAHNHOF", 334, 194, 2, 1, 0);
         dc.setColor(G.mix(P[32], 0x050814, dim), -1);
         dc.fillRectangle(200, 302, 254, 14);
+        if (sn) SE.snowCap(dc, 236, 168, 196);
       } else {
         dc.setColor(P[37], -1);
         dc.fillRectangle(414, 218, 6, RAIL - 218);
@@ -166,6 +175,11 @@ export default {
       for (let x = 0; x < 454; x += 18) dc.fillRectangle(x, RAIL + 4, 10, 6);
       dc.setColor(P[11], -1);
       dc.fillRectangle(0, RAIL, 454, 4);
+      // ---- decorations for the special days by the line
+      if (xmas) SE.tree(dc, 96, 374, 1);
+      else if (ev === EV.EASTER) SE.eggs(dc, 330, 372);
+      else if (ev === EV.HALLOWEEN) SE.pumpkin(dc, 360, 372, 1);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 380, 130, 2);
 
       // ---- timetable board with the data slots
       dc.setColor(P[37], -1);
@@ -191,11 +205,11 @@ export default {
       F.px(dc, G.timeStr(d), 229, 26, 5, 1, 0);
       dc.setColor(st === 3 ? 0x0f380f : P[12], -1);
       F.px(dc, G.timeStr(d), 227, 24, 5, 1, 0);
-      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
+      F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
       const cap = (night && d.mins >= 1260) || d.mins < 300 ? "NACHTZUG" : done ? "ANKUNFT!" : n === 0 ? "LEERFAHRT" : "UNTERWEGS";
-      dc.setColor(P[12], -1);
+      dc.setColor(sn && !night ? 0x1e2a4a : P[12], -1);
       F.px(dc, cap, 227, 374, 2, 1, 0);
-      dc.setColor(P[13], -1);
+      dc.setColor(sn && !night ? 0x4a5a7a : P[13], -1);
       F.px(dc, done ? n + " WAGGONS GELADEN" : n + " VON " + gl + " WAGGONS", 227, 394, 2, 1, 0);
     }
 
@@ -235,6 +249,13 @@ export default {
       const s = (p - 0.7) / 0.3;
       for (let i = 0; i < 4; i++) dc.fillRectangle(lx + 8 + i * 24 - Math.round(s * 10), RAIL - 14 - Math.round(s * 12), 14, 10);
     }
+    // ---- real weather, lights, fireworks, balloons
+    SE.precip(dc, d, 0, 90, 454, 240, tt);
+    if (xmas) {
+      if (done) SE.lights(dc, 246, 186, 422, 186, tt);
+      else SE.lights(dc, 130, 96, 324, 96, tt);
+    } else if (ev === EV.NYE) SE.fireworks(dc, 330, 96, 90, 50, tt);
+    else if (ev === EV.BIRTHDAY) SE.balloons(dc, 96, 374, tt);
   },
 
   aod(dc, d) {

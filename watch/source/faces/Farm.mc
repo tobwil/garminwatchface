@@ -7,6 +7,9 @@ import Toybox.Math;
 // with the steps (seed, sprout, plant, wheat), and at the step goal it is harvest time: golden wheat
 // and the farmer cheering with a sheaf. In the evening he rests on the bench, at night the farm
 // sleeps under the real stars and moon. The three data slots are chalked on the farm shop board.
+// The farm lives with the year and the real weather (Season.mc): snow in a freezing winter, flowers in
+// spring, golden hills in autumn, rain and snowfall, fairy lights and a tree at Christmas, eggs at
+// Easter, a pumpkin at Halloween, balloons on your birthday, fireworks on New Year's Eve.
 // Styles: 1 Sommer, 2 Herbst, 3 Gameboy. Mirrors web/js/faces/farm.js.
 class FaceFarm extends Face {
     const GY = 338;
@@ -111,6 +114,17 @@ class FaceFarm extends Face {
             }
             P[i] = G.mix(P[i], 0x050814, i >= 23 && i <= 34 ? (nf < 0.35 ? nf : 0.35) : nf);
         }
+        // the year and the weather: snow-covered or golden land
+        var ev = Season.event(d);
+        var sn = Season.snowy(d);
+        var ssn = Season.season(d);
+        if (st != 3 && sn) {
+            P[6] = G.mix(0xE8F0F8, 0x050814, nf);
+            P[7] = G.mix(0xF0F4FA, 0x050814, nf);
+            P[8] = G.mix(0xC8D4E8, 0x050814, nf);
+        } else if (st != 3 && ssn == 3) {
+            P[6] = G.mix(0xC8962A, 0x050814, nf);
+        }
 
         if (S) {
             // ---- sky with sun / moon / stars
@@ -145,6 +159,14 @@ class FaceFarm extends Face {
             for (var x = 0; x < 454; x += 14) {
                 dc.fillRectangle(x + ((x / 14) % 3) * 4, 372 + ((x * 13) % 60), 4, 2);
             }
+            if (ssn == 1 && !sn && st != 3) {
+                // spring flowers in the meadow
+                var FL = [0xFF7AA8, 0xFFE05A, 0xFFFFFF, 0xB48AFF];
+                for (var i = 0; i < 18; i++) {
+                    dc.setColor(G.mix(FL[i % 4], 0x050814, nf), -1);
+                    dc.fillRectangle(20 + ((i * 97) % 414), 376 + ((i * 31) % 56), 4, 4);
+                }
+            }
 
             // ---- barn: walls, roof, door with the white cross, hayloft and window
             dc.setColor(P[11], -1);
@@ -173,6 +195,9 @@ class FaceFarm extends Face {
             dc.setColor(lit ? P[13] : P[10], -1);
             dc.fillRectangle(90, 164, 20, 18);
             dc.fillRectangle(140, 218, 20, 18);
+            if (sn) {
+                Season.snowCap(dc, 24, 200, 152);
+            }
 
             // ---- farm shop board with the data slots
             dc.setColor(P[39], -1);
@@ -183,6 +208,9 @@ class FaceFarm extends Face {
             dc.setColor(P[39], -1);
             dc.drawRectangle(252, 190, 162, 76);
             dc.drawRectangle(253, 191, 160, 74);
+            if (sn) {
+                Season.snowCap(dc, 252, 190, 162);
+            }
             dc.setColor(P[20], -1);
             F.px(dc, "HOFLADEN", 333, 196, 2, 1, 0);
             for (var i = 0; i < 3; i++) {
@@ -245,16 +273,31 @@ class FaceFarm extends Face {
             dc.fillRectangle(130, 312, 46, 6);
             dc.fillRectangle(134, 318, 4, 20);
             dc.fillRectangle(168, 318, 4, 20);
+            // ---- decorations for the special days
+            if (ev == Season.ADVENT || ev == Season.XMAS) {
+                Season.tree(dc, 60, 372, 1);
+            } else if (ev == Season.EASTER) {
+                Season.eggs(dc, 44, 388);
+            } else if (ev == Season.HALLOWEEN) {
+                Season.pumpkin(dc, 190, 330, 1);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 100, 172, 2);
+            }
 
             // ---- time, date, caption
             dc.setColor(0x000000, -1);
             F.px(dc, G.timeStr(d), 229, 34, 5, 1, 0);
             dc.setColor(P[21], -1);
             F.px(dc, G.timeStr(d), 227, 32, 5, 1, 0);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
+            F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
+            // dark captions on snow by day
+            var dark = sn && k < 2 && st != 3;
+            if (dark) {
+                dc.setColor(0x1A2A4A, -1);
+            }
             F.px(dc, CAP[sc], 227, 394, 2, 1, 0);
             var sub = sc == 0 ? "SONNE UM " + G.hm(d.sunrise > 0 ? d.sunrise : 390) : G.num(d.steps > 0 ? d.steps : 0) + " SCHRITTE";
-            dc.setColor(P[22], -1);
+            dc.setColor(dark ? 0x4A5A7A : P[22], -1);
             F.px(dc, sub, 227, 414, 2, 1, 0);
         }
 
@@ -315,6 +358,15 @@ class FaceFarm extends Face {
             // evening on the bench in front of the barn
             Spr.draw(dc, SprFarm.SIT, 120, GY - 80 + 6, 5, fp, false);
         }
+        // ---- the year and the weather: lights, balloons, fireworks, rain and snow
+        if (ev == Season.ADVENT || ev == Season.XMAS) {
+            Season.lights(dc, 24, 200, 176, 200, tt);
+        } else if (ev == Season.BIRTHDAY) {
+            Season.balloons(dc, 232, 300, tt);
+        } else if (ev == Season.NYE) {
+            Season.fireworks(dc, 70, 96, 300, 70, tt);
+        }
+        Season.precip(dc, d, 0, 90, 454, 300, tt);
     }
 
     function aod(dc as Dc, d as D) as Void {

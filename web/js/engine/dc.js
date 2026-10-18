@@ -78,6 +78,24 @@ export class Dc {
     c.closePath();
     this._fill();
   }
+  // ---- bitmaps (see bmp.js): b = Bmp.load(...), o = { transform, tintColor, filterMode, bitmapX, ... }
+  drawBitmap(x, y, b) { this.drawBitmap2(x, y, b, null); }
+  drawBitmap2(x, y, b, o) {
+    if (!b || !b.ok) return;
+    o = o || {};
+    const c = this.ctx;
+    const sx = o.bitmapX || 0, sy = o.bitmapY || 0;
+    const sw = o.bitmapWidth ?? b.getWidth() - sx, sh = o.bitmapHeight ?? b.getHeight() - sy;
+    const src = o.tintColor !== undefined && o.tintColor !== null && o.tintColor !== -1 ? b.tinted(o.tintColor) : b.el;
+    c.save();
+    c.imageSmoothingEnabled = o.filterMode === 1;
+    c.translate(x, y);
+    if (o.transform) { const m = o.transform.m; c.transform(m[0], m[3], m[1], m[4], m[2], m[5]); }
+    c.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
+    c.restore();
+  }
+  // Graphics.BLEND_MODE_*: 0 source over, 1 source, 2 multiply, 3 additive
+  setBlendMode(m) { this.ctx.globalCompositeOperation = ["source-over", "copy", "multiply", "lighter"][m] || "source-over"; }
   setClip(x, y, w, h) { const c = this.ctx; this.clearClip(); c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); this._clipped = true; }
   clearClip() { if (this._clipped) { this.ctx.restore(); this._clipped = false; } }
 }

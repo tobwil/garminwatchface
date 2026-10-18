@@ -7,6 +7,9 @@ import Toybox.Math;
 // station. On every wrist raise the train rolls in and stops with a hiss of brake steam; at the goal
 // it stands at the station platform. After dark it runs as the night train with its lamp lit, under
 // the real sky. The three data slots are on the timetable board.
+// The line lives with the year and the real weather (Season.mc): snowy hills and a snowed-in station,
+// autumn-golden hills, rain or snow falling, fairy lights on the station in Advent and a tree by the
+// track, fireworks on New Year's Eve, eggs, a pumpkin, a heart or birthday balloons by the line.
 // Styles: 1 Dampf, 2 Nacht, 3 Gameboy. Mirrors web/js/faces/train.js.
 class FaceTrain extends Face {
     const RAIL = 328;
@@ -130,6 +133,9 @@ class FaceTrain extends Face {
         var el = AST.elev(d.doy, d.mins, d.lat, d.lon, d.tz);
         var k = st == 2 ? 2 : el > 6 ? 0 : el > -6 ? 1 : 2;
         var night = k == 2;
+        var ev = Season.event(d);
+        var xmas = ev == Season.ADVENT || ev == Season.XMAS;
+        var sn = st != 3 && Season.snowy(d);
 
         if (S) {
             // ---- sky, sun / stars
@@ -150,17 +156,18 @@ class FaceTrain extends Face {
 
             // ---- hills, meadow
             var dim = night && st != 3 ? 0.55 : 0.0;
-            dc.setColor(G.mix(P[6], 0x050814, dim), -1);
+            var gold = st != 3 && !sn && Season.season(d) == 3;
+            dc.setColor(G.mix(sn ? 0xC8D4E2 : gold ? 0xB89A4A : P[6], 0x050814, dim), -1);
             for (var x = 0; x < 454; x += 4) {
                 var h = 50 + Math.round(26 * Math.sin(x / 60.0 + 2) + 14 * Math.sin(x / 23.0)).toNumber();
                 dc.fillRectangle(x, 300 - h, 4, h);
             }
-            dc.setColor(G.mix(P[7], 0x050814, dim), -1);
+            dc.setColor(G.mix(sn ? 0xDCE6F0 : gold ? 0x9A7A3A : P[7], 0x050814, dim), -1);
             for (var x = 0; x < 454; x += 4) {
                 var h = 22 + Math.round(14 * Math.sin(x / 45.0) + 8 * Math.sin(x / 17.0 + 1)).toNumber();
                 dc.fillRectangle(x, 304 - h, 4, h);
             }
-            dc.setColor(G.mix(P[8], 0x050814, dim), -1);
+            dc.setColor(G.mix(sn ? 0xEEF4FA : P[8], 0x050814, dim), -1);
             dc.fillRectangle(0, 300, 454, 154);
 
             // ---- station at the goal, a signal on the way
@@ -179,6 +186,9 @@ class FaceTrain extends Face {
                 F.px(dc, "BAHNHOF", 334, 194, 2, 1, 0);
                 dc.setColor(G.mix(P[32], 0x050814, dim), -1);
                 dc.fillRectangle(200, 302, 254, 14);
+                if (sn) {
+                    Season.snowCap(dc, 236, 168, 196);
+                }
             } else {
                 dc.setColor(P[37], -1);
                 dc.fillRectangle(414, 218, 6, RAIL - 218);
@@ -198,6 +208,16 @@ class FaceTrain extends Face {
             }
             dc.setColor(P[11], -1);
             dc.fillRectangle(0, RAIL, 454, 4);
+            // ---- decorations for the special days by the line
+            if (xmas) {
+                Season.tree(dc, 96, 374, 1);
+            } else if (ev == Season.EASTER) {
+                Season.eggs(dc, 330, 372);
+            } else if (ev == Season.HALLOWEEN) {
+                Season.pumpkin(dc, 360, 372, 1);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 380, 130, 2);
+            }
 
             // ---- timetable board with the data slots
             dc.setColor(P[37], -1);
@@ -228,11 +248,11 @@ class FaceTrain extends Face {
             F.px(dc, G.timeStr(d), 229, 26, 5, 1, 0);
             dc.setColor(st == 3 ? 0x0F380F : P[12], -1);
             F.px(dc, G.timeStr(d), 227, 24, 5, 1, 0);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
+            F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
             var cap = (night && d.mins >= 1260) || d.mins < 300 ? "NACHTZUG" : done ? "ANKUNFT!" : n == 0 ? "LEERFAHRT" : "UNTERWEGS";
-            dc.setColor(P[12], -1);
+            dc.setColor(sn && !night ? 0x1E2A4A : P[12], -1);
             F.px(dc, cap, 227, 374, 2, 1, 0);
-            dc.setColor(P[13], -1);
+            dc.setColor(sn && !night ? 0x4A5A7A : P[13], -1);
             F.px(dc, done ? n + " WAGGONS GELADEN" : n + " VON " + gl + " WAGGONS", 227, 394, 2, 1, 0);
         }
 
@@ -278,6 +298,19 @@ class FaceTrain extends Face {
             for (var i = 0; i < 4; i++) {
                 dc.fillRectangle(lx + 8 + i * 24 - Math.round(s * 10).toNumber(), RAIL - 14 - Math.round(s * 12).toNumber(), 14, 10);
             }
+        }
+        // ---- real weather, lights, fireworks, balloons
+        Season.precip(dc, d, 0, 90, 454, 240, tt);
+        if (xmas) {
+            if (done) {
+                Season.lights(dc, 246, 186, 422, 186, tt);
+            } else {
+                Season.lights(dc, 130, 96, 324, 96, tt);
+            }
+        } else if (ev == Season.NYE) {
+            Season.fireworks(dc, 330, 96, 90, 50, tt);
+        } else if (ev == Season.BIRTHDAY) {
+            Season.balloons(dc, 96, 374, tt);
         }
     }
 

@@ -4,12 +4,16 @@
 // still in his bag. At the step goal the round is done and he waves goodbye. In the evening the
 // windows and the street lamp light up and a cat strolls along the pavement; late at night most
 // windows go dark. The three data slots are posted on the advertising column.
+// The street lives with the year and the real weather (season.js): snow on the roofs and the pavement,
+// rain and snowfall, fairy lights under the eaves and wreaths on the doors in Advent, eggs at Easter,
+// pumpkins at Halloween, balloons on your birthday, fireworks on New Year's Eve.
 // Styles: 1 Stadt, 2 Dorf, 3 Gameboy. Mirrors watch/source/faces/Post.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { AST } from "../engine/astro.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/post.js";
 
 const SP = encodeAll(S);
@@ -77,6 +81,13 @@ export default {
       : i >= 28 && i <= 35 ? G.mix(c, 0x050814, Math.min(nf, 0.3)) : c);
     const evening = sc === 0 || sc === 3;
     const lampOn = k > 0 || evening;
+    // the year and the weather
+    const ev = SE.event(d), sn = SE.snowy(d) && st !== 3;
+    const xmas = ev === EV.ADVENT || ev === EV.XMAS;
+    if (sn) {
+      P[18] = G.mix(0xe8eef6, 0x050814, nf);
+      P[19] = G.mix(0xc8d0dc, 0x050814, nf);
+    }
 
     if (S) {
       // ---- sky and stars
@@ -96,6 +107,7 @@ export default {
         dc.fillRectangle(x, 96, w, 22);
         dc.setColor(G.mix(P[12], 0, 0.3), -1);
         dc.fillRectangle(x, 116, w, 4);
+        if (sn) SE.snowCap(dc, x, 96, w);
         dc.setColor(P[6 + h], -1);
         dc.fillRectangle(x, 120, w, GY - 120);
         if (st === 2) {
@@ -127,6 +139,17 @@ export default {
         dc.fillRectangle(x + 22, 290, 34, 50);
         dc.setColor(P[9], -1);
         dc.fillRectangle(x + 52, 296, 4, 4);
+        if (xmas) {
+          // an Advent wreath on the door
+          dc.setColor(0x1e7a3a, -1);
+          dc.fillCircle(x + 39, 262, 11);
+          dc.setColor(P[13 + h], -1);
+          dc.fillCircle(x + 39, 262, 5);
+          dc.setColor(0xd8302a, -1);
+          dc.fillRectangle(x + 35, 270, 8, 5);
+        } else if (ev === EV.HALLOWEEN) {
+          SE.pumpkin(dc, x + 84, GY, 1);
+        }
         const num = hn - 1 + h;
         if (num >= 1 && num <= HOUSES) {
           dc.setColor(0xf4f4f4, -1);
@@ -180,13 +203,15 @@ export default {
       dc.fillRectangle(0, GY + 22, 454, 6);
       dc.setColor(P[21], -1);
       dc.fillRectangle(0, GY + 28, 454, 454 - GY - 28);
+      if (ev === EV.EASTER) SE.eggs(dc, 276, GY + 18);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 140, 168, 1);
 
       // ---- time, date, caption
       dc.setColor(0x000000, -1);
       F.px(dc, G.timeStr(d), 229, 26, 5, 1, 0);
       dc.setColor(st === 3 ? 0x0f380f : P[22], -1);
       F.px(dc, G.timeStr(d), 227, 24, 5, 1, 0);
-      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
+      F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 68, 2, 1, 0);
       const cap = sc === 0 ? "NACHTRUHE" : sc === 1 ? "HAUS " + hn + " VON " + HOUSES : sc === 2 ? "RUNDE GESCHAFFT!" : "FEIERABEND";
       const nl = Math.max(0, d.notif);
       const sub = sc === 1 ? nl + (nl === 1 ? " BRIEF DABEI" : " BRIEFE DABEI") : G.num(Math.max(0, d.steps)) + " SCHRITTE";
@@ -226,6 +251,11 @@ export default {
       const cp = [-1, P[38], k > 0 ? 0x8aff6a : 0xffd23a];
       SPR.draw(dc, p < 1 && Math.floor(a.t / 160) % 2 === 1 ? SP.CAT_B : SP.CAT_A, cx, GY - 24, 4, cp, true);
     }
+    // ---- the year and the weather: lights, balloons, fireworks, rain and snow
+    if (xmas) SE.lights(dc, 0, 124, 340, 124, tt);
+    else if (ev === EV.BIRTHDAY) SE.balloons(dc, HX[1] + 84, 268, tt);
+    else if (ev === EV.NYE) SE.fireworks(dc, 40, 14, 370, 60, tt);
+    SE.precip(dc, d, 0, 0, 454, 374, tt);
   },
 
   aod(dc, d) {

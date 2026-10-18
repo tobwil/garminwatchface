@@ -4,12 +4,16 @@
 // late at night; at weekends the office stays empty. The paper stack grows with the stress level,
 // empty coffee cups pile up as the Body Battery drains, the three data slots are written on the
 // whiteboard. Every wrist raise plays a short episode of the current scene.
+// The office lives with the year and the real weather (season.js): rain, snow and New Year's fireworks
+// in the window, fairy lights on the window and a little tree on the desk in Advent, eggs at Easter, a
+// pumpkin at Halloween, a heart on the whiteboard, balloons on your birthday.
 // Styles: 1 Großraum, 2 Homeoffice, 3 Gameboy. Mirrors watch/source/faces/Office.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { AST } from "../engine/astro.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/office.js";
 
 const SP = encodeAll(S);
@@ -63,6 +67,8 @@ export default {
     const tt = live ? a.t : 0;
     const sc = scene(d);
     const lit = sc >= 1 && sc <= 6 || sc === 8;
+    const ev = SE.event(d);
+    const xmas = ev === EV.ADVENT || ev === EV.XMAS;
     // lights off: dim the room (Gameboy keeps its four shades)
     const P = [];
     for (let i = 0; i < P0.length; i++) P.push(lit || st === 3 || i >= 20 ? P0[i] : G.mix(P0[i], 0x080a14, 0.55));
@@ -232,6 +238,11 @@ export default {
 
       // ---- plant
       SPR.draw(dc, SP.PLANT, 100, 250, 3, [-1, P[24], P[25], P[26]], false);
+      // ---- decorations for the special days
+      if (xmas) SE.tree(dc, 380, 296, 1);
+      else if (ev === EV.EASTER) SE.eggs(dc, 84, 292);
+      else if (ev === EV.HALLOWEEN) SE.pumpkin(dc, 116, 292, 1);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 374, 190, 1);
     }
 
     if (M) {
@@ -259,6 +270,11 @@ export default {
         dc.setColor(P[22], -1);
         dc.fillRectangle(mx + 46, 350, 34, 6);
       }
+      // ---- weather and fireworks in the window, lights, balloons
+      SE.precip(dc, d, 66, 108, 128, 114, tt);
+      if (ev === EV.NYE) SE.fireworks(dc, 76, 112, 100, 50, tt);
+      if (xmas) SE.lights(dc, 60, 100, 200, 100, tt);
+      else if (ev === EV.BIRTHDAY) SE.balloons(dc, 388, 296, tt);
     }
 
     if (!S) return;
@@ -266,7 +282,7 @@ export default {
     dc.setColor(P[22], -1);
     F.px(dc, CAP[sc], 227, 372, 2, 1, 0);
     dc.setColor(G.mix(P[22], P[1], 0.45), -1);
-    F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 394, 2, 1, 0);
+    F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 394, 2, 1, 0);
   },
 
   aod(dc, d) {

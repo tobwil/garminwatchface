@@ -7,6 +7,9 @@ import Toybox.Math;
 // climbs the tower (the windows light up one after another) and lights the lamp; at night the beam
 // sweeps the sea while a ship's lights pass safely, his cottage window glowing below; at dawn he
 // puts the light out. The three data slots are on the sea weather panel.
+// The coast lives with the year and the real weather (Season.mc): snow on the rocks and the roof, rain
+// or snow falling, fairy lights on the gallery and the cottage in Advent, fireworks over the sea on New
+// Year's Eve, eggs, a pumpkin, a heart or birthday balloons at the cottage.
 // Styles: 1 Küste, 2 Sturm (rain and high waves), 3 Gameboy. Mirrors web/js/faces/light.js.
 class FaceLight extends Face {
     const HZ = 250;
@@ -99,6 +102,8 @@ class FaceLight extends Face {
         var ph = phase(d, el);
         var k = ph == 0 ? 0 : ph == 2 ? 2 : 1;
         _nf = st == 3 ? 0.0 : [0.0, 0.3, 0.6][k];
+        var ev = Season.event(d);
+        var xmas = ev == Season.ADVENT || ev == Season.XMAS;
 
         if (S) {
             // ---- sky, moon / sun, stars
@@ -159,6 +164,21 @@ class FaceLight extends Face {
             dc.fillRectangle(356, 270, 18, 34);
             dc.setColor(k > 0 ? P[19] : dk(P[14]), -1);
             dc.fillRectangle(388, 272, 20, 14);
+            // ---- snow on the roof and the rocks, decorations for the special days
+            if (st != 3 && Season.snowy(d)) {
+                dc.setColor(dk(0xF4F8FF), -1);
+                dc.fillPolygon([[340, 260], [382, 236], [424, 260]]);
+                Season.snowCap(dc, 300, 296, 154);
+                Season.snowCap(dc, 250, 304, 50);
+                Season.snowCap(dc, 222, 336, 28);
+            }
+            if (ev == Season.EASTER) {
+                Season.eggs(dc, 384, 320);
+            } else if (ev == Season.HALLOWEEN) {
+                Season.pumpkin(dc, 404, 304, 1);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 382, 212, 2);
+            }
 
             // ---- sea weather panel with the data slots
             dc.setColor(P[23], -1);
@@ -186,7 +206,7 @@ class FaceLight extends Face {
             F.px(dc, G.timeStr(d), 222, 26, 5, 1, 0);
             dc.setColor(st == 3 ? 0x0F380F : P[21], -1);
             F.px(dc, G.timeStr(d), 220, 24, 5, 1, 0);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 206, 68, 2, 1, 0);
+            F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 206, 68, 2, 1, 0);
             dc.setColor(P[21], -1);
             F.px(dc, CAP[ph], 200, 392, 2, 1, 0);
             var ssn = d.sunset > 0 ? d.sunset : 1140;
@@ -244,6 +264,18 @@ class FaceLight extends Face {
             for (var i = 0; i < 24; i++) {
                 dc.fillRectangle((i * 97 + tt / 8) % 470 - 10, (i * 61 + tt / 4) % 400, 2, 10);
             }
+        }
+        // ---- real weather, lights, fireworks, balloons
+        if (!storm) {
+            Season.precip(dc, d, 0, 40, 454, 300, tt);
+        }
+        if (xmas) {
+            Season.lights(dc, TX - 28, 108, TX + 28, 108, tt);
+            Season.lights(dc, 338, 262, 426, 262, tt);
+        } else if (ev == Season.NYE) {
+            Season.fireworks(dc, 330, 140, 100, 60, tt);
+        } else if (ev == Season.BIRTHDAY) {
+            Season.balloons(dc, 432, 296, tt);
         }
         // ---- the story
         if (ph == 0) {

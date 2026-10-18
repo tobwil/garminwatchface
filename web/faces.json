@@ -1306,7 +1306,80 @@
           23,
           38
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
+    },
+    {
+      "key": "GARDEN",
+      "cls": "FaceGarden",
+      "file": "Garden.mc",
+      "js": "garden.js",
+      "name": "Pixel-Garten",
+      "tags": [
+        "pixel",
+        "health"
+      ],
+      "blurb": "Ein Hochbeet, das über Wochen mit dir wächst: Gute Tage (Schlaf, Schritte, wenig Stress, Body Battery) lassen es sprießen, blühen und Früchte tragen, schlechte lassen es welken. Der Garten merkt sich alles – und nach drei guten Tagen zieht ein Igel ein.",
+      "styles": [
+        "Garten",
+        "Nacht",
+        "Gameboy"
+      ],
+      "uses": [
+        "slots"
+      ],
+      "sprites": [
+        "garden"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FF5A8A",
+        "dcol": "FFFFFF",
+        "slots": [
+          42,
+          2,
+          23
+        ]
+      },
+      "libs": [
+        "season"
+      ]
+    },
+    {
+      "key": "SAGA",
+      "cls": "FaceSaga",
+      "file": "Saga.mc",
+      "js": "saga.js",
+      "name": "Finos Reise",
+      "tags": [
+        "pixel",
+        "challenge"
+      ],
+      "blurb": "Eine Fortsetzungsgeschichte in 21 Kapiteln: Fuchs Fino reist mit Elster Pia ans Meer. Jeder gute Tag (Schlaf, Schritte, Stress, Body Battery) schaltet das nächste Kapitel frei – es wird beim Handgelenk-Heben wie auf der Schreibmaschine getippt.",
+      "styles": [
+        "Bilderbuch",
+        "Nacht",
+        "Gameboy"
+      ],
+      "uses": [],
+      "sprites": [
+        "saga"
+      ],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB84A",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
+        ]
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "CAMP",
@@ -1340,7 +1413,10 @@
           42,
           38
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "MOON",
@@ -1444,7 +1520,10 @@
           23,
           17
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "TRAIN",
@@ -1478,7 +1557,10 @@
           2,
           4
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "OFFICE",
@@ -1512,7 +1594,10 @@
           23,
           2
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "CLIMB",
@@ -1610,7 +1695,10 @@
           17,
           23
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "BAKERY",
@@ -1643,7 +1731,10 @@
           23,
           2
         ]
-      }
+      },
+      "libs": [
+        "season"
+      ]
     },
     {
       "key": "PXCHRONO",
@@ -2009,6 +2100,34 @@
           23,
           2,
           22
+        ]
+      }
+    },
+    {
+      "key": "WERK",
+      "cls": "FaceWerk",
+      "file": "Werk.mc",
+      "js": "werk.js",
+      "name": "Tageskunstwerk",
+      "tags": [
+        "amoled",
+        "health"
+      ],
+      "blurb": "Jeder Tag malt sein eigenes Bild: Schritte bestimmen die Blütenblätter, der Schlaf die Farbe, Stress die Zacken, die Body Battery das Leuchten. Mit Bildtitel – und einer Wochengalerie der letzten sechs Tage.",
+      "styles": [
+        "Schwarz",
+        "Leinwand",
+        "Akzent"
+      ],
+      "uses": [],
+      "defaults": {
+        "style": 1,
+        "accent": "FFB84A",
+        "dcol": "FFFFFF",
+        "slots": [
+          2,
+          23,
+          42
         ]
       }
     },

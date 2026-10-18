@@ -139,8 +139,18 @@ def stage(face):
         for i, s in enumerate(styles):
             f.write('  <string id="style%d">%s</string>\n' % (i + 1, xml_escape(s)))
         f.write("</strings>\n")
+    # pre-rendered images (web/img/<KEY>/<id>.png|jpg, written by tools/render/) -> Rez.Drawables.<id>;
+    # kept compressed in the .prg and decoded when the face loads them
+    imgs = []
+    idir = os.path.join(ROOT, "web", "img", key)
+    if os.path.isdir(idir):
+        for fn in sorted(os.listdir(idir)):
+            stem, ext = os.path.splitext(fn)
+            if ext in (".png", ".jpg"):
+                shutil.copy(os.path.join(idir, fn), os.path.join(res, "drawables"))
+                imgs.append('  <bitmap id="%s" filename="%s" packingFormat="%s" dithering="none"/>\n' % (stem, fn, ext[1:]))
     with open(os.path.join(res, "drawables", "drawables.xml"), "w") as f:
-        f.write('<drawables>\n  <bitmap id="LauncherIcon" filename="icon.png"/>\n</drawables>\n')
+        f.write('<drawables>\n  <bitmap id="LauncherIcon" filename="icon.png"/>\n%s</drawables>\n' % "".join(imgs))
     png(os.path.join(res, "drawables", "icon.png"), 65, int(face["defaults"]["accent"], 16))
 
     dstyle = face["defaults"].get("style", 1)

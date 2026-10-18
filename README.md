@@ -1,6 +1,6 @@
 # FaceLab – Watchface-Studio für die Forerunner 970
 
-FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 40 fertigen Designs, die du live
+FaceLab ist ein Studio für eigene Garmin-Watchfaces: eine Website mit 71 fertigen Designs, die du live
 ansehen, anpassen und mit einem Klick per USB auf die Uhr übertragen kannst – direkt im Browser,
 ohne SDK, ohne Konto, ohne Connect IQ Store, ohne Zusatzprogramm.
 
@@ -23,9 +23,9 @@ gleichzeitig auf der Uhr haben.
 
 ## Die Designs
 
-Alle 68 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
+Alle 71 Designs auf einen Blick (gerendert mit derselben Engine wie die Vorschau im Studio):
 
-<p align="center"><img src="docs/media/overview.webp" alt="Alle 68 Designs" width="100%"></p>
+<p align="center"><img src="docs/media/overview.webp" alt="Alle 71 Designs" width="100%"></p>
 
 Die Animationen zeigen, was beim Handgelenk-Heben passiert: Intro und die ersten Sekunden der laufenden Animation.
 
@@ -153,6 +153,14 @@ erschöpft, gestresst), und nach ihr richten sich Farben, Wetter und Szenen.
 Jedes dieser Designs erzählt eine kleine Geschichte, die deine Daten und die echte Uhrzeit weiterschreiben.
 Bei jedem Handgelenk-Heben spielt eine kurze Episode.
 
+**Sie leben mit dem Jahr und dem echten Wetter:** Bei Schnee oder Frost liegt Schnee auf Dächern, Feldern
+und Felsen, Regen und Schneeflocken fallen, wenn es draußen wirklich regnet oder schneit, im Herbst färben
+sich die Hügel. Im Advent hängen Lichterketten und ein Christbaum steht im Bild, an Silvester gibt es
+Feuerwerk, dazu Ostereier, Kürbisse zu Halloween, ein Herz am Valentinstag und Luftballons an deinem
+Geburtstag (im Studio einstellen) – mit Gruß statt Datum.
+
+<p align="center"><img src="docs/media/seasons.webp" alt="Pixel-Hof durchs Jahr" width="100%"></p>
+
 <table>
 <tr>
 <td align="center" valign="top" width="25%"><img src="docs/media/MOON.webp" width="180" alt="Mondflug"><br><b>Mondflug</b><br><sub>Jede Woche eine Mondmission: Countdown, Zündung, das Wochenziel trägt die Rakete bis zur Landung</sub></td>
@@ -170,6 +178,20 @@ Bei jedem Handgelenk-Heben spielt eine kurze Episode.
 <td align="center" valign="top" width="25%"><img src="docs/media/TRAIN.webp" width="180" alt="Pixel-Zug"><br><b>Pixel-Zug</b><br><sub>Jeder Trainingstag hängt einen beladenen Waggon an, das Wochenziel ist der Bahnhof</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/LIGHT.webp" width="180" alt="Leuchtturm"><br><b>Leuchtturm</b><br><sub>Der Wärter angelt, zündet in der Dämmerung das Licht, nachts kreist der Kegel über die See</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/MAP.webp" width="180" alt="Schatzkarte"><br><b>Schatzkarte</b><br><sub>Das Schiff segelt mit dem Wochenziel Insel um Insel zum roten X, am Ziel öffnet sich die Truhe</sub></td>
+</tr>
+</table>
+
+### Wächst mit dir
+
+Diese Designs haben ein Gedächtnis: Sie bewerten jeden Tag (Schlafscore 30 %, Schritte zum Ziel 40 %,
+Ruhe = 100 − Stress 15 %, Body Battery 15 %) und merken sich das Ergebnis über Wochen im Speicher der Uhr.
+Ab 60 Punkten ist es ein guter Tag; vorher sagen sie dir, wie viele Schritte noch fehlen.
+
+<table>
+<tr>
+<td align="center" valign="top" width="25%"><img src="docs/media/GARDEN.webp" width="180" alt="Pixel-Garten"><br><b>Pixel-Garten</b><br><sub>Ein Hochbeet vom Samen bis zur Ernte: gute Tage lassen es wachsen, schlechte welken; nach drei guten Tagen zieht ein Igel ein</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/SAGA.webp" width="180" alt="Finos Reise"><br><b>Finos Reise</b><br><sub>Fortsetzungsgeschichte in 21 Kapiteln: Fuchs Fino reist ans Meer, jeder gute Tag schaltet ein Kapitel frei</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/WERK.webp" width="180" alt="Tageskunstwerk"><br><b>Tageskunstwerk</b><br><sub>Jeder Tag malt eine Blüte: Schritte = Blätter, Schlaf = Farbe, Stress = Zacken – mit Bildtitel und Wochengalerie</sub></td>
 </tr>
 </table>
 
@@ -518,6 +540,18 @@ Und die Pixel-Geschichten durch ihren Tag:
 
 <img src="docs/media/styles/PLAN.webp" width="560" alt="Was geht heute?: Varianten">
 
+**Pixel-Garten**: Garten · Nacht · Gameboy
+
+<img src="docs/media/styles/GARDEN.webp" width="560" alt="Pixel-Garten: Varianten">
+
+**Finos Reise**: Bilderbuch · Nacht · Gameboy
+
+<img src="docs/media/styles/SAGA.webp" width="560" alt="Finos Reise: Varianten">
+
+**Tageskunstwerk**: Schwarz · Leinwand · Akzent
+
+<img src="docs/media/styles/WERK.webp" width="560" alt="Tageskunstwerk: Varianten">
+
 </details>
 
 **Trainingstage** erkennt FaceLab selbst: Ein Tag zählt, wenn er mindestens 30 Aktivminuten hat oder
@@ -532,6 +566,22 @@ neue Nachricht und Geheimcode entschlüsselt sich erneut (im Simulator nicht pr�
 Alle Designs haben drei Varianten, eine Intro-Animation beim Handgelenk-Heben, teils fortlaufende
 Animationen (solange die Uhr wach ist, ca. 10 s) und einen eigenen, stromsparenden Always-On-Modus
 für das AMOLED-Display (Burn-in-Schutz inklusive).
+
+## Der Assistent
+
+Alle Designs bringen einen kleinen Assistenten mit, der beim Handgelenk-Heben für ein paar Sekunden eine
+Karte über das Design legt – nur wenn es passt, und nie zu oft:
+
+* **Atmen:** Bei hohem Stress (aktuell ab 70 oder ab 60 im Schnitt der letzten 2 Stunden) führt ein
+  Kreis durch einen ruhigen Atemzug (4 s ein, 4 s aus); höchstens alle 30 Minuten.
+* **Morgenbericht:** Beim ersten Blick des Morgens (5–11 Uhr) Schlafscore, Body Battery, Ruhepuls und ein
+  Fazit.
+* **Geburtstag:** Konfetti und Kuchen, einmal pro Stunde.
+* **Schlafenszeit:** Ab 45 Minuten vor deiner Schlafenszeit: wie lange noch, und wann du nach 8 Stunden
+  aufstehen würdest.
+
+Geburtstag, Schlafenszeit und den Assistenten (an/aus) stellst du im Studio ein; sie gelten für alle
+Designs.
 
 ## Anpassen an der Uhr
 

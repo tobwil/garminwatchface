@@ -23,12 +23,15 @@ class Cfg {
     var bikeGoal as Number = 150;
     var src as Number = 0;      // progress source for challenge faces: 0 climb (floors), 1 bike km, 2 training days
     var dayGoal as Number = 4;  // training days per week
+    var bday as Number = 0;     // birthday as MMDD (0 = not set)
+    var bed as Number = 1350;   // usual bedtime in minutes after midnight
+    var assist as Number = 1;   // assistant: breathing help, bedtime hint, morning report (0 = off)
 
     function initialize() {
     }
 
     function toArray() as Array<Number> {
-        return [style, accent, dcol, slots[0], slots[1], slots[2], ftp, kg, climb, quest, anim, bikeGoal, src, dayGoal];
+        return [style, accent, dcol, slots[0], slots[1], slots[2], ftp, kg, climb, quest, anim, bikeGoal, src, dayGoal, bday, bed, assist];
     }
 
     function fromArray(a as Array) as Void {
@@ -41,11 +44,14 @@ class Cfg {
         if (a.size() >= 14) {
             src = a[12]; dayGoal = a[13];
         }
+        if (a.size() >= 17) {
+            bday = a[14]; bed = a[15]; assist = a[16];
+        }
     }
 
-    // FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>[.<src>.<dayGoal>]
+    // FL1.<face>.<style>.<accent>.<dcol>.<s1>-<s2>-<s3>.<ftp>.<kg>.<climb>.<quest>.<anim>.<bikeGoal>[.<src>.<dayGoal>[.<bday>.<bed>.<assist>]]
     // (<face> selects the design in the studio; each .prg contains exactly one design.
-    //  The last two fields are optional for codes from the first studio version.)
+    //  The bracketed fields are optional for codes from older studio versions.)
     function decode(code as String) as Boolean {
         var p = split(code, '.');
         if (p.size() < 12 || !p[0].equals("FL1")) {
@@ -67,6 +73,9 @@ class Cfg {
         bikeGoal = num(p[11], 0, 2000, 150);
         src = p.size() > 12 ? num(p[12], 0, 2, 0) : 0;
         dayGoal = p.size() > 13 ? num(p[13], 1, 7, 4) : 4;
+        bday = p.size() > 14 ? num(p[14], 0, 1231, 0) : 0;
+        bed = p.size() > 15 ? num(p[15], 0, 1439, 1350) : 1350;
+        assist = p.size() > 16 ? num(p[16], 0, 1, 1) : 1;
         return true;
     }
 

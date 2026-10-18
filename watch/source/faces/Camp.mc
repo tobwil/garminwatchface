@@ -8,6 +8,9 @@ import Toybox.Math;
 // he sits on the log roasting a marshmallow over the campfire, which burns as high as the Body
 // Battery. The three data slots are written on the trail sign. Every wrist raise plays a short
 // episode: a sleepy Zzz, crawling out to the fire, setting off on the hike, a log on the fire.
+// The camp lives with the year and the real weather (Season.mc): snow, rain and snowfall, spring
+// flowers, fairy lights from the tent to the sign and a tree at Christmas, eggs at Easter, a pumpkin by
+// the fire at Halloween, balloons on your birthday, fireworks on New Year's Eve.
 // Styles: 1 Wald, 2 Strand, 3 Winter. Mirrors web/js/faces/camp.js.
 class FaceCamp extends Face {
     const GY = 338;
@@ -135,6 +138,14 @@ class FaceCamp extends Face {
         P[15] = sc == 0 || sc == 3 ? 0xFFC85A : P[14];
         var bb = d.bb >= 0 ? d.bb : 50;
         var fh = sc == 3 ? 16 + Math.round(bb * 0.7).toNumber() : sc == 1 ? 16 : 0;
+        // the year and the weather (no snow on the beach)
+        var ev = Season.event(d);
+        var sn = Season.snowy(d) && st != 2;
+        var ssn = Season.season(d);
+        if (sn && st == 1) {
+            P[6] = G.mix(0xF0F4FA, 0x050814, nf);
+            P[7] = G.mix(0xC8D4E8, 0x050814, nf);
+        }
 
         if (S) {
             // ---- sky, sun / moon and stars
@@ -176,8 +187,8 @@ class FaceCamp extends Face {
                         var w = 4 + (y * 0.55 / 2).toNumber() * 2 + (y % 12 == 6 ? 4 : 0);
                         dc.fillRectangle(tx - w / 2, ty + y, w, 6);
                     }
-                    if (st == 3) {
-                        dc.setColor(P[9], -1);
+                    if (st == 3 || sn) {
+                        dc.setColor(st == 3 ? P[9] : G.mix(0xFFFFFF, 0x050814, nf), -1);
                         dc.fillRectangle(tx - 2, ty, 4, 6);
                         dc.fillRectangle(tx - 6, ty + 18, 12, 4);
                     }
@@ -188,6 +199,14 @@ class FaceCamp extends Face {
             dc.setColor(P[7], -1);
             for (var x = 0; x < 454; x += 14) {
                 dc.fillRectangle(x + ((x / 14) % 3) * 4, 306 + ((x * 13) % 60), 4, 2);
+            }
+            if (ssn == 1 && !sn && st == 1) {
+                // spring flowers
+                var FL = [0xFF7AA8, 0xFFE05A, 0xFFFFFF, 0xB48AFF];
+                for (var i = 0; i < 16; i++) {
+                    dc.setColor(G.mix(FL[i % 4], 0x050814, nf), -1);
+                    dc.fillRectangle(20 + ((i * 97) % 414), 344 + ((i * 31) % 24), 4, 4);
+                }
             }
             if (fh > 0 && k > 0) {
                 dc.setColor(G.mix(P[6], P[28], 0.3), -1);
@@ -238,15 +257,28 @@ class FaceCamp extends Face {
                 F.px(dc, lb, 324, y + 4, 2, 0, 0);
                 F.px(dc, val, 426, y + 4, 2, 2, 0);
             }
+            if (sn) {
+                Season.snowCap(dc, 318, 196, 112);
+            }
+            // ---- decorations for the special days
+            if (ev == Season.ADVENT || ev == Season.XMAS) {
+                Season.tree(dc, 350, GY, 1);
+            } else if (ev == Season.EASTER) {
+                Season.eggs(dc, 296, 356);
+            } else if (ev == Season.HALLOWEEN) {
+                Season.pumpkin(dc, 330, GY + 4, 1);
+            } else if (ev == Season.VALENTINE) {
+                Season.heart(dc, 70, 318, 2);
+            }
 
             // ---- time, date, story caption
             dc.setColor(0x000000, -1);
             F.px(dc, G.timeStr(d), 229, 34, 5, 1, 0);
             dc.setColor(P[11], -1);
             F.px(dc, G.timeStr(d), 227, 32, 5, 1, 0);
-            F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
+            F.px(dc, ev != Season.NONE ? Season.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
             // dark captions on sand and snow by day
-            var dark = st >= 2 && k < 2;
+            var dark = (st >= 2 || sn) && k < 2;
             dc.setColor(dark ? 0x1A2A4A : P[11], -1);
             F.px(dc, CAP[sc], 227, 370, 2, 1, 0);
             var sub = sc == 0 ? "SONNE UM " + G.hm(sunrise(d)) : sc == 1 ? "GUTEN MORGEN"
@@ -314,6 +346,15 @@ class FaceCamp extends Face {
             dc.setColor(P[25], -1);
             dc.fillRectangle(hx + 34, hy + 8, 8, 8);
         }
+        // ---- the year and the weather: lights, balloons, fireworks, rain and snow
+        if (ev == Season.ADVENT || ev == Season.XMAS) {
+            Season.lights(dc, 84, GY - 64, 386, 190, tt);
+        } else if (ev == Season.BIRTHDAY) {
+            Season.balloons(dc, 84, GY - 64, tt);
+        } else if (ev == Season.NYE) {
+            Season.fireworks(dc, 70, 96, 300, 80, tt);
+        }
+        Season.precip(dc, d, 0, 90, 454, 300, tt);
     }
 
     function aod(dc as Dc, d as D) as Void {

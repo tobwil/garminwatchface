@@ -3,12 +3,16 @@
 // climbs the tower (the windows light up one after another) and lights the lamp; at night the beam
 // sweeps the sea while a ship's lights pass safely, his cottage window glowing below; at dawn he
 // puts the light out. The three data slots are on the sea weather panel.
+// The coast lives with the year and the real weather (season.js): snow on the rocks and the roof, rain
+// or snow falling, fairy lights on the gallery and the cottage in Advent, fireworks over the sea on New
+// Year's Eve, eggs, a pumpkin, a heart or birthday balloons at the cottage.
 // Styles: 1 Küste, 2 Sturm (rain and high waves), 3 Gameboy. Mirrors watch/source/faces/Light.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { AST } from "../engine/astro.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/light.js";
 
 const SP = encodeAll(S);
@@ -78,6 +82,8 @@ export default {
     const k = ph === 0 ? 0 : ph === 2 ? 2 : 1;
     const nf = st === 3 ? 0 : [0, 0.3, 0.6][k];
     const dk = (c) => G.mix(c, 0x050814, nf);
+    const ev = SE.event(d);
+    const xmas = ev === EV.ADVENT || ev === EV.XMAS;
 
     if (S) {
       // ---- sky, moon / sun, stars
@@ -133,6 +139,17 @@ export default {
       dc.fillRectangle(356, 270, 18, 34);
       dc.setColor(k > 0 ? P[19] : dk(P[14]), -1);
       dc.fillRectangle(388, 272, 20, 14);
+      // ---- snow on the roof and the rocks, decorations for the special days
+      if (st !== 3 && SE.snowy(d)) {
+        dc.setColor(dk(0xf4f8ff), -1);
+        dc.fillPolygon([[340, 260], [382, 236], [424, 260]]);
+        SE.snowCap(dc, 300, 296, 154);
+        SE.snowCap(dc, 250, 304, 50);
+        SE.snowCap(dc, 222, 336, 28);
+      }
+      if (ev === EV.EASTER) SE.eggs(dc, 384, 320);
+      else if (ev === EV.HALLOWEEN) SE.pumpkin(dc, 404, 304, 1);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 382, 212, 2);
 
       // ---- sea weather panel with the data slots
       dc.setColor(P[23], -1);
@@ -155,7 +172,7 @@ export default {
       F.px(dc, G.timeStr(d), 222, 26, 5, 1, 0);
       dc.setColor(st === 3 ? 0x0f380f : P[21], -1);
       F.px(dc, G.timeStr(d), 220, 24, 5, 1, 0);
-      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 206, 68, 2, 1, 0);
+      F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 206, 68, 2, 1, 0);
       dc.setColor(P[21], -1);
       F.px(dc, CAP[ph], 200, 392, 2, 1, 0);
       const ss = d.sunset > 0 ? d.sunset : 1140, sr = d.sunrise > 0 ? d.sunrise : 390;
@@ -205,6 +222,13 @@ export default {
         dc.fillRectangle(rx, ry, 2, 10);
       }
     }
+    // ---- real weather, lights, fireworks, balloons
+    if (!storm) SE.precip(dc, d, 0, 40, 454, 300, tt);
+    if (xmas) {
+      SE.lights(dc, TX - 28, 108, TX + 28, 108, tt);
+      SE.lights(dc, 338, 262, 426, 262, tt);
+    } else if (ev === EV.NYE) SE.fireworks(dc, 330, 140, 100, 60, tt);
+    else if (ev === EV.BIRTHDAY) SE.balloons(dc, 432, 296, tt);
     // ---- the story
     if (ph === 0) {
       // fishing from the rocks; a ship sails by on every raise, he waves

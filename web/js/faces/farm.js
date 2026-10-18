@@ -3,12 +3,16 @@
 // with the steps (seed, sprout, plant, wheat), and at the step goal it is harvest time: golden wheat
 // and the farmer cheering with a sheaf. In the evening he rests on the bench, at night the farm
 // sleeps under the real stars and moon. The three data slots are chalked on the farm shop board.
+// The farm lives with the year and the real weather (season.js): snow in a freezing winter, flowers in
+// spring, golden hills in autumn, rain and snowfall, fairy lights and a tree at Christmas, eggs at
+// Easter, a pumpkin at Halloween, balloons on your birthday, fireworks on New Year's Eve.
 // Styles: 1 Sommer, 2 Herbst, 3 Gameboy. Mirrors watch/source/faces/Farm.mc.
 import { G } from "../engine/gfx.js";
 import { F } from "../engine/fonts.js";
 import { St } from "../engine/st.js";
 import { AST } from "../engine/astro.js";
 import { SPR, encodeAll } from "../engine/spr.js";
+import { SE, EV } from "../engine/season.js";
 import S from "../sprites/farm.js";
 
 const SP = encodeAll(S);
@@ -86,6 +90,15 @@ export default {
     // the farm darkens with the sun (window light, chalk, text, moon and stars keep their colours)
     const nf = st === 3 ? 0 : [0, 0.3, 0.65][k];
     const P = P0.map((c, i) => i >= 6 && i <= 39 && i !== 13 && i !== 20 && i !== 21 && i !== 22 && i < 35 || i >= 38 ? G.mix(c, 0x050814, i >= 23 && i <= 34 ? Math.min(nf, 0.35) : nf) : c);
+    // the year and the weather: snow-covered or golden land
+    const ev = SE.event(d), sn = SE.snowy(d), ssn = SE.season(d);
+    if (st !== 3 && sn) {
+      P[6] = G.mix(0xe8f0f8, 0x050814, nf);
+      P[7] = G.mix(0xf0f4fa, 0x050814, nf);
+      P[8] = G.mix(0xc8d4e8, 0x050814, nf);
+    } else if (st !== 3 && ssn === 3) {
+      P[6] = G.mix(0xc8962a, 0x050814, nf);
+    }
 
     if (S) {
       // ---- sky with sun / moon / stars
@@ -113,6 +126,14 @@ export default {
       dc.fillRectangle(0, 300, 454, 154);
       dc.setColor(P[8], -1);
       for (let x = 0; x < 454; x += 14) dc.fillRectangle(x + ((x / 14) % 3) * 4, 372 + ((x * 13) % 60), 4, 2);
+      if (ssn === 1 && !sn && st !== 3) {
+        // spring flowers in the meadow
+        const FL = [0xff7aa8, 0xffe05a, 0xffffff, 0xb48aff];
+        for (let i = 0; i < 18; i++) {
+          dc.setColor(G.mix(FL[i % 4], 0x050814, nf), -1);
+          dc.fillRectangle(20 + ((i * 97) % 414), 376 + ((i * 31) % 56), 4, 4);
+        }
+      }
 
       // ---- barn: walls, roof, door with the white cross, hayloft and window
       dc.setColor(P[11], -1);
@@ -138,6 +159,7 @@ export default {
       dc.setColor(lit ? P[13] : P[10], -1);
       dc.fillRectangle(90, 164, 20, 18);
       dc.fillRectangle(140, 218, 20, 18);
+      if (sn) SE.snowCap(dc, 24, 200, 152);
 
       // ---- farm shop board with the data slots
       dc.setColor(P[39], -1);
@@ -148,6 +170,7 @@ export default {
       dc.setColor(P[39], -1);
       dc.drawRectangle(252, 190, 162, 76);
       dc.drawRectangle(253, 191, 160, 74);
+      if (sn) SE.snowCap(dc, 252, 190, 162);
       dc.setColor(P[20], -1);
       F.px(dc, "HOFLADEN", 333, 196, 2, 1, 0);
       for (let i = 0; i < 3; i++) {
@@ -198,17 +221,25 @@ export default {
       dc.fillRectangle(130, 312, 46, 6);
       dc.fillRectangle(134, 318, 4, 20);
       dc.fillRectangle(168, 318, 4, 20);
+      // ---- decorations for the special days
+      if (ev === EV.ADVENT || ev === EV.XMAS) SE.tree(dc, 60, 372, 1);
+      else if (ev === EV.EASTER) SE.eggs(dc, 44, 388);
+      else if (ev === EV.HALLOWEEN) SE.pumpkin(dc, 190, 330, 1);
+      else if (ev === EV.VALENTINE) SE.heart(dc, 100, 172, 2);
 
       // ---- time, date, caption
       dc.setColor(0x000000, -1);
       F.px(dc, G.timeStr(d), 229, 34, 5, 1, 0);
       dc.setColor(P[21], -1);
       F.px(dc, G.timeStr(d), 227, 32, 5, 1, 0);
-      F.px(dc, d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
+      F.px(dc, ev ? SE.greeting(ev) : d.dowStr + " " + d.day + ". " + d.monStr, 227, 76, 2, 1, 0);
+      // dark captions on snow by day
+      const dark = sn && k < 2 && st !== 3;
+      if (dark) dc.setColor(0x1a2a4a, -1);
       F.px(dc, CAP[sc], 227, 394, 2, 1, 0);
       const sr = d.sunrise > 0 ? d.sunrise : 390;
       const sub = sc === 0 ? "SONNE UM " + G.hm(sr) : G.num(Math.max(0, d.steps)) + " SCHRITTE";
-      dc.setColor(P[22], -1);
+      dc.setColor(dark ? 0x4a5a7a : P[22], -1);
       F.px(dc, sub, 227, 414, 2, 1, 0);
     }
 
@@ -262,6 +293,11 @@ export default {
       // evening on the bench in front of the barn
       SPR.draw(dc, SP.SIT, 120, GY - 80 + 6, 5, fp, false);
     }
+    // ---- the year and the weather: lights, balloons, fireworks, rain and snow
+    if (ev === EV.ADVENT || ev === EV.XMAS) SE.lights(dc, 24, 200, 176, 200, tt);
+    else if (ev === EV.BIRTHDAY) SE.balloons(dc, 232, 300, tt);
+    else if (ev === EV.NYE) SE.fireworks(dc, 70, 96, 300, 70, tt);
+    SE.precip(dc, d, 0, 90, 454, 300, tt);
   },
 
   aod(dc, d) {

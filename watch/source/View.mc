@@ -34,6 +34,7 @@ class FaceView extends WatchUi.WatchFace {
     hidden var _bgKey = -1;
     hidden var _bgFail = false;
     hidden var _bgMs = -1;       // debug: time of the last static layer render
+    hidden var _card = 0;        // assistant card shown after this raise (Assist.mc), 0 = none
 
     function initialize(editMode as Boolean) {
         WatchFace.initialize();
@@ -117,6 +118,8 @@ class FaceView extends WatchUi.WatchFace {
     // ------------------------------------------------------------ animation
     hidden function wake() as Void {
         _wake = System.getTimer();
+        // the assistant decides on every raise whether it has something to say
+        _card = !_sleeping && !_edit ? Assist.pick(d) : 0;
         if (cfg.anim > 0 && !_sleeping && !_edit) {
             startTimer(period(20));
         }
@@ -235,6 +238,9 @@ class FaceView extends WatchUi.WatchFace {
         var t = now - _wake;
         if (_tapAt >= 0 && now - _tapAt < TAP_MS) {
             startTimer(period(20));
+        } else if (_card > 0 && t < Assist.DUR[_card] + 150) {
+            // an assistant card is showing: keep the frames coming until it has slid away
+            startTimer(period(15));
         } else if (t > INTRO_MS) {
             var fps = cfg.anim >= 2 ? face.fps() : 0;
             if (fps <= 0 || t > MAX_ANIM_MS) {
@@ -299,6 +305,10 @@ class FaceView extends WatchUi.WatchFace {
             dc.setColor(G.dim(G.mix(0xFFFFFF, cfg.accent, 0.35), 1.0 - reveal * 0.6), -1);
             dc.fillRectangle(0, 226 - h, 454, 2);
             dc.fillRectangle(0, 226 + h, 454, 2);
+        }
+        if (_card > 0 && !_sleeping && t < Assist.DUR[_card]) {
+            dc.clearClip();
+            Assist.draw(dc, d, _card, t);
         }
         var dtNow = System.getTimer() - t0;
         _dt = (_dt * 3 + dtNow) / 4;

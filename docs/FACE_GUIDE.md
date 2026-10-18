@@ -42,6 +42,17 @@ need is copied into a watch face only when its faces.json entry lists it, e.g. `
 `IN` / `Insight` draws conclusions from the health data: `ready(d)` (readiness 0..100 plus the points each
 of Body Battery, sleep, calm and recovery adds or costs), `state(d, R)` (topfit … gestresst), `worst(r)`,
 `reason(d, k)`, `advice(st)`, `stress2h(d)`, `bbRate(d)`, `avg`, `delta`, `condName(cond)`.
+`SE` / `Season` (`"libs": ["season"]`) lets a scene live with the year and the real weather: `season(d)`,
+`event(d)` (`EV.ADVENT`, `XMAS`, `NYE`, `NEWYEAR`, `EASTER`, `HALLOWEEN`, `VALENTINE`, `BIRTHDAY` from
+`d.cfg.bday`), `wx(d)` (0 clear … 5 fog), `snowy(d)`, `greeting(ev)` and pixel decorations the scene places
+itself: `precip`, `fireworks`, `lights`, `balloons` (moving parts) and `snowCap`, `tree`, `pumpkin`, `eggs`,
+`heart` (static layer).
+
+**Memory over days** (GARDEN, SAGA, WERK, DUNGEON): keep the state in `St` under a short face prefix, read
+it once per static redraw into a member/module variable (Storage reads are slow), judge the previous day
+when `year * 1000 + doy` changes (only if it really was yesterday, else the face waited for you) and write
+only when a value changes. The web preview starts each face with a fresh store, so seed a demo state
+once behind a `<prefix>Demo` key in the JS version only.
 
 **F** (`fonts.js` / `Fonts.mc`) – procedural fonts, identical pixels on web and watch:
 * `F.st(dc, txt, x, y, h, pen, just, prog, slant)` monoline vector text. `y` = vertical centre,

@@ -3,6 +3,7 @@ import META from "../faces.json";
 import { FACES } from "./faces/index.js";
 import { prepCanvas, render, INTRO_MS } from "./engine/render.js";
 import { buildData, encodeCode, decodeCode, DEFAULT_CFG, SLOT_TYPES, SIM_DEFAULTS } from "./engine/model.js";
+import { Assist, DUR } from "./engine/assist.js";
 import { St } from "./engine/st.js";
 import { Store } from "./engine/model.js";
 import { patchPrg } from "./prg.js";
@@ -47,6 +48,8 @@ const state = {
   cfgs: LS.get("cfgs", {}),
   names: LS.get("names", {}),
   sim: LS.get("sim", {}),
+  // personal settings shared by every design: birthday, bedtime, assistant
+  personal: LS.get("personal", {}),
   filter: "alle",
   live: true,
   scrub: 600,
@@ -61,12 +64,15 @@ const stores = {}; // per-face persistent store for St (XP etc.)
 
 function cfgOf(key) {
   const f = byKey[key];
-  const c = { ...defaultsFor(f), ...(state.cfgs[key] || {}) };
+  const c = { ...defaultsFor(f), ...(state.cfgs[key] || {}), ...state.personal };
   c.slots = [...c.slots];
   c.style = Math.min(Math.max(1, c.style), (f.styles || ["x"]).length);
   return c;
 }
+const PERSONAL = ["bday", "bed", "assist"];
 function setCfg(patch) {
+  for (const k of PERSONAL) if (k in patch) state.personal[k] = patch[k];
+  LS.set("personal", state.personal);
   state.cfgs[state.key] = { ...cfgOf(state.key), ...patch };
   LS.set("cfgs", state.cfgs);
   state.dirty = true;
@@ -141,6 +147,8 @@ function wake() {
   state.raises++;
   cachedData = null;
   state.wakeAt = performance.now();
+  // the assistant decides on every raise whether it has something to say
+  state.assist = Assist.pick(dataFor(state.key, cfgOf(state.key), now()));
   state.dirty = true;
 }
 
@@ -156,7 +164,8 @@ function loop(ts) {
   const cfg = cfgOf(key);
   const t = ts - state.wakeAt;
   const tapping = !state.aod && state.tapAt >= 0 && ts - state.tapAt < TAP_MS;
-  const animating = tapping || (!state.aod && cfg.anim > 0 && t < MAX_ANIM_MS && (t < INTRO_MS || (cfg.anim === 2 && (face.fps || 0) > 0)));
+  const card = !state.aod && state.assist > 0 && t < DUR[state.assist] + 100;
+  const animating = tapping || card || (!state.aod && cfg.anim > 0 && t < MAX_ANIM_MS && (t < INTRO_MS || (cfg.anim === 2 && (face.fps || 0) > 0)));
   const period = t < INTRO_MS || tapping ? 50 : 1000 / Math.max(1, face.fps || 1);
   const dt = now();
   const sec = dt.getSeconds();
@@ -174,7 +183,7 @@ function loop(ts) {
   useStore(key);
   const a = { t, intro: cfg.anim === 0 ? 1 : Math.min(1, t / INTRO_MS), live: animating, ms: dt.getMilliseconds(),
     tap: state.tapAt < 0 ? 999999 : ts - state.tapAt };
-  render(ctx, face, cachedData, a, state.aod);
+  render(ctx, face, cachedData, a, state.aod, card ? state.assist : 0);
   if (!mini.hidden) {
     const m = miniCanvas.getContext("2d");
     m.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
@@ -196,6 +205,8 @@ function setupMini() {
 
 // ------------------------------------------------------------------ gallery
 const tiles = {};
+// pre-rendered images arrive asynchronously: redraw the tiles once they are there
+window.addEventListener("fl-bitmap", () => faces.forEach((f) => refreshTile(f.key)));
 function buildGallery() {
   const chips = $("chips");
   chips.innerHTML = "";
@@ -333,6 +344,8 @@ function syncPanel() {
   $("src").value = String(cfg.src ?? 0); $("days").value = String(cfg.dayGoal ?? 4);
   $("ftp").value = cfg.ftp; $("kg").value = cfg.kg; $("bike").value = cfg.bikeGoal;
   $("climb").value = String(cfg.climb); $("quest").value = String(cfg.quest); $("anim").value = String(cfg.anim);
+  $("bdayD").value = String(cfg.bday ? cfg.bday % 100 : 0); $("bdayM").value = String(cfg.bday ? Math.floor(cfg.bday / 100) : 0);
+  $("bed").value = String(cfg.bed ?? 1350); $("assist").value = String(cfg.assist ?? 1);
   $("fname").value = state.names[state.key] || f.name;
   syncCode();
 }
@@ -357,6 +370,14 @@ function bindInputs() {
   $("src").onchange = () => { setCfg({ src: +$("src").value }); wake(); };
   $("days").onchange = () => setCfg({ dayGoal: +$("days").value });
   $("anim").onchange = () => { setCfg({ anim: +$("anim").value }); wake(); };
+  const bday = () => {
+    const dd = +$("bdayD").value, mm = +$("bdayM").value;
+    setCfg({ bday: dd && mm ? mm * 100 + dd : 0 });
+  };
+  $("bdayD").onchange = bday;
+  $("bdayM").onchange = bday;
+  $("bed").onchange = () => setCfg({ bed: +$("bed").value });
+  $("assist").onchange = () => { setCfg({ assist: +$("assist").value }); wake(); };
   $("fname").oninput = () => { state.names[state.key] = $("fname").value; LS.set("names", state.names); };
 
   $("wake").onclick = () => { state.aod = false; $("aod").checked = false; $("aodBadge").hidden = true; wake(); };
@@ -392,12 +413,14 @@ function bindInputs() {
     const r = decodeCode($("codeIn").value);
     const err = $("codeErr");
     if (!r || !byKey[r.face]) {
-      err.textContent = "Dieser Code passt nicht. Ein Face-Code beginnt mit FL1. und hat 12 durch Punkte getrennte Teile.";
+      err.textContent = "Dieser Code passt nicht. Ein Face-Code beginnt mit FL1. und hat mindestens 12 durch Punkte getrennte Teile.";
       err.hidden = false;
       return;
     }
     err.hidden = true;
     state.cfgs[r.face] = r.cfg;
+    for (const k of PERSONAL) state.personal[k] = r.cfg[k];
+    LS.set("personal", state.personal);
     LS.set("cfgs", state.cfgs);
     selectFace(r.face);
     refreshTile(r.face);
