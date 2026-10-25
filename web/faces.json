@@ -1930,7 +1930,7 @@
         "klassisch",
         "ohnesport"
       ],
-      "blurb": "Die legendäre Pebble Text Watch auf Deutsch: „zehn / zweiund / vierzig“ in Bitmap-Schrift, die Stunde fett. Oben ein Datenfeld nach Wahl (Standard: Schritte). Beim Heben gleiten die Zeilen nacheinander von rechts herein.",
+      "blurb": "Die legendäre Pebble Text Watch auf Deutsch: „zehn / zweiund / vierzig“ in Bitmap-Schrift, die Stunde fett. Oben das Datum, unten ein Datenfeld nach Wahl (Standard: Schritte). Beim Heben gleiten die Zeilen nacheinander von rechts herein.",
       "styles": [
         "Weiß",
         "Schwarz",
@@ -1939,9 +1939,7 @@
       "uses": [
         "slots"
       ],
-      "sprites": [
-        "kiesel"
-      ],
+      "sprites": [],
       "defaults": {
         "style": 2,
         "accent": "55AAFF",

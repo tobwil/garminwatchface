@@ -58,7 +58,7 @@ Heben gibt es die typische Animation.
 <table>
 <tr>
 <td align="center" valign="top" width="25%"><img src="docs/media/KIESEL.webp" width="180" alt="Kiesel"><br><b>Kiesel</b><br><sub>TicToc-Layout: Datum, Haarlinien, große runde Ziffern, Schritte mit Raster-Balken, Akku und Bluetooth</sub></td>
-<td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, oben ein Datenfeld nach Wahl, die Zeilen gleiten von rechts herein</sub></td>
+<td align="center" valign="top" width="25%"><img src="docs/media/KTEXT.webp" width="180" alt="Kiesel Text"><br><b>Kiesel Text</b><br><sub>Die Text Watch auf Deutsch: „zehn / zweiund / vierzig“, oben das Datum, unten ein Datenfeld nach Wahl (Schritte), die Zeilen gleiten von rechts herein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KANALOG.webp" width="180" alt="Kiesel Analog"><br><b>Kiesel Analog</b><br><sub>Simple Analog: kräftige Striche, roter Sekundenzeiger, Datum im Kästchen, Zeiger drehen ein</sub></td>
 <td align="center" valign="top" width="25%"><img src="docs/media/KROLL.webp" width="180" alt="Kiesel Rolle"><br><b>Kiesel Rolle</b><br><sub>Ziffernwalzen, die beim Heben wie ein Spielautomat rotieren und nacheinander einrasten</sub></td>
 </tr>

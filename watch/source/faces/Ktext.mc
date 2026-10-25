@@ -5,9 +5,8 @@ import Toybox.Math;
 // KTEXT — "Kiesel Text": the Pebble's famous Text Watch in German. The time as words on up to three
 // lines, the hour in bold ("zehn / zweiund / vierzig", "zehn / null / sieben", "zehn / uhr"), set in
 // the bitmap font. On every wrist raise the lines slide in from the right one after the other, like
-// the minute change on the Pebble. Above a data field of your choice (steps by default) and the
-// battery, below the date (with a crossed-out Bluetooth icon when the phone is gone); otherwise as still
-// as e-paper. Styles: 1 Weiß, 2 Schwarz, 3 Farbe (Pebble Time palette).
+// the minute change on the Pebble. Above the battery and the date, below a data field of your choice
+// (steps by default); otherwise as still as e-paper. Styles: 1 Weiß, 2 Schwarz, 3 Farbe (Pebble Time palette).
 // Mirrors web/js/faces/ktext.js.
 class FaceKtext extends Face {
     const HW = ["zwölf", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf"];
@@ -68,7 +67,7 @@ class FaceKtext extends Face {
         return [0xFFFFFF, 0x000000, 0x555555] as Array<Number>;
     }
 
-    // static layer: background, data field, battery, date, Bluetooth; the words slide in
+    // static layer: background, battery, date, data field; the words slide in
     function bgKey(d as D) as Number {
         return minuteKey(d);
     }
@@ -84,17 +83,11 @@ class FaceKtext extends Face {
             dc.fillRectangle(0, 0, 454, 454);
             dc.setColor(P[2], -1);
             dc.fillRectangle(187, 60, Math.round(80 * G.clamp(d.batt / 100.0, 0, 1)).toNumber(), 4);
+            F.px(dc, DOW[d.dow] + " " + d.day + "." + d.mon + ".", 227, 74, 2, 1, 0);
             var s0 = d.slots[0];
             var lb = s0[:lbl] as String;
             if (lb.length() > 0) {
-                F.px(dc, (s0[:val] as String) + " " + lb.toLower(), 227, 74, 2, 1, 0);
-            }
-            F.px(dc, DOW[d.dow] + " " + d.day + "." + d.mon + ".", 227, 380, 2, 1, 0);
-            if (!d.phone) {
-                Spr.draw(dc, SprKiesel.BT, 220, 402, 2, [-1, P[2]], false);
-                for (var i = 0; i < 7; i++) {
-                    dc.fillRectangle(216 + i * 3, 400 + i * 3, 3, 3);
-                }
+                F.px(dc, (s0[:val] as String) + " " + lb.toLower(), 227, 380, 2, 1, 0);
             }
         }
 
