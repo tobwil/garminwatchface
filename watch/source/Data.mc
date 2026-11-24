@@ -295,7 +295,13 @@ class D {
 
     hidden function readProfile() as Void {
         var p = UserProfile.getProfile();
-        if (p.restingHeartRate != null) { rhr = p.restingHeartRate; }
+        // resting heart rate: the profile value, else Garmin's measured 7-day average
+        // (else readHistory estimates it from the night)
+        if (p.restingHeartRate != null && p.restingHeartRate > 0) {
+            rhr = p.restingHeartRate;
+        } else if ((p has :averageRestingHeartRate) && p.averageRestingHeartRate != null && p.averageRestingHeartRate > 0) {
+            rhr = p.averageRestingHeartRate;
+        }
         if (p.vo2maxCycling != null) { vo2b = p.vo2maxCycling; }
         if (p.vo2maxRunning != null) { vo2r = p.vo2maxRunning; }
         var zones = UserProfile.getHeartRateZones(UserProfile.HR_ZONE_SPORT_GENERIC);
@@ -446,6 +452,11 @@ class D {
         var nowSec = Time.now().value();
         if (SensorHistory has :getHeartRateHistory) {
             hrHist = bucket(SensorHistory.getHeartRateHistory({:period => new Time.Duration(7200), :order => SensorHistory.ORDER_OLDEST_FIRST}), 60, 7200, nowSec);
+            if (rhr <= 0) {
+                // no resting heart rate from the profile: the lowest pulse of the last 12 hours
+                var mn = SensorHistory.getHeartRateHistory({:period => new Time.Duration(43200)}).getMin();
+                if (mn != null && mn >= 30) { rhr = mn.toNumber(); }
+            }
         }
         if (SensorHistory has :getBodyBatteryHistory) {
             bbHist = bucket(SensorHistory.getBodyBatteryHistory({:period => new Time.Duration(86400), :order => SensorHistory.ORDER_OLDEST_FIRST}), 48, 86400, nowSec);
